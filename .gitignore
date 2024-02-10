@@ -3,3 +3,4 @@ License.MKL.gini
 MKL_*
 *.STB
 Debug
+*.ps1

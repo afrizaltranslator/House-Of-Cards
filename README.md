@@ -1,5 +1,5 @@
 # House-Of-Cards
- A GNU collection of solitair card games
+ A GPL licensed collection of solitair card games
 
 
  Work in progress!

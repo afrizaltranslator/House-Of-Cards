@@ -23,9 +23,12 @@
 // 
 // Version: 24.02.10
 // End License Information
+
 Module
 
 #use "Libs/SCI/Graphics" 
+
+#use "Libs/Rosetta" 
 
 PLUA _Fnt = ObtainFont("Ryanna")
 

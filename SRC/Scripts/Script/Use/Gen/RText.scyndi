@@ -1,0 +1,10 @@
+Module
+
+#use "Libs/SCI/Graphics" 
+
+PLUA _Fnt = ObtainFont("Ryanna")
+
+Global Void Text(String Cat,String Key,Int X,Int Y)
+    _Fnt.Text( Rosetta.Str(Cat,Key), X, Y )
+End
+

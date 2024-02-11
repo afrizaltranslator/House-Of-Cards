@@ -21,13 +21,99 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.10
+// Version: 24.02.12
 // End License Information
 
 // Main
 
 Script
 
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/Graphics"
+
+PLUA CFG
+PlUA RYA
+
+Class ToLoad
+	Static ReadOnly Table Lijst = {} 
+	ReadOnly String Type
+	ReadOnly String Tag
+	ReadOnly String File
+	ReadOnly Table Specifications
+	Constructor(string _Type,String _Tag, String _File,Spec)
+		Specifications = {}
+		For K,V in Pairs(Spec || {});Specifications[Upper(K)]=V;End
+		Type=Upper(_Type)
+		Tag=Upper(_Tag)
+		File=_File		
+	End
+End
+
+Void Img(String Tag,String File,Hot)
+	ToLoad.Lijst[Len(ToLoad.Lijst)]=New ToLoad("IMAGE",Tag,File,{["Hot"]=Hot})
+End
+
+Void Fnt(String Tag,String File)
+	ToLoad.Lijst[Len(ToLoad.Lijst)]=New ToLoad("FONT",Tag,File,{["Ryanna"]=Upper(File)=="FONT/RYANNA.JPBF"})
+End
+			
+Void Scr(String Tag,String File)
+	ToLoad.Lijst[Len(ToLoad.Lijst)]= New ToLoad("SCRIPT",Tag,File)
+End
+		
+
 Init
-    // Nothing Yet
+	// Take note of debug situation!
+	CSaySetConfig("ALLOW","ALWAYS")
+	
+	// Global Config
+	CSay("Loading Global Config")
+	CFG = GINIE.LoadHome("House Of Cards.GlobalConfig.ini","GLOBALCONFIG","Luna.GlobalConfig.ini","House Of Cards - (c) Jeroen P. Broks") 
+	CFG.NewValue("Rosetta","Language","English")
+	
+	// Font
+	Fnt("RYANNA","Font/Ryanna.jfbf")
+	
+	// Images
+	Img("LOGO","GFX/Logo/Main.png","TOPCENTER")
+	
+	// Script
+	Scr("FLOW_MAINMENU","Script/Flow/Flow_MainMenu.lbc")
+End
+
+Int Idx=0
+Global Void MainFlow()
+	If Idx>=Len(ToLoad.Lijst)
+		Sys.CurrentFlow = "MAINMENU"
+		Return
+		//Lua.error("Flow chain to main menu not yet scripted")
+	End
+	Plua ITM;ITM=ToLoad.Lijst[Idx];Idx++
+	CSayF("%03d/%03d: Loading %s: %s",Idx,Len(ToLoad.Lijst),lower(ITM.Type),ITM.File)
+	Switch ITM.Type
+		Case "IMAGE"
+			plua i;i = LoadImage(ITM.FILE,ITM.TAG)
+			plua h;h = Upper(ITM.Specifications.HOT || "NOTHING")			
+			Switch h
+				Case "NOTHING"
+				Case "CENTER"
+					i.HotCenter()
+				Case "TOPCENTER"
+					i.Hot(i.Width div 2,0)					
+				Default
+					CSayF("Unknown Image Hot: %s",h)
+			End
+		Case "FONT"
+			plua f;f = LinkFont(ITM.FILE,ITM.TAG)
+			If ITM.Specifications.RYANNA
+				RYA = f
+			End
+		Case "SCRIPT" "STATE"
+			Sys.LoadState(ITM.TAG,ITM.FILE)
+		Default; Lua.error("I really don't know how to load a "..ITM.Type)
+	End
+	If RYA
+		RYA.Text(sprintf("Loading %d%%",math.floor( (Idx/Len(ToLoad.Lijst)) * 100 )),Graphics.Width div 2,Graphics.Height div 2,2,2)
+	End
 End

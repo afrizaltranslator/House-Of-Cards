@@ -1,0 +1,75 @@
+
+Module
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/SString"
+#use "Libs/SCI/Graphics"
+
+
+PLUA _Back
+ReadOnly Var CFG = GINIE.Obtain("GLOBALCONFIG")
+	
+Get String Language 
+	Return CFG.Value("Rosetta","Language")
+End
+
+Set String Language
+	CFG.Value("Rosetta","Language",Value)
+End
+
+Void ___ForceBaseBackgroundSettings()
+	CFG.Value("Background","Entry","GFX/Backgrounds/Tile/Green.jpg")
+	CFG.Value("Background","Draw","Tile")
+	CFG.Value("Background","LastPlatform",Sys.Platform)
+End
+
+Void ___BaseBackgroundSettings()
+	CFG.NewValue("Background","Entry","GFX/Backgrounds/Tile/Green.jpg")
+	CFG.NewValue("Background","Draw","Tile")
+	CFG.NewValue("Background","LastPlatform",Sys.Platform)
+	If Sys.Platform!=CFG.Value("Background","LastPlatform")
+		Sys.Annoy("Warning!\n\nIt seems the configuration file\n was copied from "..CFG.Value("Background","LastPlatform").." to "..Sys.Platform.."\n\nSafety require to reset the background settings\nas a result!")
+		___ForceBaseBackgroundSettings()
+	End
+	If Upper(CFG.Value("Background","Entry"))=="*EXTERN*"
+		Sys.Annoy("External backgrounds not yet supported.\nI must revert to base background settings")
+		___ForceBaseBackgroundSettings()
+	End
+End
+
+Get String BackEntry
+	___BaseBackgroundSettings()
+	return CFG.Value("Background","Entry")
+End
+
+Get String BackName
+	___BaseBackgroundSettings()
+	If Upper(CFG.Value("Background","Entry"))=="*EXTERN*"
+		Return "EXTERNAL: "..CFG.Value("Background","Extern_"..Sys.Platform)
+	End
+	Return StripExt(StripDir(BackEntry))
+End
+
+Get String BackDraw
+___BaseBackgroundSettings()
+	Return CFG.Value("Background","Draw")
+End
+
+Get Var Background
+	___BaseBackgroundSettings()
+	_Back = _Back || LoadNewImage(BackEntry,"BACKGROUND")
+	Return _Back
+End	
+
+// I know! Odd to place here, but it's only ONE function, nearly all substates need it anyway, and it saves me a #use clause all the time!
+Global Void DrawBackground()
+	switch BackDraw
+		Case "Draw" "Center"
+			Background.Draw((Graphics.Width div 2)-(Background.width div 2),(Graphics.Height div 2)-(Background.Height div 2))
+		case "Tile" "Stretch"
+			Background[BackDraw](0,0,Graphics.width,Graphics.height)
+		default
+			Cls()
+	End
+End

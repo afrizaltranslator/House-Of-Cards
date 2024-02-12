@@ -32,6 +32,6 @@ Module
 
 PLUA _Fnt = ObtainFont("Ryanna")
 
-Global Void Text(String Cat,String Key,Int X,Int Y)
-    _Fnt.Text( Rosetta.Str(Cat,Key), X, Y )
+Global Void Text(String Cat,String Key,Int X,Int Y,Int ha=0,Int va=0)
+    _Fnt.Text( Rosetta.GetStr(Cat,Key), X, Y ,ha,va)
 End

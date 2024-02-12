@@ -29,10 +29,79 @@ Script
 #use "Libs/SCI/Events"
 #use "Libs/SCI/Graphics"
 
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+
+Bool Always(); Return True; End
+
+Class MenuItem
+	Static Int Cnt = 0
+	Static Var First = Nil
+	Static Var Last = Nil
+	
+	Var Next = Nil
+	Var Prev = Nil
+	
+	ReadOnly String RTag
+	ReadOnly Delegate Action
+	ReadOnly Delegate Allow
+	ReadOnly Int ID
+		
+	Get Int Y
+		Return 200+(ID*35)
+	End
+	
+	Static ReadOnly Int X = Graphics.Width div 2
+	
+	Constructor(String _T,_Act,_All)
+		ID     = Cnt; Cnt++ 
+		RTag   = _T
+		Action = _Act
+		Allow  = _All || Always
+		If Last
+			Last.Next = Self
+			Prev = Last
+		End
+		First  = First || Self
+		Last   = Self
+		CSayF("Menu item %s created",RTag)
+	End
+	
+	Destructor
+		CSayF("Menu item %s destroyed",RTag)
+	End
+End
+
+Void Play()
+End
+
+Void Config()
+End
+
+Void Bugs()
+End
+
+
+Init
+	plua i
+	i = New MenuItem("PLAY",Play)
+	i = New MenuItem("CONFIG",Config)
+	i = New MenuItem("BUGS",Bugs)
+	i = New MenuItem("EXIT",Sys.Exit)
+	// Prevent trouble with memory trashing
+	MenuItem.Last = nil
+End
+
 ReadOnly Var Logo = ObtainImage("LOGO")
+//ReadOnly Var Fnt  = ObtainFont("RYANNA")
 
 Global Void MainFlow()
 	If Events.AppTerminate(); Sys.Exit(); End
-	// TODO: Background
+	DrawBackground()
 	Logo.Draw(Graphics.Width div 2,25)
+	Plua Item;Item = MenuItem.First
+	Repeat
+		Text("MAINMENU",Item.RTag,Item.X,Item.Y,2)
+		Item = Item.Next
+	LoopWhile Item
 End

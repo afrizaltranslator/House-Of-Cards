@@ -32,6 +32,8 @@ Script
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
+#use "Libs/Rosetta"
+
 PLUA CFG
 PlUA RYA
 
@@ -69,8 +71,11 @@ Init
 	
 	// Global Config
 	CSay("Loading Global Config")
-	CFG = GINIE.LoadHome("House Of Cards.GlobalConfig.ini","GLOBALCONFIG","Luna.GlobalConfig.ini","House Of Cards - (c) Jeroen P. Broks") 
+	CFG = GINIE.LoadHome("House Of Cards.GlobalConfig.ini","GLOBALCONFIG","Luna.GlobalConfig.ini","House Of Cards - (c) Jeroen P. Broks")
+	
+	// Rosetta
 	CFG.NewValue("Rosetta","Language","English")
+	Rosetta.StringsDir = "Lang"
 	
 	// Font
 	Fnt("RYANNA","Font/Ryanna.jfbf")

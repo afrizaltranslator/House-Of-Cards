@@ -71,7 +71,7 @@ Init
 	
 	// Global Config
 	CSay("Loading Global Config")
-	CFG = GINIE.LoadHome("House Of Cards.GlobalConfig.ini","GLOBALCONFIG","Luna.GlobalConfig.ini","House Of Cards - (c) Jeroen P. Broks")
+	CFG = GINIE.LoadHome("House Of Cards.GlobalConfig.ini","GLOBALCONFIG","House Of Cards.GlobalConfig.ini","House Of Cards - (c) Jeroen P. Broks")
 	
 	// Rosetta
 	CFG.NewValue("Rosetta","Language","English")

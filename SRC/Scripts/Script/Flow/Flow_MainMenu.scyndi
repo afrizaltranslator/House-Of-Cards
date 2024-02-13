@@ -111,6 +111,9 @@ Global Void MainFlow()
 			Rect(0,Item.Y,Graphics.Width,30)
 			SetColorHSV(Hue,1,1)
 			SetAlpha(255)
+			If ML && ITEM.Allow()
+				ITEM.Action()
+			End
 		End
 		Text("MAINMENU",Item.RTag,Item.X,Item.Y,2)
 		Item = Item.Next

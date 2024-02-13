@@ -31,6 +31,8 @@ Module
 #use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
 
+#use "Libs/Rosetta"
+
 
 PLUA _Back
 ReadOnly Var CFG = GINIE.Obtain("GLOBALCONFIG")
@@ -40,7 +42,8 @@ Get String Language
 End
 
 Set String Language
-	CFG.Value("Rosetta","Language",Value)
+	//CFG.Value("Rosetta","Language",Value)
+	Rosetta.Lang = Value
 End
 
 Void ___ForceBaseBackgroundSettings()

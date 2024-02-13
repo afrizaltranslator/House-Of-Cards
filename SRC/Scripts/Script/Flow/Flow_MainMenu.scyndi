@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.12
+// Version: 24.02.13
 // End License Information
 Script
 
@@ -29,6 +29,7 @@ Script
 #use "Libs/SCI/Events"
 #use "Libs/SCI/Graphics"
 
+#use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 
@@ -93,15 +94,28 @@ Init
 End
 
 ReadOnly Var Logo = ObtainImage("LOGO")
-//ReadOnly Var Fnt  = ObtainFont("RYANNA")
+Int Hue = os.time()
+ReadOnly Var Fnt  = ObtainFont("RYANNA")
 
 Global Void MainFlow()
+	Hue = (Hue+1)%360
 	If Events.AppTerminate(); Sys.Exit(); End
 	DrawBackground()
 	Logo.Draw(Graphics.Width div 2,25)
 	Plua Item;Item = MenuItem.First
 	Repeat
+		SetColor(255,255,255)
+		If MY>Item.Y && MY<Item.Y+30
+			SetColorHSV(360-Hue,1,0.5)
+			SetAlpha(127)
+			Rect(0,Item.Y,Graphics.Width,30)
+			SetColorHSV(Hue,1,1)
+			SetAlpha(255)
+		End
 		Text("MAINMENU",Item.RTag,Item.X,Item.Y,2)
 		Item = Item.Next
 	LoopWhile Item
+	SetColor(255,255,255)
+	Fnt.Text("(c) Jeroen P. Broks",Graphics.Width div 2,Graphics.Height-35,2)
+	ShowMouse()
 End

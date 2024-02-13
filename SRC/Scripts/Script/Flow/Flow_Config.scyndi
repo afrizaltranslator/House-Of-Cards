@@ -1,0 +1,132 @@
+Script
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/JCR6"
+#use "Libs/SCI/Events"
+#use "Libs/SCI/SString"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/Rosetta"
+
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+
+
+#region Items
+Bool Always(); return True; End
+Class ConfigItem
+	Static Int Cnt = 0
+	Static Var First = Nil
+	Static Var Last = Nil
+	
+	Var Next = Nil
+	Var Prev = Nil
+	
+	ReadOnly String RTag
+	ReadOnly Delegate Action
+	ReadOnly Delegate Allow
+	ReadOnly Delegate Value
+	ReadOnly Int ID
+		
+	Get Int Y
+		Return 200+(ID*35)
+	End
+	
+	Static ReadOnly Int X = Graphics.Width div 2
+	
+	Constructor(String _T,_Act,_Val,_All)
+		ID     = Cnt; Cnt++ 
+		RTag   = _T
+		Action = _Act
+		Value  = _Val
+		Allow  = _All || Always
+		If Last
+			Last.Next = Self
+			Prev = Last
+		End
+		First  = First || Self
+		Last   = Self
+		CSayF("Config item %s created",RTag)
+	End
+	
+	Destructor
+		CSayF("Config item %s destroyed",RTag)
+	End
+End
+
+#endregion
+
+#region Language
+plua Langs
+int LangIndex = 0
+
+Var ScanLangs()
+	CSayF("Scanning resource for languages")
+	Langs = {}
+	plua _L = JCR6.Dir("Lang")
+	For L In Each(_L)
+		String LN = Trim(StripAll(L))
+		CSayF("=> Found: %s",LN)
+		If (Upper(LN))==Upper(Config.Language); LangIndex=Len(Langs); End
+		Langs[Len(Langs)] = LN		
+	End
+	Return Langs
+End
+
+String LangVal(); Return Rosetta.GetStr("Language","Name"); End
+Void LangAct()
+	Langs           = Langs || ScanLangs()
+	LangIndex       = (LangIndex+1)%Len(Langs)	
+	//Config.Language = Langs[LangIndex]
+	Rosetta.Lang    = Langs[LangIndex]
+	CSayF("Index %d (Langs %d) -> %s (Config: %s, Rosetta: %s)",LangIndex,Len(Langs),Langs[LangIndex],Config.Language,Rosetta.Lang)	
+End
+#endregion
+
+#region Back
+String BackVal(); Return ""; End
+Void BackAct(); Sys.CurrentFlow = "MAINMENU"; End
+
+#region Initize
+Init
+	plua i
+	i = New ConfigItem("Language",LangAct,LangVal)
+	i = New ConfigItem("Back",BackAct,BackVal)
+	// Prevent trouble with memory trashing
+	ConfigItem.Last = nil
+End
+#endregion
+
+
+#region Flow
+Plua Logo = ObtainImage("Logo")
+Plua Fnt  = ObtainFont("Ryanna")
+Int Hue = os.time()
+Global Void MainFlow()
+	Hue = (Hue+1)%360
+	If Events.AppTerminate(); Sys.Exit(); End
+	DrawBackground()
+	Logo.Draw(Graphics.Width div 2,25)
+	Plua Item;Item = ConfigItem.First
+	Repeat
+		SetColor(255,255,255)
+		If MY>Item.Y && MY<Item.Y+30
+			SetColorHSV(360-Hue,1,0.5)
+			SetAlpha(127)
+			Rect(0,Item.Y,Graphics.Width,30)
+			SetColorHSV(Hue,1,1)
+			SetAlpha(255)
+			If ML && ITEM.Allow()
+				ITEM.Action()
+			End
+		End
+		Text("CONFIG",Item.RTag,Item.X-5,Item.Y,1)
+		SetColor(255,180,0)
+		Fnt.Text(Item.Value(),Item.X+10,Item.Y)
+		Item = Item.Next
+	LoopWhile Item
+	SetColor(255,255,255)	
+	ShowMouse()
+End
+#endregion

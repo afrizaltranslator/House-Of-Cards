@@ -77,9 +77,12 @@ Void Play()
 End
 
 Void Config()
+	Sys.LoadNewState("FLOW_CONFIG","Script/Flow/Flow_Config.lbc")
+	Sys.CurrentFlow = "CONFIG"
 End
 
 Void Bugs()
+	Sys.OpenURL("https://github.com/PhantasarProductions/House-Of-Cards/issues")
 End
 
 

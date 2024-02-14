@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.13
+// Version: 24.02.14
 // End License Information
 Script
 
@@ -92,7 +92,7 @@ Var ScanLangs()
 	plua _L = JCR6.Dir("Lang")
 	For L In Each(_L)
 		String LN = Trim(StripAll(L))
-		CSayF("=> Found: %s",LN)
+		CSayF("=> Found: %s (%s)",LN,L)
 		If (Upper(LN))==Upper(Config.Language); LangIndex=Len(Langs); End
 		Langs[Len(Langs)] = LN		
 	End
@@ -109,6 +109,14 @@ Void LangAct()
 End
 #endregion
 
+#region Background
+String BackgroundVal(); Return Config.BackName; End
+Void BackGroundAct()
+	Sys.LoadNewState("FLOW_BACKGROUND","Script/Flow/Flow_Background.lbc")
+	GoToFlow("BACKGROUND")
+End
+#endregion
+
 #region Back
 String BackVal(); Return ""; End
 Void BackAct(); Sys.CurrentFlow = "MAINMENU"; End
@@ -117,6 +125,7 @@ Void BackAct(); Sys.CurrentFlow = "MAINMENU"; End
 Init
 	plua i
 	i = New ConfigItem("Language",LangAct,LangVal)
+	i = New ConfigItem("Background",BackgroundAct,BackgroundVal)
 	i = New ConfigItem("Back",BackAct,BackVal)
 	// Prevent trouble with memory trashing
 	ConfigItem.Last = nil

@@ -1,0 +1,96 @@
+// License Information:
+// House of Cards
+// Background selector
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.02.14
+// End License Information
+
+Script
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/JCR6"
+#use "Libs/SCI/Events"
+#use "Libs/SCI/SString"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/Rosetta"
+
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+
+
+Class SBack
+	ReadOnly String EntryName
+	ReadOnly String Entry
+	ReadOnly String Type
+		
+	Constructor(String E,String Name,String T)
+		Entry     = E
+		EntryName = Name
+		Type      = T
+		CSayF("Background record for %s (Entry: %s; Type: %s)",Name,E,T)
+	End
+End
+
+PLUA Backs 
+Init
+	Backs = {}
+	Plua BackDir = JCR6.Dir("GFX/Backgrounds")
+	For I in Each(BackDir)
+		String EN;   EN   = StripAll(I)
+		String UEN;  UEN  = Upper(EN)
+		String Type; Type = StripDir(ExtractDir(EN))
+		Backs[UEN]        = New SBack(I,EN,Type)
+	End
+	Backs.zzzzzzzzzy = New SBack("*CUSTOM*","*CUSTOM*","*CUSTOM*")
+	Backs.zzzzzzzzzz = New SBack("*BACK*","*BACK*","*BACK*")
+End
+
+Plua Logo = ObtainImage("Logo")
+Plua Fnt  = ObtainFont("Ryanna")
+Int Hue = os.time()
+Int Scroll = 0
+Global Void MainFlow()
+	Hue = (Hue+1)%360
+	If Events.AppTerminate(); Sys.Exit(); End
+	DrawBackground()
+	Logo.Draw(Graphics.Width div 2,25)
+	Text("CONFIG","BACKGROUNDSELECT",10,150)
+	Int BaseY; BaseY = -Scroll
+	For K,Item in sPairs(Backs)
+		Int X
+		Int Y
+		Y=200+(BaseY*35)
+		X=20
+		If Y>=200 && Y<=Graphics.Height-70
+			String EntryName
+			Switch Item.EntryName
+				Case "*BACK*";   EntryName = Rosetta.GetStr("Algemeen","Back")
+				Case "*CUSTOM*"; EntryName = Rosetta.GetStr("Config","Custom")
+				Default; EntryName = Item.EntryName
+			End
+			Fnt.Text(EntryName,X,Y)
+		End
+		BaseY++
+	End
+End

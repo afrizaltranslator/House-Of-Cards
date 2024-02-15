@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.14
+// Version: 24.02.15
 // End License Information
 
 Script
@@ -59,7 +59,7 @@ Init
 	For I in Each(BackDir)
 		String EN;   EN   = StripAll(I)
 		String UEN;  UEN  = Upper(EN)
-		String Type; Type = StripDir(ExtractDir(EN))
+		String Type; Type = StripDir(ExtractDir(I))
 		Backs[UEN]        = New SBack(I,EN,Type)
 	End
 	Backs.zzzzzzzzzy = New SBack("*CUSTOM*","*CUSTOM*","*CUSTOM*")
@@ -89,8 +89,25 @@ Global Void MainFlow()
 				Case "*CUSTOM*"; EntryName = Rosetta.GetStr("Config","Custom")
 				Default; EntryName = Item.EntryName
 			End
+			If MX<Graphics.Width-40 && MY>Y && MY<Y+30
+				SetColorHSV(360-Hue,1,0.4)
+				Rect(0,Y,Graphics.Width,30)
+				SetColorHSV(Hue,1,1)
+				If ML
+					Switch Item.EntryName
+						Case "*BACK*"; GoToFlow("CONFIG")
+						Case "*CUSTOM*"; Sys.Annoy("Custom backgrounds not yet implemented!")
+						Default
+							Config.BackDraw  = Item.Type
+							Config.BackEntry = Item.Entry
+					End
+				End
+			End
+			If K==Upper(Config.BackName); SetColor(255,180,0); End
 			Fnt.Text(EntryName,X,Y)
 		End
+		SetColor(255,255,255)
 		BaseY++
 	End
+	ShowMouse()
 End

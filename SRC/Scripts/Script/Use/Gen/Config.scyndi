@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.13
+// Version: 24.02.15
 // End License Information
 
 Module
@@ -71,6 +71,12 @@ Get String BackEntry
 	return CFG.Value("Background","Entry")
 End
 
+Set String BackEntry
+	Lua.Graphics.KillImage("BACKGROUND")
+	CFG.Value("Background","Entry",Value)
+	_Back = nil
+End
+
 Get String BackName
 	___BaseBackgroundSettings()
 	If Upper(CFG.Value("Background","Entry"))=="*EXTERN*"
@@ -80,8 +86,13 @@ Get String BackName
 End
 
 Get String BackDraw
-___BaseBackgroundSettings()
+	___BaseBackgroundSettings()
 	Return CFG.Value("Background","Draw")
+End
+
+Set String BackDraw
+	CSayF("BackDraw set to: \"%s\"!",Value)
+	CFG.Value("Background","Draw",Value)
 End
 
 Get Var Background

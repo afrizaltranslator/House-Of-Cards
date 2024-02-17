@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.14
+// Version: 24.02.17
 // End License Information
 Script
 
@@ -117,20 +117,48 @@ Void BackGroundAct()
 End
 #endregion
 
+#region Deck
+plua Decks
+Int DeckIndex
+Init
+	Decks = {}
+	plua D;D = JCR6.Dir("Data/Decks")
+	Config.CFG.NewValue("Deck","Global","Base Deck")
+	For I,E in ipairs(D)
+		Decks[I] = {["Entry"]=E,["Show"]=StripAll(E)}
+		If Config.CFG.Value("Deck","Global","Base Deck")==StripAll(E); DeckIndex = I; End
+	End	
+End
+
+String DeckVal(); Return Config.CFG.Value("Deck","Global"); End
+Void DeckAct()
+	DeckIndex = (DeckIndex+1) % Len(Decks)
+	Config.CFG.Value("Deck","Global",Decks[DeckIndex].Show)
+End
+
+
+#endregion
+
 #region Back
 String BackVal(); Return ""; End
 Void BackAct(); Sys.CurrentFlow = "MAINMENU"; End
+#endregion
+
+
 
 #region Initize
 Init
 	plua i
 	i = New ConfigItem("Language",LangAct,LangVal)
 	i = New ConfigItem("Background",BackgroundAct,BackgroundVal)
+	i = New ConfigItem("Deck",DeckAct,DeckVal)
 	i = New ConfigItem("Back",BackAct,BackVal)
 	// Prevent trouble with memory trashing
 	ConfigItem.Last = nil
 End
 #endregion
+
+
 
 
 #region Flow

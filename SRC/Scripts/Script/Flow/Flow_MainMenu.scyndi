@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.13
+// Version: 24.02.22
 // End License Information
 Script
 
@@ -74,6 +74,9 @@ Class MenuItem
 End
 
 Void Play()
+	Sys.LoadNewState("FLOW_SELECTGAME","Script/Flow/Flow_SelectGame.lbc")
+	Sys.CurrentFlow = "SELECTGAME"
+
 End
 
 Void Config()

@@ -21,12 +21,13 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.23
+// Version: 24.02.24
 // End License Information
 Script
 
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/JCR6"
+#use "Libs/SCI/GINIE"
 #use "Libs/SCI/Events"
 #use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
@@ -39,11 +40,49 @@ Script
 
 ReadOnly Var Logo = ObtainImage("LOGO")
 Int Hue = os.time()
+Int Scroll = 0
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
+plua Game = {}
+
+Init
+	plua Dir
+	Cls()
+	SetColor(255,255,255)
+	Fnt.Text("Loading...",0,0)
+	Flip()
+	CSay("Scanning for games")
+	Dir = JCR6.Dir("Script/Game")
+	For d In Each(Dir)
+		// CsayF("=> %s (%s)",d,Upper(StripDir(d))=="GAMEID.INI")
+		If Upper(StripDir(d))=="GAMEID.INI"
+			plua path;path = ExtractDir(d)
+			plua ID;ID = Upper(StripDir(path))
+			CSayF("Scanning game: %s",ID)
+			Game[ID] = GINIE.Load(d,"GAME::%s",Upper(ID))			
+		End
+	End
+End	
 
 Global Void MainFlow()
 	Hue = (Hue+1)%360
 	If Events.AppTerminate(); Sys.Exit(); End
+	SetColor(255,255,255)
 	DrawBackground()
 	Logo.Draw(Graphics.Width div 2,25)
+	Int PY=-Scroll
+	For K,D in sPairs(Game)		
+		Int Y; Y = (PY*30)+250
+		Int X = 10
+		If PY>=0 && Y<Graphics.Height-90
+			SetColor(255,255,255)
+			If MY>Y && MY<Y+30
+				SetColorHSV(360-Hue,1,0.5)
+				Rect(0,Y,Graphics.Width,30)
+				SetColorHSV(Hue,1,1)
+				X=20
+			End
+			Fnt.Text(D.Value("Meta","Title"),X,Y)
+		End
+	End
+	ShowMouse()
 End

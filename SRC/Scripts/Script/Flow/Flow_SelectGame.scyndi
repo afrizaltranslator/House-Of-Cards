@@ -44,6 +44,9 @@ Int Scroll = 0
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
 plua Game = {}
 
+
+
+
 Init
 	plua Dir
 	Cls()
@@ -84,5 +87,13 @@ Global Void MainFlow()
 			Fnt.Text(D.Value("Meta","Title"),X,Y)
 		End
 	End
+	SetColor(255,255,255)
+	If MY>Graphics.Height-60
+		SetColorHSV(Hue,1,1)
+		If ML
+			GotoFlow("MAINMENU")
+		End
+	End
+	Text("ALGEMEEN","CANCEL",Graphics.Width-10,Graphics.Height-10,1,1)
 	ShowMouse()
 End

@@ -27,6 +27,7 @@ Script
 
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/JCR6"
+#use "Libs/SCI/GINIE"
 #use "Libs/SCI/Events"
 #use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
@@ -37,10 +38,60 @@ Script
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 
-
+#region "Game Data"
 String CurrentID = ""
+ReadOnly Var Logo = ObtainImage("LOGO")
 
+Class GameRecord
+	Static Var Current
+
+	ReadOnly String ID
+	ReadOnly Var Raw
+	ReadOnly Var Banner
+		
+	Constructor(string GID)
+		CSayF("Creating Game Data Record: %s",GID)
+		ID = Upper(GID)
+		Raw = GINIE.LoadNew(sprintf("Script/Game/%s/GameID.ini",GID),sprintf("GAME::%s",ID))
+		If Raw.Value("Meta","Banner")==""
+			Banner = Logo
+		Else
+			Banner = LoadImage(Raw.Value("Meta","Banner"),sprintf("BANNER::%s",ID))
+			Banner.Hot(Banner.Width div 2,0)
+		End
+	End
+End
+
+plua _d
+QuickMeta GameData
+	index		
+		_d = _d || {}
+		Key = Upper(Key)
+		_d[Key] = _d[Key] || new GameRecord(key)
+		Return _d[Key]
+	End
+	
+	NewIndex
+		Lua.error("GameData Read Only")
+	End
+End		
+#endregion
+
+#region Callbacks
 Global Void AcceptGame(String GID)
 	CurrentID = GID
 	CSayF("Game Starter now uses Game ID: %s",GID)
+	GameRecord.Current = GameData[GID]
 End
+
+
+Int Hue = os.time()
+ReadOnly Var Fnt  = ObtainFont("RYANNA")
+
+Global Void MainFlow()
+	Hue = (Hue+1)%360
+	If Events.AppTerminate(); Sys.Exit(); End
+	DrawBackground()
+	GameRecord.Current.Banner.Draw(Graphics.Width div 2,20)
+End
+#endregion

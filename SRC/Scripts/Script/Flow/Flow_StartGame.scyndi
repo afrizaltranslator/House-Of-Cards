@@ -77,6 +77,36 @@ QuickMeta GameData
 End		
 #endregion
 
+#region "Bottom buttons"
+Bool Always(); Return True; End
+Bool AllowContinue(); Return False; End
+Void Cancel(); End
+Void Continue(); End
+Void NewGame(); End
+Class BB
+	Static Int N = 0
+	Static Var But = {}
+	Static Var BW
+		
+	ReadOnly Delegate Allow
+	ReadOnly Delegate Action
+	ReadOnly String Caption
+	Constructor(String C,Ac,Al)
+		N++
+		Caption=C
+		Action=Ac
+		Allow=Al || Always
+		BW = Graphics.Width Div n		
+	End	
+End
+Init
+	BB.But[0] = new BB("CANCEL",Cancel)
+	BB.But[1] = new BB("CONTINUE",Continue,AllowContinue)
+	BB.But[2] = new BB("NEWGAME",NewGame)
+End
+#endregion
+
+
 #region Callbacks
 Global Void AcceptGame(String GID)
 	CurrentID = GID
@@ -91,7 +121,16 @@ ReadOnly Var Fnt  = ObtainFont("RYANNA")
 Global Void MainFlow()
 	Hue = (Hue+1)%360
 	If Events.AppTerminate(); Sys.Exit(); End
+	SetColor(255,255,255)
 	DrawBackground()
 	GameRecord.Current.Banner.Draw(Graphics.Width div 2,20)
+	For i,v In iPairs(BB.But)
+		String CP;CP = Rosetta.GetStr("ALGEMEEN",v.Caption)
+		Int BX       = BB.BW*i
+		int X;    X  = BX + (BB.BW div 2)
+		SetColor(255,180,0)
+		Fnt.Text(CP,X,Graphics.Height-60,2)
+	End
+	ShowMouse()
 End
 #endregion

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.24
+// Version: 24.02.25
 // End License Information
 Script
 
@@ -37,6 +37,7 @@ Script
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Lnk/StartGame"
 
 ReadOnly Var Logo = ObtainImage("LOGO")
 Int Hue = os.time()
@@ -83,6 +84,9 @@ Global Void MainFlow()
 				Rect(0,Y,Graphics.Width,30)
 				SetColorHSV(Hue,1,1)
 				X=20
+				If ML
+					StartGame.Go(K)
+				End
 			End
 			Fnt.Text(D.Value("Meta","Title"),X,Y)
 		End

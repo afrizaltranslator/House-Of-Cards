@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.25
+// Version: 24.02.29
 // End License Information
 Script
 
@@ -38,6 +38,46 @@ Script
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 
+Bool Always(); Return True; End
+
+#region "Shuffle Selector"
+Void ShuffleAct(Item)
+End
+
+String ShuffleVal(Item)
+	 Item.Parent.Raw.Config.NewValue("Shuffle","Shuffle","Random")
+	Return Item.Parent.Raw.Config.Value("Shuffle","Shuffle")
+End
+#endregion
+
+
+#region Items
+Class CfgItem
+	ReadOnly Var Parent
+	ReadOnly Delegate Action
+	ReadOnly Delegate _Allow
+	ReadOnly Delegate _Value
+	ReadOnly String _RosCat
+	ReadOnly String _RosVal
+	ReadOnly String ConfigKey
+	Get Bool Allow; Return _Allow(Self); End
+	Get String Value; Return _Value(Self); End
+	Get String Caption
+		String Ret;Ret = Rosetta.GetStr(_RosCat,_RosVal) 
+		If Ret == ""; Return ConfigKey; End
+		Return Ret
+	End
+	Constructor(_Ouwe,String ConfigKey, String _RCat,String _RVal,_Act,_Val,_All)
+		Parent   = _Ouwe
+		_RosCat  = _RosCat
+		_RosVal  = _RosVal
+		Action   = _Act
+		_Value   = _Val
+		_Allow   = _All || Always
+	End		
+End
+#endregion
+
 #region "Game Data"
 String CurrentID = ""
 ReadOnly Var Logo = ObtainImage("LOGO")
@@ -48,6 +88,8 @@ Class GameRecord
 	ReadOnly String ID
 	ReadOnly Var Raw
 	ReadOnly Var Banner
+	ReadOnly Table ConfigItems
+	ReadOnly Var Config
 		
 	Constructor(string GID)
 		CSayF("Creating Game Data Record: %s",GID)
@@ -59,6 +101,10 @@ Class GameRecord
 			Banner = LoadImage(Raw.Value("Meta","Banner"),sprintf("BANNER::%s",ID))
 			Banner.Hot(Banner.Width div 2,0)
 		End
+		String CfgFile; CfgFile = SPRINTF("House Of Cards.GameConfig.%s.ini",ID)
+		Config = GINIE.LoadHome(CfgFile,sprintf("CONFIG::%s",ID),CfgFile,sprintf("House Of Cards - (c) Jeroen P. Broks\nConfiguration for: %s",GID))
+		ConfigItems = {}
+		ConfigItems[0] = new CfgItem(Self,"*SHUFFLE*","STARTGAME_GLOBAL","SHUFFLE",ShuffleAct,ShuffleVal)
 	End
 End
 
@@ -78,7 +124,6 @@ End
 #endregion
 
 #region "Bottom buttons"
-Bool Always(); Return True; End
 Bool AllowContinue(); Return False; End
 Void Cancel(); End
 Void Continue(); End

@@ -178,7 +178,7 @@ Global Void MainFlow()
 		Int PY; PY = i - ScrollY
 		Int Y;  Y = (PY*30)+200		
 		If PY>=0 && Y<Graphics.Height-90
-			If MY>Y && Y<Y+30
+			If MY>Y && MY<Y+30
 				SetColorHSV(Hue,1,0.5)
 				Rect(0,Y,Graphics.Width,30)
 			End

@@ -41,12 +41,12 @@ Script
 Bool Always(); Return True; End
 
 #region "Shuffle Selector"
-Void ShuffleAct(Item)
+Void ShuffleAct(Item,Parent)
 End
 
-String ShuffleVal(Item)
-	 Item.Parent.Raw.Config.NewValue("Shuffle","Shuffle","Random")
-	Return Item.Parent.Raw.Config.Value("Shuffle","Shuffle")
+String ShuffleVal(Item,Parent)
+	Parent.Config.NewValue("Shuffle","Shuffle","Random")
+	Return Parent.Config.Value("Shuffle","Shuffle")
 End
 #endregion
 
@@ -60,20 +60,21 @@ Class CfgItem
 	ReadOnly String _RosCat
 	ReadOnly String _RosVal
 	ReadOnly String ConfigKey
-	Get Bool Allow; Return _Allow(Self); End
-	Get String Value; Return _Value(Self); End
+	Get Bool Allow; Return _Allow(Self,Parent); End
+	Get String Value; Return _Value(Self,Parent); End
 	Get String Caption
 		String Ret;Ret = Rosetta.GetStr(_RosCat,_RosVal) 
 		If Ret == ""; Return ConfigKey; End
 		Return Ret
 	End
-	Constructor(_Ouwe,String ConfigKey, String _RCat,String _RVal,_Act,_Val,_All)
-		Parent   = _Ouwe
-		_RosCat  = _RosCat
-		_RosVal  = _RosVal
-		Action   = _Act
-		_Value   = _Val
-		_Allow   = _All || Always
+	Constructor(_Ouwe,String _ConfigKey, String _RCat,String _RVal,_Act,_Val,_All)
+		Parent    = _Ouwe
+		_RosCat   = _RCat
+		_RosVal   = _RVal
+		Action    = _Act
+		_Value    = _Val
+		_Allow    = _All || Always
+		ConfigKey = _ConfigKey
 	End		
 End
 #endregion
@@ -163,12 +164,31 @@ End
 Int Hue = os.time()
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
 
+// Not expected to be needed, but held here just in case	
+Int ScrollY = 0	
 Global Void MainFlow()
 	Hue = (Hue+1)%360
 	If Events.AppTerminate(); Sys.Exit(); End
 	SetColor(255,255,255)
 	DrawBackground()
 	GameRecord.Current.Banner.Draw(Graphics.Width div 2,20)
+	
+	// Config settings
+	For i,v in ipairs(GameRecord.Current.ConfigItems)
+		Int PY; PY = i - ScrollY
+		Int Y;  Y = (PY*30)+200		
+		If PY>=0 && Y<Graphics.Height-90
+			If MY>Y && Y<Y+30
+				SetColorHSV(Hue,1,0.5)
+				Rect(0,Y,Graphics.Width,30)
+			End
+			SetColor(255,255,255); Fnt.Text(v.Caption,(Graphics.Width Div 2)-5,Y,1)
+			SetColor(255,180,  0); Fnt.Text(v.Value,(Graphics.Width Div 2)+5,Y)
+		End
+	End
+	
+	
+	// Bottom Buttons
 	For i,v In iPairs(BB.But)
 		String CP;CP = Rosetta.GetStr("ALGEMEEN",v.Caption)
 		Int BX       = BB.BW*i

@@ -23,6 +23,7 @@
 // 
 // Version: 24.03.01
 // End License Information
+
 Script
 
 #use "Libs/SCI/Sys"
@@ -50,12 +51,21 @@ String ShuffleVal(Item,Parent)
 End
 #endregion
 
-Void RandomItemAct(Item,Parent)
-End
-
 String RandomItemValue(Item,Parent,String Key)
 	Return Parent.Config.Value("Config",Item.ConfigKey)
 End
+
+
+Void RandomItemAct(Item,Parent)
+	Int Keuze
+	For I,V in Pairs(Item.Answers)
+		If V==Parent.Config.Value("Config",Item.ConfigKey)
+			Keuze = (I+1) % Len(Item.Answers)
+		End
+	End
+	Parent.Config.Value("Config",Item.ConfigKey,Item.Answers[Keuze])
+End
+
 
 Bool RandomItemAllow(Item,Parent)
 	return Len(Item.Answers)>0
@@ -207,12 +217,19 @@ Global Void MainFlow()
 		Int PY; PY = i - ScrollY
 		Int Y;  Y = (PY*30)+200		
 		If PY>=0 && Y<Graphics.Height-90
-			If MY>Y && MY<Y+30
-				SetColorHSV(Hue,1,0.5)
-				Rect(0,Y,Graphics.Width,30)
+			If v.Allow				
+				If MY>Y && MY<Y+30
+					SetColorHSV(Hue,1,0.5)
+					Rect(0,Y,Graphics.Width,30)
+					IF ML
+						v.Action(v,v.Parent)
+					End							
+				End
+					SetColor(255,255,255); Fnt.Text(v.Caption,(Graphics.Width Div 2)-5,Y,1)
+					SetColor(255,180,  0); Fnt.Text(v.Value,(Graphics.Width Div 2)+5,Y)
+			Else
+				SetColor(155,155,155); Fnt.Text(v.Caption,(Graphics.Width Div 2)-5,Y,1)
 			End
-			SetColor(255,255,255); Fnt.Text(v.Caption,(Graphics.Width Div 2)-5,Y,1)
-			SetColor(255,180,  0); Fnt.Text(v.Value,(Graphics.Width Div 2)+5,Y)
 		End
 	End
 	

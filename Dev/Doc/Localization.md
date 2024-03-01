@@ -42,4 +42,6 @@ Char | Code
 ß    | \|ss
 â    | \|^a
 ç    | \|'c
+
+
 In most cases having the second character after the \| upper case should give you the upper case variant (but no guarantees).

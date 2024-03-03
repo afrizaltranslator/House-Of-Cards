@@ -1,0 +1,35 @@
+Script
+
+#use "Libs/SCI/InterVar"
+
+#use "Script/Use/Lnk/Deck"
+
+// Not the cleanest method, but for now the safest
+Global Get String DRet; Return gString.Deck_ReturnedString; End
+Global Set String DRet; gString.Deck_ReturnedString=Value; End
+
+plua _Assert = Lua.assert
+plua _Method
+plua _Reg
+
+Var GetMethod(String _meth)
+	_meth = Upper(_Meth)
+	_Method = _Method || {}
+	If !_Method[_meth]
+		Lua.Scyndi.Use(sprintf("Script/Use/Shf/Shuffle_%s",_Meth))
+		_Method[_meth] = Lua.Scyndi.Class[sprintf("Shuffle_%s",_Meth)]
+	End	
+	Return _Method[_meth]
+End
+
+Global Void ShuffleDeck(String Tag,String ShufMethod,Int Low, Int High, Int Decks, Int Suits)
+	_Reg[Tag] = GetMethod(ShufMethod).DoShuffle(Low,High,Decks,Suits)
+End
+
+Global Void GetCard(String Tag,int Index)	
+	_Assert(_Reg[Tag],"No shuffle registered as "..Tag)
+	plua ret;ret = _Reg[Tag][Index]
+	_Assert(ret,sprintf("No card registered on index #%d in shuffle %s",Index,Tag))
+	DRet = sprintf("return %d,%d",Ret.DeckSuit,Ret.DeckValue)
+End
+

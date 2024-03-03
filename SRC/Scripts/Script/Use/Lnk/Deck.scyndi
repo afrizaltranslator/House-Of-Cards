@@ -1,0 +1,70 @@
+
+Module
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/InterVar"
+
+Class DeckCard
+	Static ReadOnly Table L2S = { ["H"]=0, ["C"]=1, ["D"]=2, ["S"] = 3 }
+	Static ReadOnly Table SuitsL = NewArray("H","C","D","S")
+	Static ReadOnly Table Suits  = NewArray("Hearts","Clubs","Diamonds","Spades")
+	
+	Readonly Int CardSuit
+	ReadOnly Int CardValue
+		
+	Get String VName
+		Switch CardValue
+			Case  1; Return "A"
+			Case 11; Return "J"
+			Case 12; Return "Q"
+			Case 13; Return "K"
+			Default; Return Lua.tostring(CardValue)
+		End
+	End
+		
+	Get Bool Red; Return CardSuit%2==0; End
+	Get Bool Black; Return !Red; End
+	
+	Constructor(Int S,Int C)
+		CardSuit  = S
+		CardValue = C
+	End
+End
+
+Void _LoadSubDeck()
+	Sys.LoadNewState("SUB_DECK","Script/Subs/Sub_Deck.lbc")
+End	
+
+plua _ShufIndex(s,Index)
+	_LoadSubDeck()
+	switch Upper(Index)
+		Case "SIZE"; Return s.___Size
+		Default
+			Lua.assert(Lua.type(Index)=="Number","Deck index must be a number note a "..Lua.type(Index))			
+			If !s.___Tab[Index]
+				Sys.Call("SUB_DECK","GetCard", s.___Tag,Index)
+				plua s
+				plua v
+				plua fs = gString.Deck_ReturnedString
+				plua ff; ff = Lua.assert(Lua.Load(fs),sprintf("Bug: Invalid return from Deck Shuffle Index: '%s'",fs))		
+				s.___Tab[Index] = New DeckCard(ff())				
+			End
+			Return s.___Tab[Index]
+	End
+End
+
+plua _ShufNewIndex(s,Index,Value)
+	Lua.error(sprintf("Shuffled decks are readonly so you cannot assign %s to index %s",Value,Index))
+End
+
+Var Shuffle(String Tag,String ShufMethod="Random",Int Low=1, Int High=13, Int Decks=1,Int Suits=4)
+	_LoadSubDeck()
+	Sys.Call("SUB_DECK","ShuffleDeck",Tag, ShufMethod,Low,High, Decks,Suits)
+	plua ret = {}
+	ret.___Tag = Tag
+	ret.___Size = (High-(Low-1))*Decks*Suits
+	ret = SetMetaTable(ret,{["__index"] = _ShufIndex, ["__newindex"]=_ShufNewIndex})
+	Return ret
+End
+
+	

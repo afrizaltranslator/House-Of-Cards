@@ -1,0 +1,46 @@
+Module
+
+// This shuffle method will just deliver a completely random shuffle. 
+// No telling if there's any chance to win at all, and if there is how hard
+// this could be.
+
+#use "Libs/SCI/Sys"
+
+#use "Script/Use/Lnk/Deck"
+
+#define Debug_RandomShuffle
+
+Table DoShuffle(Int Low, Int High, Int Decks, Int Suits)
+	Int MaxCards;MaxCards = (High-(Low-1))*Decks*Suits
+	plua ret = {}
+	plua ts 
+	Switch Suits
+		Case 1; ts = NewArray(math.random(0,3))
+		Case 2; ts = NewArray(math.random(0,1)*2,(math.random(0,1)*2)+1)
+		Default
+			ts = {}
+			For i=0,Suits-1
+				ts[i]=i
+			End
+	End
+	For DI = 1, Decks
+		For SI in Each(Suits)
+			For VI=Low,High
+				Int TimeOut = 10000
+				Int Pos;Pos = math.random(0,MaxCards-1)
+				While Ret[Pos]
+					lua.assert(TimeOut>0,"Shuffle Timeout!") // Security measure to prevent infinite loops on bugs
+					Pos = (Pos+1) % MaxCards
+					TimeOut--
+				End
+				plua Crd = New DeckCard(SI,VI)
+				ret[Pos] = Crd
+#if Debug_RandomShuffle
+					CSayF("Random Shuffle %s of %s placed on position #%02d",Crd.VName,Crd.Suits[Crd.CardSuit],Pos)
+#fi
+			End
+		End
+	End
+	lua.assert(Len(ret)==MaxCards,"Internal error: Random shuffle deck length mismatch -> %02d != %02d",Len(ret),MaxCards)
+	Return Ret
+End

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.03
+// Version: 24.03.05
 // End License Information
 
 Script
@@ -167,7 +167,15 @@ End
 Bool AllowContinue(); Return False; End
 Void Cancel(); End
 Void Continue(); End
-Void NewGame(); End
+
+Void NewGame(Rec)
+	String G_ID;G_ID = sprintf("FLOW_GAME_%s",Rec.TID)
+	Sys.LoadNewState(G_ID,sprintf("Script/Game/%s/Game.lbc",Rec.ID))
+	// TODO: Load Shuffle
+	Sys.Call(G_ID,"GameNew")
+	GoToFlow(sprintf("GAME_%s",Rec.TID))
+End
+
 Class BB
 	Static Int N = 0
 	Static Var But = {}
@@ -239,6 +247,15 @@ Global Void MainFlow()
 		String CP;CP = Rosetta.GetStr("ALGEMEEN",v.Caption)
 		Int BX       = BB.BW*i
 		int X;    X  = BX + (BB.BW div 2)
+		Int RW;   RW = Fnt.Width(CP)
+		int RX;   RX = X - (RW Div 2)
+		If MY>Graphics.Height-60 && MX>RX && MX<RX+RW
+			SetColorHSV(Hue,1,0.5)
+			Rect(RX,Graphics.Height-60,RW,30)
+			If ML
+				v.Action(GameRecord.Current)
+			End
+		ENd
 		SetColor(255,180,0)
 		Fnt.Text(CP,X,Graphics.Height-60,2)
 	End

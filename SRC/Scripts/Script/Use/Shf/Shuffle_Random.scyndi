@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.03
+// Version: 24.03.05
 // End License Information
 Module
 
@@ -49,7 +49,7 @@ Table DoShuffle(Int Low, Int High, Int Decks, Int Suits)
 			End
 	End
 	For DI = 1, Decks
-		For SI in Each(Suits)
+		For SI in Each(ts)
 			For VI=Low,High
 				Int TimeOut = 10000
 				Int Pos;Pos = math.random(0,MaxCards-1)

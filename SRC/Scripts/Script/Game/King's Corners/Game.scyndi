@@ -26,11 +26,53 @@
 Script
 
 #use "Libs/SCI/GINIE"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/xMath"
 
 #use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
 
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+
+
+plua CardSize = Lua.Scyndi.Class.CardSize
+
+plua KC_Card 
 plua KC_Deck
 plua KC_Config = GINIE.Obtain("CONFIG::KING'S CORNERS")
+
+int Hue = os.time()
+
+Int CardX(Int X); Return 5+(X*(KC_Card.W + 5)); End
+Int CardY(Int Y); Return 5+(Y*(KC_Card.H + 5)); End
+
+Void DESpot(X,Y)
+	Int A = math.abs(math.floor( xmath.sin(Hue)*200 ) ) + 50
+	SetColor(10,10,10)
+	SetAlpha(A)
+	Rect( CardX(X),CardY(Y),KC_Card.W,KC_Card.H)	
+	SetAlpha(255)
+End
+
+Void DSpot(X,H)
+	DESpot(X,H)
+	// TODO: Draw Card if applicable
+End
+
+
+Void DSpots()
+	For X,Y in Range2(0,3,0,3)
+		// Print(X,Y) // DEBUG ONLY!
+		DESpot(X,Y)
+	End
+End
+
+Init
+	KC_Card = CardSize.FromH(200)
+End
 
 Global Void GameNew(String CShuffle="")
 	If CShuffle!=""
@@ -44,4 +86,9 @@ Global Void GameContinue()
 End
 
 Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	DSpots()
+	ShowMouse()
 End

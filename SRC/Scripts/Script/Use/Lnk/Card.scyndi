@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.05
+// Version: 24.03.06
 // End License Information
 
 Module
@@ -30,6 +30,8 @@ Module
 
 Const Int Width  = 368
 Const Int Height = 500
+
+
 
 Class CardSize
 	ReadOnly Int W

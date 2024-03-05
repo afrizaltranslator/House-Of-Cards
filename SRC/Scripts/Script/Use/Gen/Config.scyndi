@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.15
+// Version: 24.03.06
 // End License Information
 
 Module
@@ -111,4 +111,9 @@ Global Void DrawBackground()
 		default
 			Cls()
 	End
+End
+
+Get String GlobDeck
+	CFG.NewValue("Deck","Global","Base Deck")
+	Return CFG.Value("Deck","Global")
 End

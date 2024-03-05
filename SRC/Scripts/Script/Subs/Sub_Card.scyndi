@@ -1,0 +1,77 @@
+// License Information:
+// House of Cards
+// Cards
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.06
+// End License Information
+
+Script
+
+#use "Libs/SCI/Graphics"
+
+#use "script/use/gen/config"
+#use "script/use/lnk/card"
+
+plua _deckReg = {}
+
+Class PicDeck
+	ReadOnly Static Table L2S = { ["H"]=0, ["C"]=1, ["D"]=2, ["S"] = 3 }
+	Static Int Count = 0
+	ReadOnly Int ID
+	ReadOnly Table Cards
+	ReadOnly Var Data
+	Get String CardDir; Return Data.Value("Dirs","Cards"); End	
+	
+	Var CardPic(Int Suit,int Value)
+		String T;T = sprintf("%d.%02d")
+		Cards[T] = Cards[T] || LoadImage(sprintf("%s/%s%d.png",CardDir,L2S[Suit] || sprintf("Unk.%d.",Suit),Value),sprintf("DECK_CARD_%04x.%s",ID,T))
+		Return Cards[T]
+	End
+	
+	Void Draw(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
+		CardPic(Suit,Value).Strecht(X,Y,W,H)
+	End
+	
+	Constructor(_Data)
+		Count++
+		ID = Count
+		Data = Data
+		Cards = {}
+	End
+End
+
+
+Var LoadDeck(string DeckFile)
+	string DF;DF = Upper(DeckFile)
+	Ff !_deckReg
+		plua d = GINIE.LoadNew(sprintf("Data/Decks/%s.ini",DeckFile),sprintf("DECK_%s",DeckFile))
+		Switch Upper(d.Value("Data","Graphics"))
+			Case "BASE"
+				_deckReg[DF] = New PickDeck(d)
+			Case "SCRIPT"
+				Lua.error("Script based decks not yet implented!")
+			Default
+				Lua.error("I don't know how to deal with deck graphics type %s (%s)",d.Value("Data","Graphics"),DeckFile)
+		End
+	End
+	Return _deckReg[DF}
+End

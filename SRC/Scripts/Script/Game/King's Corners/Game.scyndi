@@ -25,6 +25,7 @@
 // End License Information
 Script
 
+#use "Libs/SCI/Sys"
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
@@ -37,12 +38,69 @@ Script
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 
+ReadOnly Var Fnt  = ObtainFont("RYANNA")
 
 plua CardSize = Lua.Scyndi.Class.CardSize
 
 plua KC_Card 
 plua KC_Deck
 plua KC_Config = GINIE.Obtain("CONFIG::KING'S CORNERS")
+
+Class KC_Score
+	Static Int _X
+	Static Int W
+	Static Int HW
+	Static Get Int X; Return _X; End
+	Static Set Int X
+		_X = Value
+		W = (Graphics.Width-_X)
+		HW = W div 2
+	End
+	Static Table Tab
+	Static Void Reset(); Tab = {}; End	
+	ReadOnly Int Mul		
+	ReadOnly String Tag
+	ReadOnly Var Next
+	Static Var First		
+	Get Int Num; Return Tab[Tag] || 0; End
+	Set Int Num; Tab[Tag]=Value; End
+	Get Bool Show; Return Tag=="TOTAL" || Tab[Tag]!=nil; End
+	Get Int Total; Return Mul*Num; End
+	Get String ShowScore
+		If Tag=="TOTAL"
+			int d = 0
+			For s in Each_Chain(First)
+				If s.Tag!="TOTAL"
+					d = d + s.Total
+				End
+			End
+			Return sprintf("%4d",d)
+		Else
+			Return sprintf("%4d (%02d x %02d)",Total,Num,Mul)
+		End
+	End
+	
+	Constructor(String _T,Int _M, _N)
+		Tag  = upper(_T)
+		Mul  = _M
+		Next = _N
+		CSayF("Created score tag: %s",_T)
+	End
+	
+	Static Void DrawAll()
+		Int Y = 5
+		For I in Each_Chain(First)
+			If I.Show
+				SetColor(255,255,255)
+				Text("KINGCORNERS",I.Tag,X,Y)
+				SetColor(255,180,0)
+				Fnt.Text(I.ShowScore,X+HW,Y)
+				Y=Y+30
+			End
+		End
+	End
+	
+End
 
 int Hue = os.time()
 
@@ -70,19 +128,27 @@ Void DSpots()
 	End
 End
 
+Void KC_Score_Chain()
+	KC_Score.First = KC_Score.First || New KC_Score("CARDSPLAYED",1, New KC_Score("JACKS",2, New KC_Score("QUEENS",3, New KC_Score("ACES",4,New KC_Score("WRONG",-4, New KC_Score("TOTAL",0))))))
+End
+
 Init
-	KC_Card = CardSize.FromH(200)
+	KC_Card        = CardSize.FromH(200)	
+	KC_Score.X     = CardX(6) 
 End
 
 Global Void GameNew(String CShuffle="")
+	KC_Score_Chain()
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else
 		KC_Deck = Deck.Shuffle("DECK_KINGSCORNERS",KC_Config.Value("Shuffle","Shuffle"))
 	End
+	KC_Score.Reset()
 End
 
 Global Void GameContinue()
+	KC_Score_Chain()
 End
 
 Global Void MainFlow()
@@ -90,5 +156,6 @@ Global Void MainFlow()
 	SetColor(255,255,255,255)
 	DrawBackground()
 	DSpots()
+	KC_Score.DrawAll()
 	ShowMouse()
 End

@@ -134,7 +134,7 @@ End
 
 Init
 	KC_Card        = CardSize.FromH(200)	
-	KC_Score.X     = CardX(6) 
+	KC_Score.X     = CardX(5) 
 End
 
 Global Void GameNew(String CShuffle="")

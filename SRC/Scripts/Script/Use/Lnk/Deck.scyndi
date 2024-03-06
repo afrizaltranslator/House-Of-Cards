@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.05
+// Version: 24.03.06
 // End License Information
 
 Module
@@ -65,13 +65,11 @@ plua _ShufIndex(s,Index)
 	switch Upper(Index)
 		Case "SIZE"; Return s.___Size
 		Default
-			Lua.assert(Lua.type(Index)=="Number","Deck index must be a number note a "..Lua.type(Index))			
+			Lua.assert(Lua.type(Index)=="number",sprintf("Deck index must be a number not a %s (%s) ",Lua.type(Index),Index))			
 			If !s.___Tab[Index]
 				Sys.Call("SUB_DECK","GetCard", s.___Tag,Index)
-				plua s
-				plua v
 				plua fs = gString.Deck_ReturnedString
-				plua ff; ff = Lua.assert(Lua.Load(fs),sprintf("Bug: Invalid return from Deck Shuffle Index: '%s'",fs))		
+				plua ff; ff = Lua.assert(Lua.load(fs),sprintf("Bug: Invalid return from Deck Shuffle Index: '%s'",fs))		
 				s.___Tab[Index] = New DeckCard(ff())				
 			End
 			Return s.___Tab[Index]
@@ -86,6 +84,7 @@ Var Shuffle(String Tag,String ShufMethod="Random",Int Low=1, Int High=13, Int De
 	_LoadSubDeck()
 	Sys.Call("SUB_DECK","ShuffleDeck",Tag, ShufMethod,Low,High, Decks,Suits)
 	plua ret = {}
+	ret.___Tab = {}
 	ret.___Tag = Tag
 	ret.___Size = (High-(Low-1))*Decks*Suits
 	ret = SetMetaTable(ret,{["__index"] = _ShufIndex, ["__newindex"]=_ShufNewIndex})

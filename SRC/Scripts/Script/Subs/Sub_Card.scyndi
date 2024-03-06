@@ -35,7 +35,7 @@ Script
 plua _deckReg = {}
 
 Class PicDeck
-	ReadOnly Static Table L2S = { ["H"]=0, ["C"]=1, ["D"]=2, ["S"] = 3 }
+	ReadOnly Static Table L2S = { ["H"]=0, ["C"]=1, ["D"]=2, ["S"] = 3, [0]="H",[1]="C",[2]="D",[3]="S" }
 	Static Int Count = 0
 	ReadOnly Int ID
 	ReadOnly Table Cards
@@ -43,7 +43,7 @@ Class PicDeck
 	Get String CardDir; Return Data.Value("Dirs","Cards"); End	
 	
 	Var CardPic(Int Suit,int Value)
-		String T;T = sprintf("%d.%02d")
+		String T;T = sprintf("%d.%02d",Suit,Value)
 		Cards[T] = Cards[T] || LoadImage(sprintf("%s/%s%d.png",CardDir,L2S[Suit] || sprintf("Unk.%d.",Suit),Value),sprintf("DECK_CARD_%04x.%s",ID,T))
 		Return Cards[T]
 	End
@@ -55,7 +55,7 @@ Class PicDeck
 	Constructor(_Data)
 		Count++
 		ID = Count
-		Data = Data
+		Data = _Data
 		Cards = {}
 	End
 End
@@ -63,20 +63,22 @@ End
 
 Global Var LoadDeckPics(string DeckFile)
 	string DF;DF = Upper(DeckFile)
-	If !_deckReg
+	If !_deckReg[DF]
 		plua d;d = GINIE.LoadNew(sprintf("Data/Decks/%s.ini",DeckFile),sprintf("DECK_%s",DeckFile))
 		Switch Upper(d.Value("Data","Graphics"))
-			Case "BASE"
-				_deckReg[DF] = New PickDeck(d)
+			Case "PICTUREFOLDER"
+				_deckReg[DF] = New PicDeck(d)
 			Case "SCRIPT"
 				Lua.error("Script based decks not yet implented!")
 			Default
-				Lua.error("I don't know how to deal with deck graphics type %s (%s)",d.Value("Data","Graphics"),DeckFile)
+				Lua.error(sprintf("I don't know how to deal with deck graphics type %s (%s)",d.Value("Data","Graphics"),DeckFile))
 		End
 	End
 	Return _deckReg[DF]
 End
 
 Global Void DrawDeckPic(string DeckFile,Int X,int Y,Int W, Int H,Int Suit,Int Value)
-	LoadDeckPics(DeckFile).Draw(X,Y,W,H,Suit,Value)
+	plua _P
+	_P = Lua.assert(LoadDeckPics(DeckFile),sprintf("DrawDeckPic(\"%s\",%d,%d,%d,%d,%d,%d): Nil received!",DeckFile,X,Y,W,H,Suit,Value))
+	_P.Draw(X,Y,W,H,Suit,Value)
 End

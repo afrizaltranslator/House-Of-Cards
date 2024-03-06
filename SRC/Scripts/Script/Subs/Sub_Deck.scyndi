@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.05
+// Version: 24.03.06
 // End License Information
 Script
 
@@ -56,5 +56,5 @@ Global Void GetCard(String Tag,int Index)
 	_Assert(_Reg[Tag],"No shuffle registered as "..Tag)
 	plua ret;ret = _Reg[Tag][Index]
 	_Assert(ret,sprintf("No card registered on index #%d in shuffle %s",Index,Tag))
-	DRet = sprintf("return %d,%d",Ret.DeckSuit,Ret.DeckValue)
+	DRet = sprintf("return %d,%d",Ret.CardSuit,Ret.CardValue)
 End

@@ -26,6 +26,7 @@
 
 Script
 
+#use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
 #use "script/use/gen/config"
@@ -48,7 +49,7 @@ Class PicDeck
 	End
 	
 	Void Draw(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
-		CardPic(Suit,Value).Strecht(X,Y,W,H)
+		self.CardPic(Suit,Value).Stretch(X,Y,W,H)
 	End
 	
 	Constructor(_Data)
@@ -60,10 +61,10 @@ Class PicDeck
 End
 
 
-Var LoadDeck(string DeckFile)
+Global Var LoadDeckPics(string DeckFile)
 	string DF;DF = Upper(DeckFile)
-	Ff !_deckReg
-		plua d = GINIE.LoadNew(sprintf("Data/Decks/%s.ini",DeckFile),sprintf("DECK_%s",DeckFile))
+	If !_deckReg
+		plua d;d = GINIE.LoadNew(sprintf("Data/Decks/%s.ini",DeckFile),sprintf("DECK_%s",DeckFile))
 		Switch Upper(d.Value("Data","Graphics"))
 			Case "BASE"
 				_deckReg[DF] = New PickDeck(d)
@@ -73,5 +74,9 @@ Var LoadDeck(string DeckFile)
 				Lua.error("I don't know how to deal with deck graphics type %s (%s)",d.Value("Data","Graphics"),DeckFile)
 		End
 	End
-	Return _deckReg[DF}
+	Return _deckReg[DF]
+End
+
+Global Void DrawDeckPic(string DeckFile,Int X,int Y,Int W, Int H,Int Suit,Int Value)
+	LoadDeckPics(DeckFile).Draw(X,Y,W,H,Suit,Value)
 End

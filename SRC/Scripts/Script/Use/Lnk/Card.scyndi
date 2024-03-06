@@ -28,11 +28,41 @@ Module
 
 #use "Libs/SCI/Sys"
 
+#use "Script/Use/Gen/Config"
+
 Const Int Width  = 368
 Const Int Height = 500
 
+Void _LoadC()
+	Sys.LoadNewState("SUB_CARD","Script/Subs/Sub_Card.lbc")
+End
 
+Void LoadDeckCards(string DeckFile)
+	_LoadC()
+	Sys.Call("SUB_CARD","LoadDeckPics", DeckFile)
+End
 
+// Draw Deck
+Class DDeck
+	ReadOnly Var Sz
+	ReadOnly String DeckFile
+	Constructor(_Sz,string _Deck)
+		Sz=_Sz
+		If _Deck=="*"
+			DeckFile = Config.GlobDeck
+		Else
+			DeckFile = _Deck
+		End
+		LoadDeckCards(DeckFile)
+	End
+	
+	Void DrawCard(Int X, Int Y,Int Suit, Int Value)
+		_LoadC()
+		Sys.Call("SUB_CARD","DrawDeckPic",DeckFile, X,Y,Sz.W, Sz.H, Suit,Value)
+	End
+End
+
+// Size
 Class CardSize
 	ReadOnly Int W
 	ReadOnly Int H
@@ -53,5 +83,9 @@ Class CardSize
 		Int _W
 		_W = math.floor( Width * (_H / Height) )
 		Return New CardSize(_W,_H)
+	End
+	
+	Var Bind(String _Deck="*")
+		Return New DDeck(Self,_Deck)
 	End
 End

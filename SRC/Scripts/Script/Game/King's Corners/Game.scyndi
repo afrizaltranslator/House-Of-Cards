@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.05
+// Version: 24.03.06
 // End License Information
 Script
 
@@ -42,9 +42,15 @@ ReadOnly Var Fnt  = ObtainFont("RYANNA")
 
 plua CardSize = Lua.Scyndi.Class.CardSize
 
-plua KC_Card 
+plua KC_Card
+plua KC_DCard
 plua KC_Deck
 plua KC_Config = GINIE.Obtain("CONFIG::KING'S CORNERS")
+plua KC_Spots
+
+Int PilePos
+
+Get Var TopCard; return KC_Deck[PilePos]; End
 
 Class KC_Score
 	Static Int _X
@@ -61,7 +67,13 @@ Class KC_Score
 	ReadOnly Int Mul		
 	ReadOnly String Tag
 	ReadOnly Var Next
-	Static Var First		
+	Static Var First
+	Static Var Played
+	Static Var Kings
+	Static Var Queens
+	Static Var Jacks
+	Static Var Aces
+	Static Var Wrong
 	Get Int Num; Return Tab[Tag] || 0; End
 	Set Int Num; Tab[Tag]=Value; End
 	Get Bool Show; Return Tag=="TOTAL" || Tab[Tag]!=nil; End
@@ -85,6 +97,13 @@ Class KC_Score
 		Mul  = _M
 		Next = _N
 		CSayF("Created score tag: %s",_T)
+		Switch Tag
+			case "CARDSPLAYED"
+				Played = Self
+			Case "KINGS" "QUEENS" "JACKS" "ACES" "WRONG"
+				Self[Tag] = Self
+				CSayF("Initiated: %s",_T)
+		End
 	End
 	
 	Static Void DrawAll()
@@ -107,34 +126,102 @@ int Hue = os.time()
 Int CardX(Int X); Return 5+(X*(KC_Card.W + 5)); End
 Int CardY(Int Y); Return 5+(Y*(KC_Card.H + 5)); End
 
+Var Spot(Int X,Int Y,NV)
+	Int Idx;Idx=X+(Y*4)
+	KC_Spots[Idx] = NV || KC_Spots[Idx]
+	Return KC_Spots[Idx]
+End
+
+
+Bool AllowSpot(Int X, Int Y, Int Value)
+	If Spot(X,Y); return False; End
+	Switch Value		
+		Case 13
+			// Kings
+			Return (X==0 || X==3) && (Y==0 || Y==3)
+		Case 12
+			// Queens
+			Return (X==1 || X==2) && (Y==0 || Y==3)
+		Case 11
+			// Jacks
+			Return (X==0 || X==3) && (Y==1 || Y==2)
+		Case 1
+			// Aces
+			If Upper(KC_Config.Value("CONFIG","ACES"))=="NO"; Return True; End
+			Return (X==1 || X==2) && (Y==1 && Y==2)
+		Default
+			// Any other card
+			Return True
+	End
+End
+
+Void PlayCard(Int X,Int Y)
+	plua _Card = KC_Deck[PilePos]
+	KC_Score.Played.Num++
+	If !AllowSpot(X,Y,_Card.CardValue); KC_Score.Wrong.Num++; Return; End
+	Spot(X,Y,_Card)
+	Switch _Card.CardValue
+		Case 13; KC_Score.Kings.Num++
+		Case 12; KC_Score.Queens.Num++
+		Case 11; KC_Score.Jacks.Num++
+		Case 1; If Upper(KC_Config.Value("CONFIG","ACES"))=="YES"; KC_Score.Aces.Num++; End
+		Default 
+	End
+	PilePos++
+End
+
 Void DESpot(X,Y)
 	Int A = math.abs(math.floor( xmath.sin(Hue)*200 ) ) + 50
-	SetColor(10,10,10)
-	SetAlpha(A)
+	If AllowSpot(X,Y,KC_Deck[PilePos].CardValue) && MX>CardX(X) && MY>CardY(Y) && MX<CardX(X)+KC_Card.W && MY<CardY(Y)+KC_Card.H
+		SetColorHSV(Hue,1,0.5)
+		If ML
+			PlayCard(X,Y)
+		End
+	Else
+		SetColor(10,10,10)
+		SetAlpha(A)
+	End		
 	Rect( CardX(X),CardY(Y),KC_Card.W,KC_Card.H)	
 	SetAlpha(255)
 End
 
-Void DSpot(X,H)
-	DESpot(X,H)
-	// TODO: Draw Card if applicable
+
+Void DSpot(X,Y)
+	DESpot(X,Y)
+	plua _Crd; _Crd = Spot(X,Y)
+	If _Crd
+		SetColor(255,255,255)
+		KC_DCard.DrawCard(CardX(X),CardY(Y),_Crd.CardSuit,_Crd.CardValue)
+	End
 End
+
+
 
 
 Void DSpots()
 	For X,Y in Range2(0,3,0,3)
 		// Print(X,Y) // DEBUG ONLY!
-		DESpot(X,Y)
+		DSpot(X,Y)
 	End
 End
 
+
+
+Void TopPile()
+	plua TC;TC = KC_Deck[PilePos]
+	SetColor(255,255,255)
+	KC_DCard.DrawCard(CardX(5),Graphics.Height-KC_Card.H-5,TC.CardSuit,TC.CardValue)
+End
+
 Void KC_Score_Chain()
-	KC_Score.First = KC_Score.First || New KC_Score("CARDSPLAYED",1, New KC_Score("JACKS",2, New KC_Score("QUEENS",3, New KC_Score("ACES",4,New KC_Score("WRONG",-4, New KC_Score("TOTAL",0))))))
+	KC_Score.First = KC_Score.First || New KC_Score("CARDSPLAYED",1, New KC_Score("JACKS",2, New KC_Score("QUEENS",3,  New KC_Score("KINGS",4,New KC_Score("ACES",5,New KC_Score("WRONG",-4, New KC_Score("TOTAL",0)))))))
 End
 
 Init
 	KC_Card        = CardSize.FromH(200)	
-	KC_Score.X     = CardX(5) 
+	KC_Score.X     = CardX(4) 
+	KC_DCard       = KC_Card.Bind()
+	KC_Spots       = {}
 End
 
 Global Void GameNew(String CShuffle="")
@@ -145,6 +232,7 @@ Global Void GameNew(String CShuffle="")
 		KC_Deck = Deck.Shuffle("DECK_KINGSCORNERS",KC_Config.Value("Shuffle","Shuffle"))
 	End
 	KC_Score.Reset()
+	PilePos = 0
 End
 
 Global Void GameContinue()
@@ -157,5 +245,6 @@ Global Void MainFlow()
 	DrawBackground()
 	DSpots()
 	KC_Score.DrawAll()
+	TopPile()
 	ShowMouse()
 End

@@ -21,13 +21,17 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.06
+// Version: 24.03.07
 // End License Information
 
 Script
 
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/JCR6"
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
+
+#use "Libs/Rosetta"
 
 #use "script/use/gen/config"
 #use "script/use/lnk/card"
@@ -60,6 +64,171 @@ Class PicDeck
 	End
 End
 
+// A kind of deck that is still pretty basic, yet already more versatile than PicDeck
+Class QuickDeck
+	Static Int Count=0
+	Static ReadOnly Table SuitNames = NewArray("Hearts","Clubs","Diamonds","Spades")
+	Static ReadOnly Table SuitLetter = NewArray("H","C","D","S")
+	Static ReadOnly Table SuitPic = {}
+	Static ReadOnly Var FntReg = {}
+	Static Var Blanco
+	ReadOnly Int ID
+	
+	ReadOnly Var Pics
+	
+	Get String PicDir; Return Data.Value("Dirs","Pic"); End
+	Get String FntDir; Return Data.value("Dirs","Fnt"); End
+	ReadOnly Var Data
+		
+	Get Var Fnt
+		FntReg[FntDir] = FntReg[FntDir] || {}
+		Return FntReg
+	End
+	
+	String ValueName(Int V)
+		Return Upper(Rosetta.GetStr("CardSymbols",sprintf("CS%d",V)))
+	End
+	
+	Void WCStretch(IMG,Int X, Int Y, Int W, Int H)
+		Int SX; SX = X
+		Int SY; SY = Y
+		Int SW; SW = Img.Width
+		Int SH; SH = Img.Height
+		Int CX; CX = X + ( W Div 2)
+		Int CY; CY = Y + ( H Div 2)
+		If SH!=H
+			Number R
+			R = H/SH
+			SH = H
+			SW = math.floor(SW*R)
+			SX = CX - (SW div 2)
+			SY = CY - (SH Div 2)
+		End
+		If SW>W
+			Number R
+			R = W/SW
+			SW = W
+			SH = math.floor(SH*R)
+			SX = CX - (SW div 2)
+			SY = CY - (SH Div 2)
+		End
+		IMG.Stretch(SX,SY,SW,SH)
+	End
+	
+	Void DrawJoker(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
+		// Suit and Value sounds a bit strange for a joker, but the values can give some "other" information 
+	End
+		
+	//Int Stack
+	Void Draw(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
+		//Stack++;CSayF("Beg Stack: %d",Stack)
+		Blanco.Stretch(X,Y,W,H)
+		If Value<=0
+			self.DrawJoker(X,Y,W,H,Suit,Value)
+			Return
+		End
+		SuitPic[Suit] = SuitPic[Suit] || LoadNewImage(sprintf("GFX/Cards/Scripted/Base/%s.png",SuitNames[Suit]),sprintf("SCRIPTED_CARD_SUIT_%d",Suit))
+		// Pic
+		String SameAndSuit;SameAndSuit = Data.Value("SAME+SUIT",sprintf("CS%d",Value))
+		String Afbeelding;Afbeelding = sprintf("%s/%s%d.png",PicDir,SuitLetter[Suit],Value)
+		If SameAndSuit!=""
+			String Tag; Tag=sprintf("QUICKDECK_SAMDANDSUIT_%08x_%02d",ID,Value)
+			Pics[Tag] = Pics[Tag] || LoadNewImage(SameAndSuit,Tag)
+			self.WCStretch(Pics[Tag],X,Y,W,H)
+			//SuitPic[Suit].Stretch(X,(Y+(H div 2))-(SuitPic[Suit].Width-(W div 2)),W,W)	
+			int W2;W2=math.floor(W*0.75)
+			SuitPic[Suit].Stretch(X+((W-W2) div 2),(Y+(H div 2))-(W2 div 2),W2,W2)
+		ElIf JCR6.EntryExists(Afbeelding)
+			Pics[Afbeelding] = Pics[Afbeelding] || LoadNewImage(Afbeelding,sprintf("QUICKDECK_IMG_%s",Afbeelding))
+			self.WCStretch(Pics[Afbeelding],X,Y,W,H)
+		Else
+			plua Kleur;Kleur = SuitPic[Suit]
+			Int SH; SH = H div 7 
+			Int TY; TY = Y + 25
+			Int BY; BY = (Y+H) - (25+SH)
+			Int CY; CY = (Y + (H div 2))-(SH div 2)
+			INT LX; LX = X + 25
+			int RX; RX = (X+W) - (25+SH)
+			Int CX; CX = (X + (W div 2))-(SH div 2)
+			Switch Value
+				// 2 and 3
+				Case 3
+					Kleur.Stretch(CX,CY,SH,SH)
+					FallThrough
+				Case 2
+					Kleur.Stretch(CX,TY,SH,SH)
+					Kleur.Stretch(CX,BY,SH,SH)
+					
+				// 4, 5, 6 and 7
+				Case 4 5 6 7 8 9
+					Kleur.Stretch(LX,TY,SH,SH)
+					Kleur.Stretch(LX,BY,SH,SH)
+					Kleur.Stretch(RX,TY,SH,SH)
+					Kleur.Stretch(RX,BY,SH,SH)
+					switch Value
+						Case 5
+							Kleur.Stretch(CX,CY,SH,SH)
+						Case 7
+							Kleur.Stretch(CX,CY,SH,SH)
+							FallThrough
+						Case 6 8 9
+							Kleur.Stretch(LX,CY,SH,SH)
+							Kleur.Stretch(RX,CY,SH,SH)
+							Switch Value
+								Case 9
+									Kleur.Stretch(CX,CY,SH,SH)
+									FallThrough								
+								Case 8
+									Kleur.Stretch(CX,TY,SH,SH)
+									Kleur.Stretch(CX,BY,SH,SH)								
+							End
+					End
+				Case 10
+					Int Y10;Y10 = (Y+H)-25
+					Int H10;H10 = (H-50) div 5
+					Int W10;W10 = math.max(H10,SH)
+					For i=0,4
+						Kleur.Stretch(LX,TY+(i*H10),W10,W10)
+						Kleur.Stretch(RX,TY+(i*H10),W10,W10)
+					End
+				Default
+					self.WCStretch(Kleur,X,Y,W,H)				
+			End
+		End
+		
+		// Value + Suit
+		Int SW=0
+		Int VH=0
+		String V;V=Self.ValueName(Value)
+		Int VX;VX = X+5
+		Int VY;VY = Y+5
+		switch Suit%2
+			case 0; SetColor(255,0,0)
+			case 1; SetColor(0,0,0)
+			default
+				SetColor(255,180,0)
+		End
+		For i=1,Len(V)
+			Int C;C=Lua.string.byte(Mid(V,i,1))
+			Fnt[C] = Fnt[C] || LoadNewImage(sprintf("%s/%d.png",FntDir,C),sprintf("DECKFONT:%s:%d",FntDir,C))
+			Fnt[C].Draw(VX,VY)
+			VX = VX + Fnt[C].Width
+			SW=SW + Fnt[C].Width
+			VH=math.max(VH,Fnt[C].Height)
+		End
+		SetColor(255,255,255)
+		SuitPic[Suit].Stretch(5+X,VY+VH,SW,SW)
+		//Stack--;CSayF("End Stack: %d",Stack)
+	End
+	
+	Constructor(_Data)
+		ID = Count; Count++		
+		Data=_Data
+		Pics = {}
+		Blanco = Blanco || LoadNewImage("GFX/Cards/Scripted/Base/Blanco.png","BLANCO")
+	End
+End
+
 
 Global Var LoadDeckPics(string DeckFile)
 	string DF;DF = Upper(DeckFile)
@@ -68,6 +237,8 @@ Global Var LoadDeckPics(string DeckFile)
 		Switch Upper(d.Value("Data","Graphics"))
 			Case "PICTUREFOLDER"
 				_deckReg[DF] = New PicDeck(d)
+			case "QUICK" "QUICKDECK"
+				_deckReg[DF] = New QuickDeck(D)
 			Case "SCRIPT"
 				Lua.error("Script based decks not yet implented!")
 			Default

@@ -39,6 +39,8 @@ Script
 #use "Script/Use/Gen/Config"
 
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
+ReadOnly Var ESC  = ObtainImage("SUCCESS")
+ReadOnly Var EFL  = ObtainImage("FAIL")
 
 plua CardSize = Lua.Scyndi.Class.CardSize
 
@@ -49,6 +51,8 @@ plua KC_Config = GINIE.Obtain("CONFIG::KING'S CORNERS")
 plua KC_Spots
 
 Int PilePos
+
+Int EndTime
 
 Get Var TopCard; return KC_Deck[PilePos]; End
 
@@ -217,6 +221,25 @@ Void KC_Score_Chain()
 	KC_Score.First = KC_Score.First || New KC_Score("CARDSPLAYED",1, New KC_Score("JACKS",2, New KC_Score("QUEENS",3,  New KC_Score("KINGS",4,New KC_Score("ACES",5,New KC_Score("WRONG",-4, New KC_Score("TOTAL",0)))))))
 End
 
+Void CheckEnd()
+	If KC_Score.Played.Num>=16
+		ESC.Draw(Graphics.Width div 2,Graphics.Height div 2)
+		EndTime--
+	Else
+		Bool Ok = false
+		For x,y in Range2(0,3,0,3)
+			Ok = Ok || AllowSpot(x,y,KC_Deck[PilePos].CardValue)
+		End
+		If !Ok
+			EFL.Draw(Graphics.Width div 2,Graphics.Height div 2)
+			EndTime--
+		End
+	End
+	If EndTime<=0
+		GoToFlow("SELECTGAME")
+	End
+End
+
 Init
 	KC_Card        = CardSize.FromH(200)	
 	KC_Score.X     = CardX(4) 
@@ -231,13 +254,16 @@ Global Void GameNew(String CShuffle="")
 	Else
 		KC_Deck = Deck.Shuffle("DECK_KINGSCORNERS",KC_Config.Value("Shuffle","Shuffle"))
 	End
+	KC_Spots = {}
 	KC_Score.Reset()
 	PilePos = 0
+	EndTime = 250
 End
 
 Global Void GameContinue()
 	KC_Score_Chain()
 End
+
 
 Global Void MainFlow()
 	hue = (hue+1)%360
@@ -246,5 +272,6 @@ Global Void MainFlow()
 	DSpots()
 	KC_Score.DrawAll()
 	TopPile()
+	CheckEnd()
 	ShowMouse()
 End

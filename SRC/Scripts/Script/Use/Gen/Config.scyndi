@@ -21,12 +21,13 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.06
+// Version: 24.03.07
 // End License Information
 
 Module
 
 #use "Libs/SCI/Sys"
+#use "Libs/SCI/JCR6"
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
@@ -117,3 +118,17 @@ Get String GlobDeck
 	CFG.NewValue("Deck","Global","Base Deck")
 	Return CFG.Value("Deck","Global")
 End
+
+
+Get String BackSide
+	string Ret = CFG.Value("Deck","BacKSide")
+	If !Ret || Ret==""
+		plua BSD = JCR6.Dir("GFX/Backsides")
+		CFG.Value("Deck","BacKSide",BSD[math.random(0,len(BSD)-1)])
+		Ret = CFG.Value("Deck","BacKSide")
+		CSayF("No backside present. Selected one: %s",Ret)		
+	End
+	Return Ret
+End
+
+Set String BackSide; CFG.Value("Deck","BacKSide",Value); End

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.17
+// Version: 24.03.07
 // End License Information
 Script
 
@@ -126,7 +126,7 @@ Init
 	Config.CFG.NewValue("Deck","Global","Base Deck")
 	For I,E in ipairs(D)
 		Decks[I] = {["Entry"]=E,["Show"]=StripAll(E)}
-		If Config.CFG.Value("Deck","Global","Base Deck")==StripAll(E); DeckIndex = I; End
+		If Config.CFG.Value("Deck","Global")==StripAll(E); DeckIndex = I; End
 	End	
 End
 

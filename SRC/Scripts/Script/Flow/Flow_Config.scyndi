@@ -30,6 +30,7 @@ Script
 #use "Libs/SCI/Events"
 #use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
+#use "Libs/SCI/SString"
 
 #use "Libs/Rosetta"
 
@@ -136,8 +137,25 @@ Void DeckAct()
 	Config.CFG.Value("Deck","Global",Decks[DeckIndex].Show)
 End
 
-
 #endregion
+
+#region BackSide
+plua BackSideIndex=-1
+plua BackSideFiles
+String BackSideV(); Return StripDir(Config.BackSide); End
+Void BackSideA()
+	If !BackSideFiles
+		BackSideFiles = JCR6.Dir("GFX/BackSides")
+		For i,v in pairs(BackSideFiles)
+			If Upper(v)==Upper(Config.BackSide)
+				BackSideIndex=i
+			End
+		End
+	End
+	BackSideIndex = (BackSideIndex + 1) % Len(BackSideFiles)
+	Config.BackSide = BackSideFiles[BackSideIndex] 
+	CSayF("Backside: %03d/%03d >> %s",BackSideIndex,Len(BackSideFiles),Config.BackSide)
+End
 
 #region Back
 String BackVal(); Return ""; End
@@ -152,6 +170,7 @@ Init
 	i = New ConfigItem("Language",LangAct,LangVal)
 	i = New ConfigItem("Background",BackgroundAct,BackgroundVal)
 	i = New ConfigItem("Deck",DeckAct,DeckVal)
+	i = New ConfigItem("BackSide",BackSideA,BackSideV)
 	i = New ConfigItem("Back",BackAct,BackVal)
 	// Prevent trouble with memory trashing
 	ConfigItem.Last = nil

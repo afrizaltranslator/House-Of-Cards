@@ -62,7 +62,7 @@ Init
 			plua path;path = ExtractDir(d)
 			plua ID;ID = Upper(StripDir(path))
 			CSayF("Scanning game: %s",ID)
-			Game[ID] = GINIE.Load(d,"GAME::%s",Upper(ID))			
+			Game[ID] = GINIE.Load(d,sprintf("GAME::%s",Upper(ID)))			
 		End
 	End
 End	
@@ -90,6 +90,7 @@ Global Void MainFlow()
 			End
 			Fnt.Text(D.Value("Meta","Title"),X,Y)
 		End
+		PY++
 	End
 	SetColor(255,255,255)
 	If MY>Graphics.Height-60

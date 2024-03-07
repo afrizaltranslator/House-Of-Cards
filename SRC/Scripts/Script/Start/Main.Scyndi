@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.13
+// Version: 24.03.06
 // End License Information
 
 // Main
@@ -84,6 +84,8 @@ Init
 	Img("LOGO","GFX/Logo/Main.png","TOPCENTER")
 	Img("MOUSE_TRUE","GFX/MOUSE/TRUE.PNG")
 	Img("MOUSE_FALSE","GFX/MOUSE/FALSE.PNG")
+	Img("SUCCESS","GFX/End Game/Success.PNG","CENTER")
+	Img("FAIL","GFX/End Game/Fail.png","CENTER")
 	
 	// Script
 	Scr("FLOW_MAINMENU","Script/Flow/Flow_MainMenu.lbc")

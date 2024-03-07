@@ -142,7 +142,7 @@ End
 #region BackSide
 plua BackSideIndex=-1
 plua BackSideFiles
-String BackSideV(); Return StripDir(Config.BackSide); End
+String BackSideV(); Return StripAll(Config.BackSide); End
 Void BackSideA()
 	If !BackSideFiles
 		BackSideFiles = JCR6.Dir("GFX/BackSides")

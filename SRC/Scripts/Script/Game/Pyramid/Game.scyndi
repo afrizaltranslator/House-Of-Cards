@@ -63,7 +63,7 @@ Int  Pyr_ResetPile
 
 Int  hue = os.time()
 
-ReadOnly Var DrPX = (Graphics.Width div 2) - (125)
+ReadOnly Var DrPX = (Graphics.Width div 2) - (175)
 ReadOnly Var DiPX = (Graphics.Width div 2) + ( 25)
 ReadOnly Var PY   = 600
 
@@ -246,6 +246,10 @@ Global Void MainFlow()
 		End
 	End
 	If Pyr_Draw
+		SetColor(100,100,100,100)
+		Rect(DrPX,PY,Pyr_CardSize.W,Pyr_CardSize.H)
+		Rect(DiPX,PY,Pyr_CardSize.W,Pyr_CardSize.H)
+		SetColor(255,255,255,255)
 		Pyr_Card.DrawCard(DrPX,PY,Pyr_Draw.Value.CardSuit,Pyr_Draw.Value.CardValue)
 		If MX>DrPX && MY>PY && MX<DrPX+Pyr_CardSize.W && MY<PY+Pyr_CardSize.H && ML
 			SelectCard(-1,0)

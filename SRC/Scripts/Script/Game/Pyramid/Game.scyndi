@@ -31,6 +31,7 @@ Script
 #use "Libs/SCI/Graphics"
 
 #use "Libs/xMath"
+#use "Libs/Stacker"
 
 #use "Script/Use/Lnk/Deck"
 #use "Script/Use/Lnk/Card"
@@ -42,8 +43,29 @@ Script
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
 ReadOnly Var ESC  = ObtainImage("SUCCESS")
 ReadOnly Var EFL  = ObtainImage("FAIL")
+	
+	
+// 0 = Playing
+// 1 = Won
+// 2 = Fail
+Int State = 0
 
 plua CardSize = Lua.Scyndi.Class.CardSize
+
+plua Pyr_Config = GINIE.Obtain("CONFIG::PYRAMID")
+plua Pyr_Deck
+plua Pyr_Draw
+plua Pyr_Discard
+plua Pyr_CardSize = CardSize.FromH(200)
+plua Pyr_Card
+Int  Pyr_Score
+Int  Pyr_ResetPile
+
+Int  hue = os.time()
+
+ReadOnly Var DrPX = (Graphics.Width div 2) - (125)
+ReadOnly Var DiPX = (Graphics.Width div 2) + ( 25)
+ReadOnly Var PY   = 600
 
 Class PyrNode
 	ReadOnly Int X
@@ -87,9 +109,51 @@ Init
 		plua wrow;wrow = New PyrRow(i,B) // wrow = Work Row
 		PyrRow.Row[i]  = wrow
 		For j=0,i
-			Int jx;jx = j*50 // TODO: Better X calculation
-			int jy;jy = (j*50)+25
+			Int jx;jx = (((Graphics.Width div 2) - (75*i)) + (j*150)) - (Pyr_CardSize.W Div 2)
+			int jy;jy = (i*50)+25
 			wrow.nodes[j] = new PyrNode(jx,jy,i,PyrRow.Row[i].Nodes[j],PyrRow.Row[i].Nodes[j+1])
 		End
+	End	
+End
+
+Global Void GameNew(String CShuffle="")
+	Pyr_Score = 0
+	If CShuffle!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else
+		Pyr_Deck = Deck.Shuffle("DECK_PYRAMID",Pyr_Config.Value("Shuffle","Shuffle"))
 	End
+	Int DIdx = 0
+	For RI,RR in iPairs(PyrRow.Row)
+		For NI,NN in iPairs(RR.Nodes)
+			NN.Card = Pyr_Deck[DIdx]
+			DIdx++
+		End
+	End
+	Pyr_Draw    = New Stack()
+	Pyr_Discard = New Stack()
+	For i=Pyr_Deck.Size-1,DIdx,-1
+		Pyr_Draw.Push(Pyr_Deck[i])
+	End
+	Pyr_Card = Pyr_CardSize.Bind()
+	State = 0
+	Pyr_ResetPile = 0
+End
+
+Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	For RI,RR in iPairs(PyrRow.Row)
+		For NI,NN in iPairs(RR.Nodes)
+			If NN.Card
+				Pyr_Card.DrawCard(NN.X,NN.Y,NN.Card.CardSuit,NN.Card.CardValue)
+			End
+		End
+	End
+	If Pyr_Draw
+		Pyr_Card.DrawCard(DrPX,PY,Pyr_Draw.Value.CardSuit,Pyr_Draw.Value.CardValue)
+	End
+	ShowScore(Pyr_Score,5,5)
+	ShowMouse()
 End

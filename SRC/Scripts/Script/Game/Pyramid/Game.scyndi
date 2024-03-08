@@ -182,7 +182,7 @@ Void SelectCard(Int Row,Int Node)
 		Selected.Remove()
 		Selected = nil
 		Pyr_Score = Pyr_Score + 5
-	ElIf s2.Card.CardValue!=Selected.Card.Cardvalue
+	ElIf s2.Card.CardValue!=Selected.Card.Cardvalue || s2.Card.CardSuit!=Selected.Card.CardSuit 
 		Selected=s2
 	End
 End	

@@ -74,13 +74,23 @@ Class PyrNode
 	ReadOnly Var Cover1
 	ReadOnly Var Cover2
 	Var Card
+	
+	Get Bool Selectable
+		plua ret; ret = (Card!=nil) && (Cover1==nil || Cover1.Card==nil) && (Cover2==nil || Cover2.Card==nil)
+		CSayF("Selectable card row %d (%d,%d) -> %s",Row,X,Y,ret)
+		return ret;
+	End
+	
+	Get Int W; return Pyr_CardSize.W; End
+	Get Int H; return Pyr_CardSize.H; End
+	
 	Constructor (Int _X, Int _Y, Int _Row,_C1,_C2)
 		X=_X
 		Y=_Y
 		Row=_Row
 		Cover1=_C1
 		Cover2=_C2
-		CSayF("- Node added to row #%d",Row)
+		CSayF("- Node added to row #%d  (%s::%s)",Row,_C1,_C2)
 	End
 End	
 
@@ -97,6 +107,86 @@ Class PyrRow
 	End
 End
 
+Class SelectedCard
+	ReadOnly Int Row
+	ReadOnly Int Node
+	Bool Removed 
+	Get Int X
+		Switch Row*-1
+			Case 1; Return DrPX;
+			Case 2; Return DiPX;
+			Default; Return PyrRow.Row[Row].Nodes[Node].X
+		End
+	End
+	Get Int Y
+		If Row<0; Return PY; End
+		Return PyrRow.Row[Row].Nodes[Node].Y
+	End
+	Get Int W; Return Pyr_CardSize.W; End
+	Get Int H; Return Pyr_CardSize.H; End
+	
+	Get Var Card
+		Switch Row*-1
+			Case 1; Return Pyr_Draw.Value
+			Case 2; Return Pyr_Discard.value
+			Default; Return PyrRow.Row[Row].Nodes[Node].Card
+		End
+	End
+	
+	Void BonusCheckRow()
+		// TODO: Bonus for clearing row
+	End
+	Void Mark()
+		If Removed; Return; End
+		SetColorHSV(Hue,1,1)
+		Rect(X-1,Y-1,W+2,H+2,1)
+		SetAlpha(75)
+		Rect(X,Y,W,H)
+		SetAlpha(255)
+	End
+	Void Remove()
+		CSayF("Removing card %d:%d",Row,Node)
+		Switch Row*-1
+			Case 1; Pyr_Draw.Pop()
+			Case 2; Pyr_Discard.Pop()
+			Default; PyrRow.Row[Row].Nodes[Node].Card = nil; self.BonusCheckRow()
+		End
+		Removed = true
+	End
+	Constructor(Int _R, Int _N)
+		Row  = _R
+		Node = _N
+		Removed = False
+		CSayF("Selected record for %d:%d",_R,_N)
+	End
+	Destructor
+		//CSayF("Selection record for %d:%d destroyed",Row,Node)
+	End
+End
+
+Var Selected
+
+Void SelectCard(Int Row,Int Node)
+	If Selected && Selected.removed; Selected = nil; End
+	plua S2;S2 = new SelectedCard(Row,Node)
+	If S2.Card.CardValue==13
+		S2.Remove()
+		Selected = nil
+		Pyr_Score = Pyr_Score + 5
+		Return
+	End
+	Selected = Selected || s2
+	CSayF("Compare %d + %d = %d ",s2.Card.CardValue,Selected.Card.Cardvalue,s2.Card.CardValue+Selected.Card.Cardvalue)
+	If s2.Card.CardValue+Selected.Card.Cardvalue==13
+		s2.Remove()
+		Selected.Remove()
+		Selected = nil
+		Pyr_Score = Pyr_Score + 5
+	ElIf s2.Card.CardValue!=Selected.Card.Cardvalue
+		Selected=s2
+	End
+End	
+
 Init
 	PyrRow.Row[7] = { ["Nodes"] = {} }
 	For i=6,0,-1
@@ -111,7 +201,7 @@ Init
 		For j=0,i
 			Int jx;jx = (((Graphics.Width div 2) - (75*i)) + (j*150)) - (Pyr_CardSize.W Div 2)
 			int jy;jy = (i*50)+25
-			wrow.nodes[j] = new PyrNode(jx,jy,i,PyrRow.Row[i].Nodes[j],PyrRow.Row[i].Nodes[j+1])
+			wrow.nodes[j] = new PyrNode(jx,jy,i,PyrRow.Row[i+1].Nodes[j],PyrRow.Row[i+1].Nodes[j+1])
 		End
 	End	
 End
@@ -148,12 +238,20 @@ Global Void MainFlow()
 		For NI,NN in iPairs(RR.Nodes)
 			If NN.Card
 				Pyr_Card.DrawCard(NN.X,NN.Y,NN.Card.CardSuit,NN.Card.CardValue)
+				If MX>NN.X && MX<NN.X+NN.W && MY>NN.Y && MY<NN.Y+NN.H && ML && NN.Selectable
+					SelectCard(RI,NI)
+				End
 			End
 		End
 	End
 	If Pyr_Draw
 		Pyr_Card.DrawCard(DrPX,PY,Pyr_Draw.Value.CardSuit,Pyr_Draw.Value.CardValue)
+		If MX>DrPX && MY>PY && MX<DrPX+Pyr_CardSize.W && MY<PY+Pyr_CardSize.H && ML
+			SelectCard(-1,0)
+		End
 	End
+	If Selected; Selected.Mark(); End
+	SetColor(255,255,255)
 	ShowScore(Pyr_Score,5,5)
 	ShowMouse()
 End

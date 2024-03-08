@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.05
+// Version: 24.03.08
 // End License Information
 
 Script
@@ -165,7 +165,7 @@ End
 
 #region "Bottom buttons"
 Bool AllowContinue(); Return False; End
-Void Cancel(); End
+Void Cancel(); Sys.CurrentFlow="SELECTGAME"; End
 Void Continue(); End
 
 Void NewGame(Rec)

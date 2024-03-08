@@ -1,2 +1,95 @@
+// License Information:
+// House Of Cards
+// Pyramid
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.08
+// End License Information
+
 Script
 
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/xMath"
+
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+
+ReadOnly Var Fnt  = ObtainFont("RYANNA")
+ReadOnly Var ESC  = ObtainImage("SUCCESS")
+ReadOnly Var EFL  = ObtainImage("FAIL")
+
+plua CardSize = Lua.Scyndi.Class.CardSize
+
+Class PyrNode
+	ReadOnly Int X
+	ReadOnly Int Y
+	ReadOnly Int Row
+	ReadOnly Var Cover1
+	ReadOnly Var Cover2
+	Var Card
+	Constructor (Int _X, Int _Y, Int _Row,_C1,_C2)
+		X=_X
+		Y=_Y
+		Row=_Row
+		Cover1=_C1
+		Cover2=_C2
+		CSayF("- Node added to row #%d",Row)
+	End
+End	
+
+Class PyrRow
+	ReadOnly Static Table Row={}
+	ReadOnly Table Nodes
+	ReadOnly Int Bonus
+	ReadOnly Int Num
+	Constructor(Int N,Int B)
+		Nodes = {}
+		Bonus = B
+		Num = N
+		CSayF("Row %d, Bonus %02d",N,B)
+	End
+End
+
+Init
+	PyrRow.Row[7] = { ["Nodes"] = {} }
+	For i=6,0,-1
+		Int B=(7-i)*25
+		Switch i
+			case 0; B=500
+			case 1; B=250
+			case 2; B=150
+		End
+		plua wrow;wrow = New PyrRow(i,B) // wrow = Work Row
+		PyrRow.Row[i]  = wrow
+		For j=0,i
+			Int jx;jx = j*50 // TODO: Better X calculation
+			int jy;jy = (j*50)+25
+			wrow.nodes[j] = new PyrNode(jx,jy,i,PyrRow.Row[i].Nodes[j],PyrRow.Row[i].Nodes[j+1])
+		End
+	End
+End

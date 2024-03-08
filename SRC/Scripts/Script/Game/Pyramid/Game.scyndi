@@ -203,7 +203,8 @@ Init
 			int jy;jy = (i*50)+25
 			wrow.nodes[j] = new PyrNode(jx,jy,i,PyrRow.Row[i+1].Nodes[j],PyrRow.Row[i+1].Nodes[j+1])
 		End
-	End	
+	End
+	CSayF("Card Size: %dx%d",Pyr_CardSize.W,Pyr_CardSize.H)
 End
 
 Global Void GameNew(String CShuffle="")

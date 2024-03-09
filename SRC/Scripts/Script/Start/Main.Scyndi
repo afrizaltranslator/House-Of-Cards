@@ -29,6 +29,7 @@
 Script
 
 #use "Libs/SCI/Sys"
+#use "Libs/SCI/Audio"
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
@@ -59,7 +60,12 @@ End
 Void Fnt(String Tag,String File)
 	ToLoad.Lijst[Len(ToLoad.Lijst)]=New ToLoad("FONT",Tag,File,{["Ryanna"]=Upper(File)=="FONT/RYANNA.JPBF"})
 End
-			
+
+Void Aud(String Tag,String File)
+	ToLoad.Lijst[Len(ToLoad.Lijst)]=New ToLoad("AUDIO",Tag,File)
+End
+
+
 Void Scr(String Tag,String File)
 	ToLoad.Lijst[Len(ToLoad.Lijst)]= New ToLoad("SCRIPT",Tag,File)
 End
@@ -89,6 +95,10 @@ Init
 	For _,I in Pairs{"Up","Down","Left","Right"}
 		Img(sprintf("ARROW_%s",Upper(I)),sprintf("GFX/Arrows/%s.png",I))
 	End
+	
+	// Audio
+	Aud("BONUS","SFX/Bonus.ogg")
+	Aud("COMPLETE","SFX/Complete.ogg")
 	
 	// Script
 	Scr("FLOW_MAINMENU","Script/Flow/Flow_MainMenu.lbc")
@@ -121,6 +131,8 @@ Global Void MainFlow()
 			If ITM.Specifications.RYANNA
 				RYA = f
 			End
+		Case "AUDIO"
+			Audio.Load(ITM.FILE,ITM.TAG)
 		Case "SCRIPT" "STATE"
 			Sys.LoadState(ITM.TAG,ITM.FILE)
 		Default; Lua.error("I really don't know how to load a "..ITM.Type)

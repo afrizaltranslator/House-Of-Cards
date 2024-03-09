@@ -37,6 +37,7 @@ Script
 #use "Script/Use/Lnk/Card"
 
 #use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 
@@ -104,14 +105,54 @@ Class PyrRow
 	ReadOnly Table Nodes
 	ReadOnly Int Bonus
 	ReadOnly Int Num
+	ReadOnly Var BonusImg
 	Constructor(Int N,Int B)
 		Nodes = {}
 		Bonus = B
 		Num = N
+		BonusImg = LoadImage(sprintf("Script/Game/Pyramid/Bonus_%d.png",Bonus),sprintf("PYRAMID_BONUS_%d",Bonus))
+		BonusImg.HotCenter()
 		CSayF("Row %d, Bonus %02d",N,B)
 	End
 End
 
+Class Bonus
+	ReadOnly Static Table Lijst = {}
+	ReadOnly Var Img	
+	ReadOnly Int X = Graphics.Width div 2
+	Int Y = Graphics.Height div 2
+	Int A = 300
+	Constructor(I)
+		Img = I
+		For _,k in Pairs(Lijst)
+			y = math.max(y,k.y+50)
+		End
+	End
+	Static Void Go(I)
+		int IDX
+		While Lijst[IDX]
+			IDX++
+		End
+		Lijst[IDX]=New Bonus(I)
+	End
+	Void Show()
+		SetAlpha(math.min(255,A))
+		Img.Draw(X,Y)
+		Y--
+		A--
+	End
+	Static Void ShowAll()
+		plua kill = {}
+		For i,k in Pairs(Lijst)
+			k.Show()
+			if k.A<0; kill[len(kill)]=i; end
+		End
+		For victim in Each(kill)
+			Lijst[victim]=nil
+		End
+	End
+End
+		
 Class SelectedCard
 	ReadOnly Int Row
 	ReadOnly Int Node
@@ -139,8 +180,22 @@ Class SelectedCard
 	End
 	
 	Void BonusCheckRow()
-		// TODO: Bonus for clearing row
+		plua Leeg=True
+		For N in Each(PyrRow.Row[Row].Nodes)
+			Leeg = Leeg && N.Card == nil
+		End
+		If Leeg
+			Bonus.Go(PyrRow.Row[Row].BonusImg)
+			If Row==0
+				Bonus.Go(ESC)
+				SFX("COMPLETE")
+			Else 
+				SFX("BONUS")
+			End
+			Pyr_Score = Pyr_Score + PyrRow.Row[Row].Bonus			
+		End
 	End
+	
 	Void Mark()
 		If Removed; Return; End
 		SetColorHSV(Hue,1,1)
@@ -323,5 +378,6 @@ Global Void MainFlow()
 	If Selected; Selected.Mark(); End
 	SetColor(255,255,255)
 	ShowScore(Pyr_Score,5,5)
+	Bonus.ShowAll()
 	ShowMouse()
 End

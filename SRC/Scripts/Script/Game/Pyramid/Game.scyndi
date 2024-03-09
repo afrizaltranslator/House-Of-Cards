@@ -125,7 +125,7 @@ Class Bonus
 	Constructor(I)
 		Img = I
 		For _,k in Pairs(Lijst)
-			y = math.max(y,k.y+50)
+			y = math.max(y,k.y+75)
 		End
 	End
 	Static Void Go(I)
@@ -377,6 +377,7 @@ Global Void MainFlow()
 	End
 	If Selected; Selected.Mark(); End
 	SetColor(255,255,255)
+	SetAlpha(255)
 	ShowScore(Pyr_Score,5,5)
 	Bonus.ShowAll()
 	ShowMouse()

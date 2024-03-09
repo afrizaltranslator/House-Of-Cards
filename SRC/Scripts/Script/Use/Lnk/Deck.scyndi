@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.06
+// Version: 24.03.09
 // End License Information
 
 Module
@@ -89,4 +89,10 @@ Var Shuffle(String Tag,String ShufMethod="Random",Int Low=1, Int High=13, Int De
 	ret.___Size = (High-(Low-1))*Decks*Suits
 	ret = SetMetaTable(ret,{["__index"] = _ShufIndex, ["__newindex"]=_ShufNewIndex})
 	Return ret
+End
+
+String ShuffleOut(String Tag)
+	_LoadSubDeck()
+	Sys.Call("SUB_DECK","ShufOut",Tag)
+	return gString.Deck_ReturnedString
 End

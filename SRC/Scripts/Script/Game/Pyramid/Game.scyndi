@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.08
+// Version: 24.03.09
 // End License Information
 
 Script
@@ -63,9 +63,14 @@ Int  Pyr_ResetPile
 
 Int  hue = os.time()
 
-ReadOnly Var DrPX = (Graphics.Width div 2) - (175)
-ReadOnly Var DiPX = (Graphics.Width div 2) + ( 25)
-ReadOnly Var PY   = 600
+ReadOnly Int DrPX = (Graphics.Width div 2) - (175)
+ReadOnly Int DiPX = (Graphics.Width div 2) + ( 25)
+ReadOnly Int PY   = 600
+// Slow, but not slow enough for me. :-P
+Get Int BX; Return DrPX+Pyr_CardSize.W; End
+Get Int BH; Return Pyr_CardSize.H div 5; End
+Get Int BY; Return PY+BH; End
+Get Int BW; return DiPX-BX; End
 
 Class PyrNode
 	ReadOnly Int X
@@ -147,9 +152,9 @@ Class SelectedCard
 	Void Remove()
 		CSayF("Removing card %d:%d",Row,Node)
 		Switch Row*-1
-			Case 1; Pyr_Draw.Pop()
-			Case 2; Pyr_Discard.Pop()
-			Default; PyrRow.Row[Row].Nodes[Node].Card = nil; self.BonusCheckRow()
+			Case 1; Pyr_Draw.Pop(); CSay("Removal from draw stack")
+			Case 2; Pyr_Discard.Pop(); CSay("Removal from discard stack")
+			Default; PyrRow.Row[Row].Nodes[Node].Card = nil; self.BonusCheckRow(); CSayF("Removal from row #%d, node #%d",Row,Node)
 		End
 		Removed = true
 	End
@@ -187,6 +192,47 @@ Void SelectCard(Int Row,Int Node)
 	End
 End	
 
+Class StackButton
+	Static ReadOnly Table Lst = {}
+	ReadOnly Delegate Condition
+	ReadOnly Delegate Action
+	ReadOnly Var Icon
+	Constructor(String _I,_C,_A)
+		Icon = ObtainImage(_I)
+		Condition = _C
+		Action = _A
+		CSayF("Stack Button '%s' created",_I)
+	End
+End
+
+Bool Draw_Condition()
+	Return PYR_Draw.Value!=nil
+End
+
+Void Draw_Action()
+	CSayF("Moving a card from draw to discard")
+	plua f;f = Pyr_Draw.Value
+	Pyr_Draw.Pop()
+	PYR_Discard.Push(f)	
+End
+
+Bool Disc_Condition()
+	Fnt.Text(Lua.tostring(3-Pyr_ResetPile),BX+(BW div 2),BY+BH,2)
+	Return PYR_Draw.Value==nil && Pyr_Discard.Value!=nil && Pyr_ResetPile<3
+End
+
+Void Disc_Action()
+	CSay("We need a great reset") // :-P
+	Pyr_ResetPile++
+	While PYR_Discard.Value
+		plua f;f = Pyr_Discard.Value
+		Pyr_Draw.push(f)
+		PYR_Discard.Pop()
+	End
+End
+		
+	
+
 Init
 	PyrRow.Row[7] = { ["Nodes"] = {} }
 	For i=6,0,-1
@@ -205,6 +251,8 @@ Init
 		End
 	End
 	CSayF("Card Size: %dx%d",Pyr_CardSize.W,Pyr_CardSize.H)
+	StackButton.Lst[0] = new StackButton("Arrow_Right",Draw_Condition,Draw_Action)
+	StackButton.Lst[1] = new StackButton("Arrow_Left",Disc_Condition,Disc_Action)
 End
 
 Global Void GameNew(String CShuffle="")
@@ -245,14 +293,31 @@ Global Void MainFlow()
 			End
 		End
 	End
-	If Pyr_Draw
-		SetColor(100,100,100,100)
-		Rect(DrPX,PY,Pyr_CardSize.W,Pyr_CardSize.H)
-		Rect(DiPX,PY,Pyr_CardSize.W,Pyr_CardSize.H)
+	SetColor(100,100,100,100)
+	Rect(DrPX,PY,Pyr_CardSize.W,Pyr_CardSize.H)
+	Rect(DiPX,PY,Pyr_CardSize.W,Pyr_CardSize.H)
+	If Pyr_Draw.Value
 		SetColor(255,255,255,255)
 		Pyr_Card.DrawCard(DrPX,PY,Pyr_Draw.Value.CardSuit,Pyr_Draw.Value.CardValue)
 		If MX>DrPX && MY>PY && MX<DrPX+Pyr_CardSize.W && MY<PY+Pyr_CardSize.H && ML
 			SelectCard(-1,0)
+		End
+	End
+	if Pyr_Discard.Value
+		SetColor(255,255,255,255)
+		Pyr_Card.DrawCard(DiPX,PY,Pyr_Discard.Value.CardSuit,Pyr_Discard.Value.CardValue)
+		If MX>DiPX && MY>PY && MX<DiPX+Pyr_CardSize.W && MY<PY+Pyr_CardSize.H && ML
+			SelectCard(-2,0)
+		End
+	End
+	For But in Each(StackButton.Lst)
+		If But.Condition()
+			If MX>BX && MY>BY && MX<BX+BW && MY<BY+BH
+				SetColorHSV(Hue,1,1)
+				If ML; But.Action(); End
+			End
+			But.Icon.Stretch(BX,BY,BW,BH)
+			break
 		End
 	End
 	If Selected; Selected.Mark(); End

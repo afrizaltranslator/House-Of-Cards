@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.06
+// Version: 24.03.09
 // End License Information
 Script
 
@@ -57,4 +57,30 @@ Global Void GetCard(String Tag,int Index)
 	plua ret;ret = _Reg[Tag][Index]
 	_Assert(ret,sprintf("No card registered on index #%d in shuffle %s",Index,Tag))
 	DRet = sprintf("return %d,%d",Ret.CardSuit,Ret.CardValue)
+End
+
+Global Void ShufOut(String Tag)
+	Assert(_Reg[Tag],"No shuffle registered as "..Tag)
+	plua Shf;shf = _Reg[Tag]
+	Int Jokers = 0
+	Int Suits = 0
+	Int Lowest = 1000000
+	Int Highest = 0
+	Table SuitsUsed={}
+	String R = "[Data]\n"
+	String S = "[Shuffle]\n"
+	R = R .. sprintf("Tag=%s\nLen=%d\n",Tag,Len(_Reg[Tag]))
+	For i,c in pairs(Shf)
+		If c.CardSuit<0
+			Jokers++
+		ElIf !SuitsUsed[c.CardSuit]
+			Suits++
+			SuitsUsed[c.CardSuit]=true
+		End
+		Lowest  = math.min(Lowest, c.CardValue)
+		Highest = math.max(Highest,c.CardValue)
+		S = S .. sprintf("P%03d_S=%d\nP%03d_V=%d\n",i,c.CardSuit,i,c.CardValue)
+	End
+	R = R .. sprintf("Jokers=%d\nSuits=%d\nLowest=%d\nHighest=%d\n",Jokers,Suits,Lowest,Highest)
+	DRet = R.."\n\n"..S
 End

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.07
+// Version: 24.03.09
 // End License Information
 
 Module
@@ -132,3 +132,18 @@ Get String BackSide
 End
 
 Set String BackSide; CFG.Value("Deck","BacKSide",Value); End
+
+Get Bool AllowSFX
+	CFG.NewValue("Audio","SFX","Yes")
+	Return Upper(CFG.Value("Audio","SFX"))=="YES"
+End
+
+Set Bool AllowSFX
+	// Simple yet effective, and that's what matters.
+	CSayF("Allow Sound Effects: %s",Value)
+	If Value
+		CFG.Value("Audio","SFX","Yes")
+	Else
+		CFG.Value("Audio","SFX","No")
+	End
+End

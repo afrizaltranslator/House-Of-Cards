@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.07
+// Version: 24.03.09
 // End License Information
 Script
 
@@ -157,6 +157,17 @@ Void BackSideA()
 	CSayF("Backside: %03d/%03d >> %s",BackSideIndex,Len(BackSideFiles),Config.BackSide)
 End
 
+#region "Sound Effects"
+String SFXV() 
+	Config.CFG.NewValue("Audio","SFX","Yes")
+	Return Rosetta.GetStr("Algemeen",Config.CFG.Value("Audio","SFX"))
+End
+Void SFXA()
+	CSayF("CONFIG.SFX: %s -> %s", Config.AllowSFX , !Config.AllowSFX)
+	Config.AllowSFX = !Config.AllowSFX 
+End
+#endregion
+
 #region Back
 String BackVal(); Return ""; End
 Void BackAct(); Sys.CurrentFlow = "MAINMENU"; End
@@ -171,6 +182,7 @@ Init
 	i = New ConfigItem("Background",BackgroundAct,BackgroundVal)
 	i = New ConfigItem("Deck",DeckAct,DeckVal)
 	i = New ConfigItem("BackSide",BackSideA,BackSideV)
+	i = New ConfigItem("AllowSFX",SFXA,SFXV)
 	i = New ConfigItem("Back",BackAct,BackVal)
 	// Prevent trouble with memory trashing
 	ConfigItem.Last = nil

@@ -1,0 +1,103 @@
+// License Information:
+// House Of Cards
+// A shuffle method for Pyramid (should guarantee an easy to win game)
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.09
+// End License Information
+Module
+
+#use "Libs/SCI/Sys"
+
+#use "Script/Use/Lnk/Deck"
+
+
+//Plua TegenHangers={13,12,11,10,9,8,7,6,5,4,3,2,1,0}
+Const Int MaxCards=52
+
+//Init
+//	For i,t in iPairs(TegenHangers)
+//		CSayF("Tegenhanger van %2d is %2d => %d",i,t,i+t)
+//		Lua.assert(i+t==13,"Tegenhanger error!")
+//	End
+//End
+
+QuickMeta Tegenhangers
+	index
+		return math.abs(13-key)%14
+	end
+	newindex
+		lua.error("Huh?")
+	End
+End
+
+Void Plaats(stok,gehad,int pos,int suit,int value)
+	string t;t=sprintf("%d:%02d",suit,value)
+	if gehad[t] || value<1 || value>13; return; End
+	gehad[t]=true
+	pos=pos%MaxCards
+	int TimeOut=10000
+	While stok[pos]
+		pos=(pos+1)%MaxCards
+		TimeOut--
+		CSayF("(%d,%02d): %2d => %s  (Timeout: %6d)",suit,value,pos,stok[pos],TimeOut)
+		lua.assert(timeout>0,"Card placement time-out!")
+	End
+	plua Crd
+	crd       = New DeckCard(Suit,Value)	
+	stok[pos] = Crd 
+End
+
+Table DoShuffle(Int Low, Int High, Int Decks, Int Suits)
+	// Override. This is only meant for Pyramid anyway!
+	Decks = 4
+	Suits = 4
+	Low   = 1
+	High  = 13
+	//Int MaxCards;MaxCards = (High-(Low-1))*Decks*Suits
+	plua gehad = {}
+	plua ret = {}
+	plua ts 
+	plua suitorder = {}
+	int timeout=1000
+	for i=0,3
+		int s = math.random(0,3)			
+		while suitorder[s]
+			s=(s+1)%4
+			timeout--
+			lua.assert(timeout>0,"Suit order time-out!")
+		End
+		suitorder[s]=i
+	End
+	For DI,DD in pairs(SuitOrder)
+		//For SI in Each(ts)		 
+			For VI=Low,High
+				Int R1
+				Int R2
+				R1=math.random(0,MaxCards-1)
+				R2=(MaxCards-1)-R1
+				Plaats(ret,gehad,R1,DD,VI)
+				Plaats(ret,gehad,R1,DD,TegenHangers[VI])
+			End
+		//End
+	End
+	return ret
+End

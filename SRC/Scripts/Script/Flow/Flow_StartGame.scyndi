@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.08
+// Version: 24.03.09
 // End License Information
 
 Script
@@ -42,11 +42,27 @@ Script
 Bool Always(); Return True; End
 
 #region "Shuffle Selector"
+Plua Shuffles = {}
+plua ShuffleIdx = {} 
 Void ShuffleAct(Item,Parent)
+	ShuffleIdx[Parent.TID] = ( (ShuffleIdx[Parent.TID] || 0) + 1) % len(Shuffles[Parent.TID] || "1")
+	Parent.Config.Value("Shuffle","Shuffle",Shuffles[Parent.TID][ShuffleIdx[Parent.TID]])
 End
 
 String ShuffleVal(Item,Parent)
-	Parent.Config.NewValue("Shuffle","Shuffle","Random")
+	If Parent.Raw.Value("Shuffle","Default")!="" 
+		Parent.Config.NewValue("Shuffle","Shuffle","Random",Parent.Raw.Value("Shuffles","Default"))
+	Else
+		Parent.Config.NewValue("Shuffle","Shuffle","Random")
+	End	
+	if (!Shuffles[Parent.TID])
+		Shuffles[Parent.TID] = {[0]="Random" }
+		For sh in Each(Parent.Raw.List("Shuffles","Shuffles"))
+			If sh==Parent.Config.Value("Shuffle","Shuffle"); ShuffleIdx[Parent.TID]=Len(Shuffles[Parent.TID]); End
+			Shuffles[Parent.TID][len(Shuffles[Parent.TID])]=sh
+			CSayF("Shuffle '%s' added to %s",sh,Parent.TID)
+		End
+	End
 	Return Parent.Config.Value("Shuffle","Shuffle")
 End
 #endregion

@@ -46,6 +46,9 @@ Script
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
 ReadOnly Var ESC  = ObtainImage("SUCCESS")
 ReadOnly Var EFL  = ObtainImage("FAIL")
+ReadOnly Var UND  = ObtainImage("UNDO")
+ReadOnly Var ICO  = LoadNewImage("Script/Game/Pyramid/Icon.png","PYRAMID_ICON")
+ReadOnly Var OKE  = ObtainImage("OK")
 	
 	
 // 0 = Playing
@@ -380,6 +383,32 @@ Global Void GameNew(String CShuffle="")
 	Pyr_ResetPile = 0
 End
 
+Void UndoButton()
+	SetColor(255,255,255)
+	If MX<64 && MY>Graphics.Height-64
+		SetColorHSV(Hue,1,1)
+		If ML
+			CSay("Undo not yet operational")
+		End
+	End
+	UND.Stretch(0,Graphics.Height-64,64,64)
+End
+
+Void OkayButton()
+	If State!=1; Return; End
+	Int X = (Graphics.Width div 2) - 32
+	Int Y = Graphics.Height - 64
+	SetColor(255,255,255)
+	If MY>Y && MX>X && MX<X+64
+		SetColorHSV(Hue,1,1)
+		If ML
+			Sys.CurrentFlow="SELECTGAME" 
+		End
+	End
+	Oke.Stretch(X,Y,64,64)
+	SetColor(255,255,255,255)
+End
+
 Global Void MainFlow()
 	hue = (hue+1)%360
 	SetColor(255,255,255,255)
@@ -427,5 +456,8 @@ Global Void MainFlow()
 	ShowScore(Pyr_Score,5,5)
 	Bonus.ShowAll()
 	GameFeatures.Button()
+	UndoButton()
+	OkayButton()
+	SetColor(255,255,255); Ico.Stretch(Graphics.Width-65,Graphics.height-65,64,64)
 	ShowMouse()
 End

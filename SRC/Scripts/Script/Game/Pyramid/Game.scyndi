@@ -78,6 +78,35 @@ Get Int BH; Return Pyr_CardSize.H div 5; End
 Get Int BY; Return PY+BH; End
 Get Int BW; return DiPX-BX; End
 
+Class PlayAct
+	ReadOnly Var Card1
+	ReadOnly Int Row1
+	ReadOnly Int Node1
+	ReadOnly Var Card2
+	ReadOnly Int Row2
+	ReadOnly Int Node2
+	ReadOnly Int Score
+	ReadOnly String ActCmd
+		
+	Constructor(String _Cmd,_Card1,_Card2,Int _Row1, Int _Node1,Int _Row2, Int _Node2)
+		Score  = Pyr_Score
+		ActCmd = _Cmd
+		Card1  = _Card1
+		Row1   = _Row1
+		Node1  = Node1		
+		Card2  = _Card2
+		Row2   = _Row2
+		Node2  = Node2		
+	End
+	
+	ReadOnly Static Var Stack = New Stack()
+	Static Void Add(String _Cmd,_Card1,_Card2, Int _Row1=0, Int _Node1=0,Int _Row2=0, Int _Node2=0)
+		Stack.Push(new PlayAct(_Cmd,_Card1,_Card2,_Row1,_Node2,_Row2,_Node2))
+		CSayF("Stacked: %s (%3s:%3s), %d:%d",_Cmd,(_Card1 || {}).CardSuit,(_Card1 || {}).CardValue,_Row1,_Node1)
+	End
+End
+	
+
 Class PyrNode
 	ReadOnly Int X
 	ReadOnly Int Y
@@ -211,7 +240,7 @@ Class SelectedCard
 		SetAlpha(255)
 	End
 	Void Remove()
-		CSayF("Removing card %d:%d",Row,Node)
+		CSayF("Removing card %d:%d",Row,Node)		
 		Switch Row*-1
 			Case 1; Pyr_Draw.Pop(); CSay("Removal from draw stack")
 			Case 2; Pyr_Discard.Pop(); CSay("Removal from discard stack")
@@ -236,6 +265,7 @@ Void SelectCard(Int Row,Int Node)
 	If Selected && Selected.removed; Selected = nil; End
 	plua S2;S2 = new SelectedCard(Row,Node)
 	If S2.Card.CardValue==13
+		PlayAct.Add("KillKing",S2.Card,nil,Row,Node)
 		S2.Remove()
 		Selected = nil
 		Pyr_Score = Pyr_Score + 5
@@ -244,6 +274,7 @@ Void SelectCard(Int Row,Int Node)
 	Selected = Selected || s2
 	CSayF("Compare %d + %d = %d ",s2.Card.CardValue,Selected.Card.Cardvalue,s2.Card.CardValue+Selected.Card.Cardvalue)
 	If s2.Card.CardValue+Selected.Card.Cardvalue==13
+		PlayAct.Add("Kill",Selected.Card,S2.Card,Selected.Row,Selected.Node,s2.Row,s2.Node)
 		s2.Remove()
 		Selected.Remove()
 		Selected = nil
@@ -273,8 +304,10 @@ End
 Void Draw_Action()
 	CSayF("Moving a card from draw to discard")
 	plua f;f = Pyr_Draw.Value
+	PlayAct.Add("ToDiscard",f)
 	Pyr_Draw.Pop()
 	PYR_Discard.Push(f)	
+	Selected = nil
 End
 
 Bool Disc_Condition()
@@ -284,12 +317,14 @@ End
 
 Void Disc_Action()
 	CSay("We need a great reset") // :-P
+	PlayAct.Add("Reset")
 	Pyr_ResetPile++
 	While PYR_Discard.Value
 		plua f;f = Pyr_Discard.Value
 		Pyr_Draw.push(f)
 		PYR_Discard.Pop()
 	End
+	Selected = nil
 End
 		
 	
@@ -384,6 +419,7 @@ Global Void GameNew(String CShuffle="")
 End
 
 Void UndoButton()
+	If State==1; Return; End
 	SetColor(255,255,255)
 	If MX<64 && MY>Graphics.Height-64
 		SetColorHSV(Hue,1,1)

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.09
+// Version: 24.03.10
 // End License Information
 
 Script
@@ -29,6 +29,7 @@ Script
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/JCR6"
 #use "Libs/SCI/GINIE"
+#use "Libs/SCI/SGJCR"
 #use "Libs/SCI/Events"
 #use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
@@ -39,6 +40,9 @@ Script
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 
+
+String SaveFile
+Bool SaveFound
 Bool Always(); Return True; End
 
 #region "Shuffle Selector"
@@ -180,7 +184,7 @@ End
 #endregion
 
 #region "Bottom buttons"
-Bool AllowContinue(); Return False; End
+Bool AllowContinue(); Return SaveFound; End
 Void Cancel(); Sys.CurrentFlow="SELECTGAME"; End
 Void Continue(); End
 
@@ -221,6 +225,9 @@ Global Void AcceptGame(String GID)
 	CurrentID = GID
 	CSayF("Game Starter now uses Game ID: %s",GID)
 	GameRecord.Current = GameData[GID]
+	SaveFile = sprintf("House Of Cards.SaveGame.%s.jcr",GID)
+	SaveFound = SGJCR.Exists(SaveFile)
+	CSayF("= Save game '%s' found -> %s",SaveFile,SaveFound)
 End
 
 
@@ -265,15 +272,19 @@ Global Void MainFlow()
 		int X;    X  = BX + (BB.BW div 2)
 		Int RW;   RW = Fnt.Width(CP)
 		int RX;   RX = X - (RW Div 2)
-		If MY>Graphics.Height-60 && MX>RX && MX<RX+RW
-			SetColorHSV(Hue,1,0.5)
-			Rect(RX,Graphics.Height-60,RW,30)
-			If ML
-				v.Action(GameRecord.Current)
+		If v.Allow()
+			If MY>Graphics.Height-60 && MX>RX && MX<RX+RW
+				SetColorHSV(Hue,1,0.5)
+				Rect(RX,Graphics.Height-60,RW,30)
+				If ML
+					v.Action(GameRecord.Current)
+				End
 			End
+			SetColor(255,180,0)
+			Fnt.Text(CP,X,Graphics.Height-60,2)			
 		ENd
-		SetColor(255,180,0)
-		Fnt.Text(CP,X,Graphics.Height-60,2)
+		
+		
 	End
 	ShowMouse()
 End

@@ -92,6 +92,7 @@ Init
 	Img("MOUSE_FALSE","GFX/MOUSE/FALSE.PNG")
 	Img("SUCCESS","GFX/End Game/Success.PNG","CENTER")
 	Img("FAIL","GFX/End Game/Fail.png","CENTER")
+	Img("FUNCTIONS","GFX/Buttons/Functions.png")
 	For _,I in Pairs{"Up","Down","Left","Right"}
 		Img(sprintf("ARROW_%s",Upper(I)),sprintf("GFX/Arrows/%s.png",I))
 	End

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.09
+// Version: 24.03.10
 // End License Information
 Script
 
@@ -48,11 +48,13 @@ Var GetMethod(String _meth)
 End
 
 Global Void ShuffleDeck(String Tag,String ShufMethod,Int Low, Int High, Int Decks, Int Suits)
+	Tag = Upper(Tag)
 	_Reg      = _Reg || {}
 	_Reg[Tag] = GetMethod(ShufMethod).DoShuffle(Low,High,Decks,Suits)
 End
 
-Global Void GetCard(String Tag,int Index)	
+Global Void GetCard(String Tag,int Index)
+	Tag = Upper(Tag)
 	_Assert(_Reg[Tag],"No shuffle registered as "..Tag)
 	plua ret;ret = _Reg[Tag][Index]
 	_Assert(ret,sprintf("No card registered on index #%d in shuffle %s",Index,Tag))
@@ -60,6 +62,7 @@ Global Void GetCard(String Tag,int Index)
 End
 
 Global Void ShufOut(String Tag)
+	Tag = Upper(Tag)
 	Assert(_Reg[Tag],"No shuffle registered as "..Tag)
 	plua Shf;shf = _Reg[Tag]
 	Int Jokers = 0

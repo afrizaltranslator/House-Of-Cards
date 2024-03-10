@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.06
+// Version: 24.03.10
 // End License Information
 Script
 
@@ -152,7 +152,7 @@ Bool AllowSpot(Int X, Int Y, Int Value)
 		Case 1
 			// Aces
 			If Upper(KC_Config.Value("CONFIG","ACES"))=="NO"; Return True; End
-			Return (X==1 || X==2) && (Y==1 && Y==2)
+			Return (X==1 || X==2) && (Y==1 || Y==2)
 		Default
 			// Any other card
 			Return True

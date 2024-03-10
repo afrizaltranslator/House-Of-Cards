@@ -1,0 +1,132 @@
+// License Information:
+// House Of Cards
+// Quick Game Features
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.10
+// End License Information
+
+
+Module
+
+#use "Libs/Rosetta"
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/Events"
+#use "Libs/SCI/Graphics"
+#use "Libs/SCI/RealFile"
+
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/RText"
+
+
+// The "GAMEBOTTOM" category in the Rosetta files was a leftover from the idea
+// These features would always be at the bottom, however that idea was dropped
+// before this script was written, simply because I realized the size of the 
+// screen would be an issue, especially since some languages can require
+// loads of space for certain captions.
+
+
+ReadOnly Var Icon = ObtainImage("FUNCTIONS")
+ReadOnly Var FNT = ObtainFont("RYANNA")
+Int Hue = os.time()
+
+Bool Always(); Return True; End
+Bool Never(); Return False; End
+
+#Region "Continue"
+Bool Stay
+Get Delegate GF_Continue_Allow; Return Always; End
+Void         GF_Continue_Action(); Stay=False; End	
+#Endregion
+
+#Region "Forfeit"
+Get Delegate GF_Forfeit_Allow; Return Always; End
+Void         GF_Forfeit_Action()
+	If Sys.Yes(Rosetta.GetStr("GAMEBOTTOM","CONFIRM_FORFEIT"))
+		Sys.CurrentFlow="SELECTGAME"
+		Stay=False
+	End
+End
+#Region
+
+#Region "Save & Exit"
+Bool NoSave
+Get Delegate GF_SaveExit_Allow; If NoSave; Return Never; End; Return Lua.Scyndi.Globals.GameFeatures_SaveExit_Allow; End
+Get Delegate GF_SaveExit_Action; Return Lua.Scyndi.Globals.GameFeatures_SaveExit_Action; End
+#EndRegion
+
+
+#Region "Save Shuffle"
+String ShuffleTag
+Bool GF_SaveShuffle_Allow(); Return ShuffleTag!=""; End
+Void GF_SaveShuffle_Action()
+	String F;F = RealFile.RequestSaveFile()
+	If F!=""
+		RealFile.SaveString(F,Deck.ShuffleOut(ShuffleTag))
+	End
+	Stay=False	
+End
+#EndRegion
+
+
+ReadOnly Table Items = NewArray("CONTINUE","FORFEIT","SAVEEXIT","SAVESHUFFLE")
+ReadOnly Int X = Graphics.Width div 2
+	
+Void RunMenu()
+	Stay=True
+	Repeat
+		Events.Poll()
+		If MR; Return; End		
+		Cls()
+		For i,v in pairs(Items)
+			Int Y;Y = (I*35)+10
+			If !Lua.Scyndi.Class.GameFeatures["GF_"..v.."_Allow"]()
+				SetColor(20,20,20)
+			ElIf MY>Y && MY<Y+30
+				Hue = (Hue+1)%360
+				SetColorHSV(Hue,1,1)
+				If ML; Lua.Scyndi.Class.GameFeatures["GF_"..v.."_Action"](); End
+			Else
+				SetColor(255,255,255)
+			End
+			Text("GAMEBOTTOM",v,X,Y,2,0)
+		End
+		SetColorHSV(Hue,0.1,1)
+		ShowMouse()
+		Flip()
+	LoopWhile Stay
+End
+
+Void Button()
+	SetColor(255,255,255,255)
+	If MY<Icon.Height && MX>Graphics.Width-Icon.Width
+		Hue = (Hue+1)%360
+		SetColor(360-Hue,1,1)
+		SetColorHSV(Hue,1,1)
+		If ML
+			RunMenu()
+		End		
+	End
+	Icon.Draw(Graphics.Width-Icon.Width,0)
+	SetColor(255,255,255,255)
+End

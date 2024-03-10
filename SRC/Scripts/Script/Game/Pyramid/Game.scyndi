@@ -21,13 +21,14 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.09
+// Version: 24.03.10
 // End License Information
 
 Script
 
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/GINIE"
+#use "Libs/SCI/SGJCR"
 #use "Libs/SCI/Graphics"
 
 #use "Libs/xMath"
@@ -40,6 +41,7 @@ Script
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/GameFeatures"
 
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
 ReadOnly Var ESC  = ObtainImage("SUCCESS")
@@ -189,6 +191,7 @@ Class SelectedCard
 			If Row==0
 				Bonus.Go(ESC)
 				SFX("COMPLETE")
+				State = 1
 			Else 
 				SFX("BONUS")
 			End
@@ -310,8 +313,51 @@ Init
 	StackButton.Lst[1] = new StackButton("Arrow_Left",Disc_Condition,Disc_Action)
 End
 
+Global Bool GameFeatures_SaveExit_Allow()
+	Return State == 0
+End
+
+Global Void GameFeatures_SaveExit_Action()
+	CSay("Preparing savegame")
+	plua SG = SGJCR.Create("SAVE:PYRAMID")
+	SG.Assign("House Of Cards.SaveGame.PYRAMID.jcr")
+	SG.Clear()	
+	CSay("= Shuffle") SG.Text["Shuffle.ini"] = Deck.ShuffleOut(GameFeatures.ShuffleTag)
+	CSay("= General") SG.Text["General.ini"] = sprintf("[Check]\nEngine=Scyndi's Creative Interpreter\nProject=House Of Cards\nGame=Pyramid\n\n[Data]Score=%d\n",Pyr_Score)
+	CSay("= Actions") SG.Text["Actions.ini"] = "[Gen]\nCount=0\n" // TODO: Actions for undo
+	String NOut = "[Gen]\nNodeFile=Pyramid\n\n"
+	CSay("= Nodes")
+	For ri=0,6
+		For ni=0,ri
+			NOut = NOut .. sprintf("[Node %d::%d]\n",ri,ni)
+			plua C;C= PyrRow.Row[ri].Nodes[ni].Card
+			If C
+				NOut = NOut .. sprintf("Card=Yes\nSuit=%d\nValue=%d\n\n",C.CardSuit,C.CardValue)
+			Else
+				NOut = Nout .. "Card=No\n"
+			End
+		End
+	End
+	CSay("= Stacks")
+	For ktag,kstack in pairs { ["Draw"]=Pyr_Draw,["Discard"]=Pyr_Discard }
+		plua ar = kstack.Array
+		NOut = NOut .. sprintf("[%s]\nCount=%d\n",ktag,Len(ar))
+		For i,c in ipairs(ar)
+			NOut=Nout..sprintf("STACK%02dS=%d\nSTACK%02dV=%d\n",i,C.CardSuit,i,C.CardValue)
+		End
+		NOut=Nout .. "\n"
+	End
+	SG.Text["Nodes.ini"] = NOut
+	CSay("= Saving")
+	SG.Save()
+	CSay("= Done")
+	CSay("= Leaving")
+	Sys.CurrentFlow="SELECTGAME"
+End
+
 Global Void GameNew(String CShuffle="")
 	Pyr_Score = 0
+	GameFeatures.ShuffleTag="DECK_Pyramid"
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else
@@ -380,5 +426,6 @@ Global Void MainFlow()
 	SetAlpha(255)
 	ShowScore(Pyr_Score,5,5)
 	Bonus.ShowAll()
+	GameFeatures.Button()
 	ShowMouse()
 End

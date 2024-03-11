@@ -91,17 +91,19 @@ Class PlayAct
 	Constructor(String _Cmd,_Card1,_Card2,Int _Row1, Int _Node1,Int _Row2, Int _Node2)
 		Score  = Pyr_Score
 		ActCmd = _Cmd
+		
 		Card1  = _Card1
 		Row1   = _Row1
-		Node1  = Node1		
+		Node1  = _Node1
+		
 		Card2  = _Card2
 		Row2   = _Row2
-		Node2  = Node2		
+		Node2  = _Node2		
 	End
 	
 	ReadOnly Static Var Stack = New Stack()
 	Static Void Add(String _Cmd,_Card1,_Card2, Int _Row1=0, Int _Node1=0,Int _Row2=0, Int _Node2=0)
-		Stack.Push(new PlayAct(_Cmd,_Card1,_Card2,_Row1,_Node2,_Row2,_Node2))
+		Stack.Push(new PlayAct(_Cmd,_Card1,_Card2,_Row1,_Node1,_Row2,_Node2))
 		CSayF("Stacked: %s (%3s:%3s), %d:%d",_Cmd,(_Card1 || {}).CardSuit,(_Card1 || {}).CardValue,_Row1,_Node1)
 	End
 End
@@ -274,6 +276,7 @@ Void SelectCard(Int Row,Int Node)
 	Selected = Selected || s2
 	CSayF("Compare %d + %d = %d ",s2.Card.CardValue,Selected.Card.Cardvalue,s2.Card.CardValue+Selected.Card.Cardvalue)
 	If s2.Card.CardValue+Selected.Card.Cardvalue==13
+		CSayF("Nodes: %d:%d    %d:%d",Selected.Row,Selected.Node,s2.Row,s2.Node)
 		PlayAct.Add("Kill",Selected.Card,S2.Card,Selected.Row,Selected.Node,s2.Row,s2.Node)
 		s2.Remove()
 		Selected.Remove()
@@ -418,12 +421,72 @@ Global Void GameNew(String CShuffle="")
 	Pyr_ResetPile = 0
 End
 
+Void UndoError(string Msg)
+	Sys.Annoy(sprintf("UNDO ERROR\n\n%s\n\nThis is likely due to a bug in the Pyramid script\n\nYou may go on, but expect odd behavior.\n\nFor safety reasons the action stack has been emptied!\n\nPlease report this on my issue tracker (if it wasn't reported before)",Msg))
+	PlayAct.Stack.Clear()
+End
+
 Void UndoButton()
 	If State==1; Return; End
+	If !PlayAct.Stack.Value; Return; End
 	SetColor(255,255,255)
 	If MX<64 && MY>Graphics.Height-64
 		SetColorHSV(Hue,1,1)
 		If ML
+			Plua _UA = PlayAct.Stack.Pop()
+			Pyr_Score = _UA.Score
+			Switch _UA.ActCmd
+				Case "ToDiscard"
+					Pyr_Draw.Push(Pyr_Discard.Pop())
+				Case "Reset" 
+					While Pyr_Draw.Value
+						plua fuck;fuck = Pyr_Draw.Pop()
+						Pyr_Discard.Push(fuck)
+					End
+				Case "Kill" 
+					For i=1,2
+						//plua Crd;Crd=new DeckCard(_UA[sprintf("Suit%d",i)],_UA[sprintf("Value%d",i)])
+						plua Crd;Crd=_UA[sprintf("Card%d",i)]
+						Switch _UA[sprintf("Row%d",i)]*-1
+							Case 1 
+								Pyr_Draw.Push(Crd)
+							Case 2
+								Pyr_Discard.Push(Crd)
+							Default
+								int R;R=_UA[sprintf("Row%d",i)]
+								Int N;N=_UA[sprintf("Node%d",i)]
+								Plua Node;Node=PyrRow.Row[R].Nodes[N]
+								If (Node.Card)
+									UndoError(sprintf("Undo responds to non-empty node %d:%d",R,N))
+									Return
+								End
+								Node.Card=Crd
+						End
+					End
+				Case "KillKing" 
+					plua Crd;Crd=_UA.Card1
+					Switch _UA.Row1*-1
+						Case 1 
+							Pyr_Draw.Push(Crd)
+						Case 2
+							Pyr_Discard.Push(Crd)
+						Default
+							int R;R=_UA.Row1
+							Int N;N=_UA.Node1
+							Plua Node;Node=PyrRow.Row[R].Nodes[N]
+							If (Node.Card)
+								UndoError(sprintf("Undo responds to non-empty node %d:%d",R,N))
+								Return
+							End
+							Node.Card=Crd
+					End
+				Case "FuckYou"
+					Lua.error("Yes! Yes! Fuck you too! But I ain't coming to America")
+					// A case had to exist
+				Default
+					UndoError(sprintf("Unknown action command '%s'",_UA.ActCmd))
+					Return
+			End
 			CSay("Undo not yet operational")
 		End
 	End

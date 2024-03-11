@@ -61,10 +61,15 @@ ReadOnly Var EFL  = ObtainImage("FAIL")
 ReadOnly Var UND  = ObtainImage("UNDO")
 ReadOnly Var ICO  = LoadNewImage("Script/Game/Spider/Icon.png","SPIDER_ICON")
 ReadOnly Var OKE  = ObtainImage("OK")
+	
+Int Hue = os.time()
 #endregion
 
 #region "Game Variables"
+Plua CardSize = Lua.Scyndi.Class.CardSize
 PLUA SPI_Deck
+plua SPI_CardSize = CardSize.FromW(Graphics.Width div (Rows+1))
+Int SPI_Score
 #endregion
 
 #region Configration
@@ -81,26 +86,45 @@ Get String ShuffleMethod; Return SPI_Config.Value("Shuffle","Shuffle"); End
 #region Icon
 Int IconSize = math.min(graphics.width,graphics.height)
 Void ShowIcon()
-	ICO.Stretch(Graphics.Width-IconSize,Graphics.Height-Iconsize)
+	SetColor(255,255,255,255)
+	ICO.Stretch(Graphics.Width-IconSize,Graphics.Height-Iconsize,IconSize,IconSize)
 	Iconsize = math.max(64,IconSize-1)
 End
 #endregion
 
-Global Void GameNew(String CShuffle="")
-	Pyr_Score = 0
-	GameFeatures.ShuffleTag="DECK_Spider"
-	If CShuffle!=""
-		Lua.error("Loading shuffles not yet supported")
-	Else
-		//Pyr_Deck = Deck.Shuffle("DECK_Spider",SPI_Config.Value("Shuffle","Shuffle"))
-		Switch Suits
-		Case 1
-			SPI_Deck = Shuffle("DECK_Spider",ShuffleMethod,1, 13, 8,1)
-		Case 2
-			SPI_Deck = Shuffle("DECK_Spider",ShuffleMethod,1, 13, 4,2)
-		Default
-			SPI_Deck = Shuffle("DECK_Spider",ShuffleMethod,1, 13, 2,4)
+Int RowX(Int Row)
+	return math.floor(((Row*1.06)*SPI_CardSize.W)+(Row div 2))
+End
+
+Void RowMarkers()
+	For i=0,Rows-1
+		SetColor(100,100,100,100)
+		Rect(RowX(i),5,SPI_CardSize.W,SPI_CardSize.H)
 	End
 End
 
+Global Void GameNew(String CShuffle="")
+	SPI_Score = 500
+	GameFeatures.ShuffleTag="DECK_Spider"
+	If CShuffle!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else		
+		Switch Suits
+		Case 1
+			SPI_Deck = Deck.Shuffle("DECK_Spider",ShuffleMethod,1, 13, 8,1)
+		Case 2
+			SPI_Deck = Deck.Shuffle("DECK_Spider",ShuffleMethod,1, 13, 4,2)
+		Default
+			SPI_Deck = Deck.Shuffle("DECK_Spider",ShuffleMethod,1, 13, 2,4)
+		End
+	End
+End
 
+Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	RowMarkers()
+	ShowIcon()
+	ShowMouse()
+End

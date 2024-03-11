@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.08
+// Version: 24.03.11
 // End License Information
 
 Module
@@ -39,4 +39,19 @@ End
 Global Void ShowScore(Int Score,Int X, Int Y, Int ha=0,Int va=0, Int Zeros=4)
 	String Fmt;Fmt=sprintf("%s: %%0%dd",Rosetta.GetStr("ALGEMEEN","SCORE"),Zeros)
 	_Fnt.Text( sprintf(fmt,Score), X, Y ,ha,va)
+End
+
+Global Void ShowTime(Int Time,Int X, Int Y, Int ha=0,Int va=0)
+	Int Seconds;Seconds = Time % 60 
+	Int TrueMinutes;TrueMinutes = Time div 60
+	Int Minutes;Minutes = TrueMinutes % 60
+	Int Hours; Hours = TrueMinutes div 60
+	String Show;Show = sprintf("%02d",Seconds)
+	If TrueMinutes>0
+		Show = sprintf("%02d:%s",Minutes,Show)
+		If Hours>0
+			Show  = sprintf("%d:%s",Hours,Show)
+		End
+	End
+	_Fnt.Text( sprintf("%s: %s",Rosetta.GetStr("ALGEMEEN","TIME"),Show) , x,y,ha,va)
 End

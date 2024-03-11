@@ -23,10 +23,84 @@
 // 
 // Version: 24.03.11
 // End License Information
+
 Script
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/SGJCR"
+#use "Libs/SCI/Graphics"
+
+//#use "Libs/xMath"
+//#use "Libs/Stacker"
+
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Sound"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/GameFeatures"
+
+#Region "Base Configuration"
 Const Int Rows = 10
 Const Int Packages = 5
 QuickMeta BaseCardsInRow
 	NewIndex;Lua.error("Nope!");End
-	Index;if Key<4; Return 6; else Return 5; End // Top Card included
+	Index;if Key<4; Return 6; else; Return 5; End; End // Top Card included
 End
+#endregion
+
+
+
+#region Assets
+ReadOnly Var Fnt  = ObtainFont("RYANNA")
+ReadOnly Var ESC  = ObtainImage("SUCCESS")
+ReadOnly Var EFL  = ObtainImage("FAIL")
+ReadOnly Var UND  = ObtainImage("UNDO")
+ReadOnly Var ICO  = LoadNewImage("Script/Game/Spider/Icon.png","SPIDER_ICON")
+ReadOnly Var OKE  = ObtainImage("OK")
+#endregion
+
+#region "Game Variables"
+PLUA SPI_Deck
+#endregion
+
+#region Configration
+plua SPI_Config = GINIE.Obtain("CONFIG::SPIDER")
+Get Int Suits; Return SPI_Config.IntValue("CONFIG","SUITS"); End
+
+// Will allow to deal an extra package of cards even if some rows are empty.
+// That is, when set to 'true' that is.
+Get Bool AllowEmpty; Return Upper(SPI_Config.Value("CONFIG","ALLOWEMPTY")=="YES"); End
+
+Get String ShuffleMethod; Return SPI_Config.Value("Shuffle","Shuffle"); End
+#endregion
+	
+#region Icon
+Int IconSize = math.min(graphics.width,graphics.height)
+Void ShowIcon()
+	ICO.Stretch(Graphics.Width-IconSize,Graphics.Height-Iconsize)
+	Iconsize = math.max(64,IconSize-1)
+End
+#endregion
+
+Global Void GameNew(String CShuffle="")
+	Pyr_Score = 0
+	GameFeatures.ShuffleTag="DECK_Spider"
+	If CShuffle!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else
+		//Pyr_Deck = Deck.Shuffle("DECK_Spider",SPI_Config.Value("Shuffle","Shuffle"))
+		Switch Suits
+		Case 1
+			SPI_Deck = Shuffle("DECK_Spider",ShuffleMethod,1, 13, 8,1)
+		Case 2
+			SPI_Deck = Shuffle("DECK_Spider",ShuffleMethod,1, 13, 4,2)
+		Default
+			SPI_Deck = Shuffle("DECK_Spider",ShuffleMethod,1, 13, 2,4)
+	End
+End
+
+

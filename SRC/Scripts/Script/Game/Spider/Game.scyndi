@@ -103,6 +103,8 @@ Void RowMarkers()
 	End
 End
 
+Global Bool GameFeatures_SaveExit_Allow(); Return False; End // TODO: Save Exit allow!
+
 Global Void GameNew(String CShuffle="")
 	SPI_Score = 500
 	GameFeatures.ShuffleTag="DECK_Spider"
@@ -125,6 +127,7 @@ Global Void MainFlow()
 	SetColor(255,255,255,255)
 	DrawBackground()
 	RowMarkers()
+	GameFeatures.Button()
 	ShowIcon()
 	ShowMouse()
 End

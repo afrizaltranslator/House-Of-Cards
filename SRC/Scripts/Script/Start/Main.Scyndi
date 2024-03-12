@@ -104,6 +104,7 @@ Init
 	Aud("BONUS","SFX/Bonus.ogg")
 	Aud("COMPLETE","SFX/Complete.ogg")
 	Aud("SLIDE","SFX/CardSlide.ogg")
+	Aud("BUZZ","SFX/Buzz.ogg")
 	
 	// Script
 	Scr("FLOW_MAINMENU","Script/Flow/Flow_MainMenu.lbc")

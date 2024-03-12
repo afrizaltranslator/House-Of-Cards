@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.12
+// Version: 24.03.13
 // End License Information
 
 Script
@@ -63,6 +63,7 @@ ReadOnly Var ICO = LoadNewImage("Script/Game/Spider/Icon.png","SPIDER_ICON")
 ReadOnly Var OKE = ObtainImage("OK")
 ReadOnly Var MNI = ObtainFont("MINI")
 ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")
+	
 
 ReadOnly Int X_Score = Graphics.Width div 4
 ReadOnly Int X_Time  = X_Score * 3
@@ -96,8 +97,10 @@ Class SpiderCard
 	
 	Void Draw(NoAutoMove)
 		If !NoAutoMove
-			if X!=GotoX; X = X + math.ceil( (GotoX-X) / 10); End
-			if Y!=GotoY; Y = Y + math.ceil( (GotoY-Y) / 10); End
+			if X<GotoX; X = X + math.ceil( (GotoX-X) / 10); End
+			if Y<GotoY; Y = Y + math.ceil( (GotoY-Y) / 10); End
+			if X>GotoX; X = X + math.floor( (GotoX-X) / 10); End
+			if Y>GotoY; Y = Y + math.floor( (GotoY-Y) / 10); End
 			// If GotoX==0; print(self,X,Y," -> ",GotoX,GotoY,"Verschil",GotoX-X,GotoY-Y); End // DEBUG ONLY!			
 		End
 		If Visible
@@ -158,8 +161,9 @@ Class PlayAct
 	End
 	
 	Static Get Var Stack;Return SPI_Actions; End
-	Var Add(String C,Int OldRow=5000, Int NewRow=0,Int _Cards=0)
+	Static Var Add(String C,Int OldRow=5000, Int NewRow=0,Int _Cards=0)
 		plua ret;ret = new PlayAct(C,OldRow,NewRow,_Cards)
+		SPI_Score--
 		Stack.Push(ret)
 		Return ret;
 	End
@@ -200,7 +204,7 @@ Void ShowCards()
 		Int GoY = 5
 		Int CntInvis = 0
 		For CI,CA in ipairs(RA)
-			if CA.Visible; GoY = math.ceil(GoY,20); End 
+			if CA.Visible; GoY = math.ceil(GoY,25); End 
 			CA.GotoY = GoY;
 			CA.GotoX = RowX(RI)
 			//CSayF("Row #%d:%d - GotoCoords (%04d,%04d); Now is (%04d,%04d);",RI,CI,CA.GotoX,CA.GotoY,CA.X,CA.Y) // DEBUG ONLY!!!
@@ -221,10 +225,25 @@ Void ShowCards()
 			//CSayF("Package %d,%d: (%04d,%04d)",PI,CI,CD.X,CD.Y)
 		End
 	End
-	if (!Hovering) && MX>Graphics.Width-70 && MY>Graphics.Height-(60+18+SPI_CardSize.H) && MY<Graphics.Height-(60+18)
-		PPP.Strech(Graphics.Width-190,Graphics.Height-(78+120),120,120)
+	if (!Hovering) && MX>Graphics.Width-70 && MY>Graphics.Height-(60+18+SPI_CardSize.H) && MY<Graphics.Height-(60+18) && SPI_Packages[0]
+		PPP.Stretch(Graphics.Width-190,Graphics.Height-(198+SPI_CardSize.H),120,120)
 		IF ML
-			CSay("Package opening not yet supported")
+			Bool Allow = True
+			If !AllowEmpty
+				For RI,RA in iPairs(SPI_Row); Allow = Allow && Len(RA)>0; End
+			End
+			If !Allow
+				SFX("BUZZ")
+			Else
+				//CSay("Package opening not yet supported")
+				PlayAct.Add("GetPackage")
+				int PI;PI = Len(SPI_Packages)-1
+				For CI,CD in ipairs(SPI_Packages[PI])
+					SPI_Row[CI][Len(SPI_Row[CI])]=CD
+				End
+				SFX("SLIDE")
+				SPI_Packages[PI]=nil
+			End
 		END
 	End
 End
@@ -235,7 +254,6 @@ Get Int Suits; Return SPI_Config.IntValue("CONFIG","SUITS"); End
 
 // Will allow to deal an extra package of cards even if some rows are empty.
 // That is, when set to 'true' that is.
-Get Bool AllowEmpty; Return Upper(SPI_Config.Value("CONFIG","ALLOWEMPTY")=="YES"); End
 Get Bool AllowEmpty; Return Upper(SPI_Config.Value("CONFIG","ALLOWEMPTY"))=="YES"; End
 
 Get String ShuffleMethod; Return SPI_Config.Value("Shuffle","Shuffle"); End

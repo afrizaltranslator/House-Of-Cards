@@ -85,6 +85,7 @@ Init
 	
 	// Font
 	Fnt("RYANNA","Font/Ryanna.jfbf")
+	Fnt("MINI","Font/Mini.jfbf")
 	
 	// Images
 	Img("LOGO","GFX/Logo/Main.png","TOPCENTER")

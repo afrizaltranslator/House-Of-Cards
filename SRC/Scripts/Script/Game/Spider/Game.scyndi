@@ -236,6 +236,7 @@ Get Int Suits; Return SPI_Config.IntValue("CONFIG","SUITS"); End
 // Will allow to deal an extra package of cards even if some rows are empty.
 // That is, when set to 'true' that is.
 Get Bool AllowEmpty; Return Upper(SPI_Config.Value("CONFIG","ALLOWEMPTY")=="YES"); End
+Get Bool AllowEmpty; Return Upper(SPI_Config.Value("CONFIG","ALLOWEMPTY"))=="YES"; End
 
 Get String ShuffleMethod; Return SPI_Config.Value("Shuffle","Shuffle"); End
 #endregion

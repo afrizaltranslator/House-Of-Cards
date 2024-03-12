@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.10
+// Version: 24.03.12
 // End License Information
 
 
@@ -118,6 +118,10 @@ Void RunMenu()
 End
 
 Void Button()
+	If Events.AppTerminate() && Sys.Yes(Rosetta.GetStr("GAMEBOTTOM","CONFIRM_FORFEIT"))
+		Sys.Exit()
+		Return
+	End
 	SetColor(255,255,255,255)
 	If MY<Icon.Height && MX>Graphics.Width-Icon.Width
 		Hue = (Hue+1)%360

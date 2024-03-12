@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.10
+// Version: 24.03.12
 // End License Information
 
 // Main
@@ -102,6 +102,7 @@ Init
 	// Audio
 	Aud("BONUS","SFX/Bonus.ogg")
 	Aud("COMPLETE","SFX/Complete.ogg")
+	Aud("SLIDE","SFX/CardSlide.ogg")
 	
 	// Script
 	Scr("FLOW_MAINMENU","Script/Flow/Flow_MainMenu.lbc")

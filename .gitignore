@@ -11,4 +11,22 @@ Private
 Make_Alpha_House_Of_Cards
 Dev/Promo/Aziella Mascotte.pdn
 Dev/Promo/Aziella Mascotte.png
+
+
+
+# To prevent copyright infringements 
+# ignore these directories.
+#
+# (These authors do allow their work to be included
+# in games and such, but they do not always allow
+# their files to be distributed separataly, which is
+# acctually precisely what github, bitbucket and
+# similar services do. Hence their inclusion in 
+# this .gitignorefile
+# The SCI builder should as a result be able to
+# ignore this and games built should run normally, 
+# however this stuff is then not included (and 
+# the game can work without them). Full game 
+# releases have this all covered (of course)
+
 Pixabay

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.11
+// Version: 24.03.12
 // End License Information
 
 Script
@@ -61,16 +61,36 @@ ReadOnly Var EFL  = ObtainImage("FAIL")
 ReadOnly Var UND  = ObtainImage("UNDO")
 ReadOnly Var ICO  = LoadNewImage("Script/Game/Spider/Icon.png","SPIDER_ICON")
 ReadOnly Var OKE  = ObtainImage("OK")
+
+ReadOnly Int X_Score = Graphics.Width div 4
+ReadOnly Int X_Time  = X_Score * 3
 	
 Int Hue = os.time()
 #endregion
 
+
+
 #region "Game Variables"
+
+Class SpiderCard
+	Bool Visible
+	Var  Card
+	Int  X
+	Int  Y
+	Int  GoToX
+	Int  GoToY		
+End
+
 Plua CardSize = Lua.Scyndi.Class.CardSize
 PLUA SPI_Deck
 plua SPI_CardSize = CardSize.FromW(Graphics.Width div (Rows+1))
+plua SPI_Row
 Int SPI_Score
+Int SPI_Time
+Int SPI_CheckTime
+Bool SPI_TimeRuns
 #endregion
+
 
 #region Configration
 plua SPI_Config = GINIE.Obtain("CONFIG::SPIDER")
@@ -103,6 +123,12 @@ Void RowMarkers()
 	End
 End
 
+Void ScoreAndTime()
+	SetColor(255,180,0,255)
+	ShowScore(SPI_Score,X_Score,Graphics.Height-30,2)
+	ShowTime(SPI_Time,X_Time,Graphics.Height-30,2)
+End
+
 Global Bool GameFeatures_SaveExit_Allow(); Return False; End // TODO: Save Exit allow!
 
 Global Void GameNew(String CShuffle="")
@@ -120,6 +146,8 @@ Global Void GameNew(String CShuffle="")
 			SPI_Deck = Deck.Shuffle("DECK_Spider",ShuffleMethod,1, 13, 2,4)
 		End
 	End
+	For RI=0,Rows-1
+	End
 End
 
 Global Void MainFlow()
@@ -128,6 +156,7 @@ Global Void MainFlow()
 	DrawBackground()
 	RowMarkers()
 	GameFeatures.Button()
+	ScoreAndTime()
 	ShowIcon()
 	ShowMouse()
 End

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.11
+// Version: 24.03.12
 // End License Information
 
 Script
@@ -49,6 +49,7 @@ ReadOnly Var EFL  = ObtainImage("FAIL")
 ReadOnly Var UND  = ObtainImage("UNDO")
 ReadOnly Var ICO  = LoadNewImage("Script/Game/Pyramid/Icon.png","PYRAMID_ICON")
 ReadOnly Var OKE  = ObtainImage("OK")
+
 	
 	
 // 0 = Playing
@@ -267,6 +268,7 @@ Void SelectCard(Int Row,Int Node)
 	If Selected && Selected.removed; Selected = nil; End
 	plua S2;S2 = new SelectedCard(Row,Node)
 	If S2.Card.CardValue==13
+		SFX("SLIDE")
 		PlayAct.Add("KillKing",S2.Card,nil,Row,Node)
 		S2.Remove()
 		Selected = nil
@@ -276,6 +278,7 @@ Void SelectCard(Int Row,Int Node)
 	Selected = Selected || s2
 	CSayF("Compare %d + %d = %d ",s2.Card.CardValue,Selected.Card.Cardvalue,s2.Card.CardValue+Selected.Card.Cardvalue)
 	If s2.Card.CardValue+Selected.Card.Cardvalue==13
+		SFX("SLIDE")
 		CSayF("Nodes: %d:%d    %d:%d",Selected.Row,Selected.Node,s2.Row,s2.Node)
 		PlayAct.Add("Kill",Selected.Card,S2.Card,Selected.Row,Selected.Node,s2.Row,s2.Node)
 		s2.Remove()
@@ -310,6 +313,7 @@ Void Draw_Action()
 	PlayAct.Add("ToDiscard",f)
 	Pyr_Draw.Pop()
 	PYR_Discard.Push(f)	
+	SFX("SLIDE")
 	Selected = nil
 End
 
@@ -326,6 +330,8 @@ Void Disc_Action()
 		plua f;f = Pyr_Discard.Value
 		Pyr_Draw.push(f)
 		PYR_Discard.Pop()
+		Sys.Delay(10)
+		SFX("SLIDE")
 	End
 	Selected = nil
 End

@@ -32,7 +32,7 @@ Script
 #use "Libs/SCI/Graphics"
 
 //#use "Libs/xMath"
-//#use "Libs/Stacker"
+#use "Libs/Stacker"
 
 #use "Script/Use/Lnk/Deck"
 #use "Script/Use/Lnk/Card"
@@ -55,12 +55,14 @@ End
 
 
 #region Assets
-ReadOnly Var Fnt  = ObtainFont("RYANNA")
-ReadOnly Var ESC  = ObtainImage("SUCCESS")
-ReadOnly Var EFL  = ObtainImage("FAIL")
-ReadOnly Var UND  = ObtainImage("UNDO")
-ReadOnly Var ICO  = LoadNewImage("Script/Game/Spider/Icon.png","SPIDER_ICON")
-ReadOnly Var OKE  = ObtainImage("OK")
+ReadOnly Var Fnt = ObtainFont("RYANNA")
+ReadOnly Var ESC = ObtainImage("SUCCESS")
+ReadOnly Var EFL = ObtainImage("FAIL")
+ReadOnly Var UND = ObtainImage("UNDO")
+ReadOnly Var ICO = LoadNewImage("Script/Game/Spider/Icon.png","SPIDER_ICON")
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Var MNI = ObtainFont("MINI")
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")
 
 ReadOnly Int X_Score = Graphics.Width div 4
 ReadOnly Int X_Time  = X_Score * 3
@@ -68,6 +70,18 @@ ReadOnly Int X_Time  = X_Score * 3
 Int Hue = os.time()
 #endregion
 
+#Region Coordinates
+Int RowX(Int Row)
+	return math.floor(((Row*1.06)*SPI_CardSize.W)+(Row div 2))
+End
+
+Void RowMarkers()
+	For i=0,Rows-1
+		SetColor(100,100,100,100)
+		Rect(RowX(i),5,SPI_CardSize.W,SPI_CardSize.H)
+	End
+End
+#EndRegion
 
 
 #region "Game Variables"
@@ -78,19 +92,142 @@ Class SpiderCard
 	Int  X
 	Int  Y
 	Int  GoToX
-	Int  GoToY		
+	Int  GoToY
+	
+	Void Draw(NoAutoMove)
+		If !NoAutoMove
+			if X!=GotoX; X = X + math.ceil( (GotoX-X) / 10); End
+			if Y!=GotoY; Y = Y + math.ceil( (GotoY-Y) / 10); End
+			// If GotoX==0; print(self,X,Y," -> ",GotoX,GotoY,"Verschil",GotoX-X,GotoY-Y); End // DEBUG ONLY!			
+		End
+		If Visible
+			SPI_Card.DrawCard(X,Y,Card.CardSuit,Card.CardValue)
+		Else
+			SPI_Card.DrawBack(X,Y)
+		End
+		
+	End
+	
+	Constructor(_Card,Int _X,Int _Y,_GX,_GY,_Visible)
+		Card = _Card
+		X = _X
+		Y = _Y
+		GotoX = _GX || _X
+		GotoY = _GY || _Y
+		Visible = _Visible == true
+	End
 End
+
 
 Plua CardSize = Lua.Scyndi.Class.CardSize
 PLUA SPI_Deck
 plua SPI_CardSize = CardSize.FromW(Graphics.Width div (Rows+1))
+plua SPI_Card
 plua SPI_Row
+plua SPI_Packages
+plua SPI_Actions
+Int SPI_State = 0 // 0 = playing, 1 = won, 2 = lost
 Int SPI_Score
 Int SPI_Time
 Int SPI_CheckTime
 Bool SPI_TimeRuns
 #endregion
 
+
+#region "Actions stack for undo"
+Class PlayAct	
+	ReadOnly String ActCmd
+	ReadOnly Int NRow // new row
+	ReadOnly Int ORow // old row. This is for undo, so from new back to old
+	ReadOnly Int FromCard // Top Card to move back
+	ReadOnly Int ToCard // Bottom card to move back (likely unneeded, but key)
+	ReadOnly Table Cards // Check!
+	Constructor(String C,Int OldRow=5000, Int NewRow=0,Int _Cards=0) //,Int _FromCard=0)
+		ActCmd = C
+		SPI_TimeRuns=true
+		If OldRow<5000
+			ORow=OldRow
+			NRow=NewRow
+			FromCard=Len(SPI_Row[NRow])
+			ToCard=FromCard+_Cards
+			Cards={}
+			For i=Len(SPI_Row[NRow]-1)-_Cards,Len(SPI_Row[NRow]-1)
+				Cards[len(Cards)]=SPI_Row[NRow][i]
+			End
+		End
+	End
+	
+	Static Get Var Stack;Return SPI_Actions; End
+	Var Add(String C,Int OldRow=5000, Int NewRow=0,Int _Cards=0)
+		plua ret;ret = new PlayAct(C,OldRow,NewRow,_Cards)
+		Stack.Push(ret)
+		Return ret;
+	End
+End
+
+
+Void Deal()
+	Int CMod = 0
+	Int Idx = 0
+	SPI_Actions = new Stack()
+	SPI_Card = SPI_CardSize.Bind()	
+	SPI_Row = {}
+	For CI=0,6
+		For RI=0,Rows-1
+			If CI<BaseCardsInRow[RI]
+				SPI_Row[RI] = SPI_Row[RI] || {}
+				SPI_Row[RI][len(SPI_Row[RI])] = New SpiderCard(SPI_Deck[Idx],-CMod,Graphics.Height+CMod)
+				CMod = CMod + math.floor(SPI_CardSize.Height*1.5)
+				CSayF("Row %02d:%d -> Card #%03d -> %d:%02d",RI,CI,Idx,SPI_Deck[Idx].CardSuit,SPI_Deck[Idx].CardValue)
+				IDX++
+			End
+		End
+	End
+	SPI_Packages = {}
+	For I=1,Packages
+		SPI_Packages[I-1] = {}
+		For J=0,9
+			SPI_Packages[I-1][J] = New SpiderCard(SPI_Deck[Idx],-CMod,-CMod)
+			CSayF("Package %d:%d -> Card #%03d -> %d:%02d",I,J,Idx,SPI_Deck[Idx].CardSuit,SPI_Deck[Idx].CardValue)
+			Idx++
+		End
+	End
+End
+
+Void ShowCards()
+	Bool Hovering = False
+	For RI,RA in iPairs(SPI_Row)
+		Int GoY = 5
+		Int CntInvis = 0
+		For CI,CA in ipairs(RA)
+			if CA.Visible; GoY = math.ceil(GoY,20); End 
+			CA.GotoY = GoY;
+			CA.GotoX = RowX(RI)
+			//CSayF("Row #%d:%d - GotoCoords (%04d,%04d); Now is (%04d,%04d);",RI,CI,CA.GotoX,CA.GotoY,CA.X,CA.Y) // DEBUG ONLY!!!
+			CA.Draw()
+			CA.Visible = CA.Visible || CI==Len(RA)-1 // Top card always visible
+			if CA.Visible; GoY = GoY + 30; Else; CntInvis++; End
+		End
+		If (CntInvis>0)
+			MNI.Dark(sprintf("%d",CntInvis),RowX(RI),4)
+		End
+	End	
+	For PI,PA in iPairs(SPI_Packages)
+		For CI,CD in ipairs(PA)
+			CD.Visible=False
+			CD.Draw()
+			CD.GotoX=Graphics.Width-(10+(PI*10))
+			CD.GoToY=Graphics.Height-(60+(PI*3)+SPI_CardSize.H)
+			//CSayF("Package %d,%d: (%04d,%04d)",PI,CI,CD.X,CD.Y)
+		End
+	End
+	if (!Hovering) && MX>Graphics.Width-70 && MY>Graphics.Height-(60+18+SPI_CardSize.H) && MY<Graphics.Height-(60+18)
+		PPP.Strech(Graphics.Width-190,Graphics.Height-(78+120),120,120)
+		IF ML
+			CSay("Package opening not yet supported")
+		END
+	End
+End
 
 #region Configration
 plua SPI_Config = GINIE.Obtain("CONFIG::SPIDER")
@@ -112,21 +249,25 @@ Void ShowIcon()
 End
 #endregion
 
-Int RowX(Int Row)
-	return math.floor(((Row*1.06)*SPI_CardSize.W)+(Row div 2))
-End
-
-Void RowMarkers()
-	For i=0,Rows-1
-		SetColor(100,100,100,100)
-		Rect(RowX(i),5,SPI_CardSize.W,SPI_CardSize.H)
+Void UndoButton()
+	if SPI_State==1 || (!SPI_Actions.Value); Return; End
+	SetColor(255,255,255)
+	If MX<64 && MY>Graphics.height-64
+		SetColorHSV(Hue,1,1)
 	End
+	UND.Stretch(0,Graphics.Height-64,64,64)
 End
 
 Void ScoreAndTime()
 	SetColor(255,180,0,255)
 	ShowScore(SPI_Score,X_Score,Graphics.Height-30,2)
 	ShowTime(SPI_Time,X_Time,Graphics.Height-30,2)
+	If SPI_TimeRuns && SPI_CheckTime!=os.time()
+		if SPI_CheckTime!=0
+			SPI_Time++
+		End
+		SPI_CheckTime=os.time()
+	End
 End
 
 Global Bool GameFeatures_SaveExit_Allow(); Return False; End // TODO: Save Exit allow!
@@ -146,8 +287,7 @@ Global Void GameNew(String CShuffle="")
 			SPI_Deck = Deck.Shuffle("DECK_Spider",ShuffleMethod,1, 13, 2,4)
 		End
 	End
-	For RI=0,Rows-1
-	End
+	Deal()
 End
 
 Global Void MainFlow()
@@ -155,8 +295,10 @@ Global Void MainFlow()
 	SetColor(255,255,255,255)
 	DrawBackground()
 	RowMarkers()
+	ShowCards()
 	GameFeatures.Button()
 	ScoreAndTime()
+	UndoButton()
 	ShowIcon()
 	ShowMouse()
 End

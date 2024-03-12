@@ -21,17 +21,25 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.06
+// Version: 24.03.12
 // End License Information
 
 Module
 
 #use "Libs/SCI/Sys"
+#use "Libs/SCI/Graphics"
 
 #use "Script/Use/Gen/Config"
 
 Const Int Width  = 368
 Const Int Height = 500
+
+
+Get Int CardWidth;  Return Width; End
+Get Int CardHeight; Return Height; End
+
+plua _backsides
+
 
 Void _LoadC()
 	Sys.LoadNewState("SUB_CARD","Script/Subs/Sub_Card.lbc")
@@ -42,11 +50,20 @@ Void LoadDeckCards(string DeckFile)
 	Sys.Call("SUB_CARD","LoadDeckPics", DeckFile)
 End
 
+Get Var BackSide
+	string T;T = "BACKSIDE::"..Upper(Config.BackSide)
+	_backsides = _backsides || {}
+	_backsides[T] = _backsides[T] || LoadNewImage(Config.BackSide,T)
+	return _backsides[T]
+End
+
 // Draw Deck
 Class DDeck
 	ReadOnly Var Sz
 	ReadOnly String DeckFile
-	Constructor(_Sz,string _Deck)
+	ReadOnly String BackSideName
+	ReadOnly Var Back
+	Constructor(_Sz,string _Deck,string _BackSide = "" )
 		Sz=_Sz
 		If _Deck=="*"
 			DeckFile = Config.GlobDeck
@@ -54,6 +71,24 @@ Class DDeck
 			DeckFile = _Deck
 		End
 		LoadDeckCards(DeckFile)
+		If _BackSide!=""
+			BackSideName = _BackSide
+		Else
+			BackSideName = Config.BackSide
+		End
+		string T;T = "BACKSIDE::"..Upper(BackSideName)
+		Back = LoadNewImage(BackSideName,T)
+	End
+	
+	Void DrawBack(Int X, Int Y)
+		SetColor(255,255,255,255)
+		If !Back
+			SetColor(math.random(0,255),math.random(0,255),math.random(0,255))
+			Rect(X,Y,Sz.W,Sz.H)
+			SetColor(255,255,255,255)
+		Else
+			Back.Stretch(X,Y,Sz.W,Sz.H)
+		End
 	End
 	
 	Void DrawCard(Int X, Int Y,Int Suit, Int Value)
@@ -66,22 +101,27 @@ End
 Class CardSize
 	ReadOnly Int W
 	ReadOnly Int H
+	ReadOnly Var Me
+		
+	Get Int Height; Return Me.H; End
+	Get Int Width;  Return Me.W; End
 
 	Constructor (Int _W,Int _H)
 		W = _W
 		H = _H
+		Me = Self
 		CSayF("Card size record created %03dx%03d",_W,_H)
 	End
 
 	Static Var FromW(Int _W)
 		Int _H
-		_H = math.floor( Height * (_W / Width ) )
+		_H = math.floor( CardHeight * (_W / CardWidth ) )
 		Return New CardSize(_W,_H)
 	End
 
 	Static Var FromH(Int _H)
 		Int _W
-		_W = math.floor( Width * (_H / Height) )
+		_W = math.floor( CardWidth * (_H / CardHeight) )
 		Return New CardSize(_W,_H)
 	End
 	

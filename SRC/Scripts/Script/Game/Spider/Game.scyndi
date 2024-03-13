@@ -284,7 +284,7 @@ Void ShowCards()
 	Bool Hovering = False
 	Int HovR
 	Int HovC
-	SetAlpha(255)
+	SetColor(255,255,255,255)
 	For RI,RA in iPairs(SPI_Row)
 		Int GoY = 5
 		Int CntInvis = 0

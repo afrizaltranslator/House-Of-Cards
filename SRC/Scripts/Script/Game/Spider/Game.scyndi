@@ -29,6 +29,7 @@ Script
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/SGJCR"
+#use "Libs/SCI/Events"
 #use "Libs/SCI/Graphics"
 
 //#use "Libs/xMath"
@@ -73,7 +74,7 @@ Int Hue = os.time()
 
 #Region Coordinates
 Int RowX(Int Row)
-	return math.floor(((Row*1.06)*SPI_CardSize.W)+(Row div 2))
+	return 10+math.floor(((Row*1.06)*SPI_CardSize.W)+(Row div 2))
 End
 
 Void RowMarkers()
@@ -81,6 +82,7 @@ Void RowMarkers()
 		SetColor(100,100,100,100)
 		Rect(RowX(i),5,SPI_CardSize.W,SPI_CardSize.H)
 	End
+	SetAlpha(255)
 End
 #EndRegion
 
@@ -129,11 +131,86 @@ plua SPI_Card
 plua SPI_Row
 plua SPI_Packages
 plua SPI_Actions
+plua SPI_DragCards
+plua SPI_Cleared
 Int SPI_State = 0 // 0 = playing, 1 = won, 2 = lost
 Int SPI_Score
 Int SPI_Time
 Int SPI_CheckTime
 Bool SPI_TimeRuns
+
+Get Int StacksCleared
+	if !SPI_Cleared; return 0; end
+	Return len(SPI_Cleared)
+End
+
+Get Int HoverRow
+	For I,_ in pairs(SPI_Row)
+		If MX>RowX(I) && MX<RowX(I+1)
+			Return I
+		End
+	End
+	Return -1
+End
+
+Void CheckStackClear(int Row)
+	CSayF("Let's see if row #%d has a stack to be cleared or not!",Row)
+	plua chkr;chkr=SPI_Row[row]
+	If !chkr; CSayF("= Checking row #%d returned nil!"); Return; End
+	if len(chkr)<13; CSayF("= Only %d cards. Cannot have any stacks!",len(chkr)); Return; End; // When less than 13 cards we can be 100% sure there is no stack to be clear.
+	plua s;s = chkr[len(chkr)-1].Card.CardSuit
+	for i=1,13
+		int ci;ci = len(chkr)-i;
+		plua crd;crd=chkr[len(chkr)-i]
+		if !crd.visible; CSayF("= Card #%d/%d is not yet revealed",ci,len(chkr)); return; end
+		if crd.Card.CardValue!=i; CSayF("= Card #%d/%d has the wrong value (%2d!=%2d)",ci,len(chkr),crd.Card.CardValue,i); return; end
+		If crd.Card.CardSuit!=s; CSayF("= Card #%d/%d has the wrong suit (%2d!=%2d)",ci,len(chkr),crd.Card.CardSuit,s); return; end
+	End
+	CSay("= Clearing stack!") 
+	// If this point is reached the stack is surely ready to be cleared
+	plua CS = {}
+	SPI_Cleared[StacksCleared]=CS
+	SPI_Score = SPI_Score + 100 
+	If StacksCleared==8
+		SPI_State=1
+		SFX("COMPLETE")
+	Else
+		SFX("BONUS")
+	End
+	Int rl;rl=len(chkr)
+	For i=1,13
+		plua crd;crd=chkr[rl-i]
+		CS[len(CS)]=crd
+		chkr[rl-i]=nil
+	End
+End	
+	
+
+Get Bool Dragging
+	plua ret = Events.MouseDown(Events.MouseLeftButton) && SPI_DragCards!=nil
+	if (!Events.MouseDown(Events.MouseLeftButton)) && SPI_DragCards!=nil
+		Int Row = HoverRow; CSayF("Dragging to row #%d",Row); 
+		If Row<0
+			SPI_DragCards = nil
+			Return False
+		End			
+		Bool Ok;Ok = SPI_DragCards.Row!=Row && Row>=0
+		Bool REmpty;REmpty = !SPI_Row[Row][0] 
+		Ok = Ok && (REmpty || SPI_Row[Row][Len(SPI_Row[Row])-1].Card.CardValue==SPI_DragCards[0].Card.CardValue+1)
+		If Ok
+			For I,C in ipairs(SPI_DragCards)
+				// TODO: Log for undo (and score substraction)
+				SPI_Row[Row][len(SPI_Row[Row])]=C
+				SPI_Row[SPI_DragCards.Row][SPI_DragCards.Crd+I]=nil
+				SFX("SLIDE")
+			End
+			CheckStackClear(Row)
+		End
+		SPI_DragCards = nil 
+	End
+	Return Ret
+End
+			
 #endregion
 
 
@@ -145,6 +222,8 @@ Class PlayAct
 	ReadOnly Int FromCard // Top Card to move back
 	ReadOnly Int ToCard // Bottom card to move back (likely unneeded, but key)
 	ReadOnly Table Cards // Check!
+	ReadOnly Int ORowHidden=0
+	ReadOnly Int Cleared=0
 	Constructor(String C,Int OldRow=5000, Int NewRow=0,Int _Cards=0) //,Int _FromCard=0)
 		ActCmd = C
 		SPI_TimeRuns=true
@@ -154,6 +233,9 @@ Class PlayAct
 			FromCard=Len(SPI_Row[NRow])
 			ToCard=FromCard+_Cards
 			Cards={}
+			For i,C in ipairs(SPI_Row[NROW])
+				If !C.Visible;ORowHidden=math.max(ORowHidden,i);End
+			End
 			For i=Len(SPI_Row[NRow]-1)-_Cards,Len(SPI_Row[NRow]-1)
 				Cards[len(Cards)]=SPI_Row[NRow][i]
 			End
@@ -200,22 +282,48 @@ End
 
 Void ShowCards()
 	Bool Hovering = False
+	Int HovR
+	Int HovC
+	SetAlpha(255)
 	For RI,RA in iPairs(SPI_Row)
 		Int GoY = 5
 		Int CntInvis = 0
 		For CI,CA in ipairs(RA)
-			if CA.Visible; GoY = math.ceil(GoY,25); End 
-			CA.GotoY = GoY;
-			CA.GotoX = RowX(RI)
-			//CSayF("Row #%d:%d - GotoCoords (%04d,%04d); Now is (%04d,%04d);",RI,CI,CA.GotoX,CA.GotoY,CA.X,CA.Y) // DEBUG ONLY!!!
+			if CA.Visible; GoY = math.max(GoY,25); End
+			if (!Dragging)
+				CA.GotoY = GoY;
+				CA.GotoX = RowX(RI)			
+				//CSayF("Row #%d:%d - GotoCoords (%04d,%04d); Now is (%04d,%04d);",RI,CI,CA.GotoX,CA.GotoY,CA.X,CA.Y) // DEBUG ONLY!!!
+				CA.Visible = CA.Visible || CI==Len(RA)-1 // Top card always visible
+			End
 			CA.Draw()
-			CA.Visible = CA.Visible || CI==Len(RA)-1 // Top card always visible
 			if CA.Visible; GoY = GoY + 30; Else; CntInvis++; End
+			if (!Dragging) && CA.Visible && ((!RA[CI+1]) || (RA[CI+1].Card.CardValue==CA.Card.CardValue-1 && RA[CI+1].Card.CardSuit==CA.Card.CardSuit)) && MX>CA.X && MY>CA.Y && MX<CA.X+SPI_CardSize.W && MY<CA.Y+SPI_CardSize.H				
+				Hovering = true
+				HovR=RI
+				HovC=CI
+			End
 		End
 		If (CntInvis>0)
 			MNI.Dark(sprintf("%d",CntInvis),RowX(RI),4)
 		End
-	End	
+	End
+	If Hovering
+		plua RA;RA=SPI_Row[HovR]
+		plua HC;HC=SPI_Row[HovR][HovC]
+		if (HC)
+			PPP.Stretch(HC.X-100,HC.Y-100,100,100)
+			If Events.MouseDown(Events.MouseLeftButton)
+				SPI_DragCards = {}
+				SPI_DragCards.Row = HovR
+				SPI_DragCards.Crd = HovC
+				For RII = HovC,Len(RA)-1
+					SPI_DragCards[len(SPI_DragCards)]=RA[RII]
+				End
+			End
+		End
+	End
+
 	For PI,PA in iPairs(SPI_Packages)
 		For CI,CD in ipairs(PA)
 			CD.Visible=False
@@ -225,7 +333,7 @@ Void ShowCards()
 			//CSayF("Package %d,%d: (%04d,%04d)",PI,CI,CD.X,CD.Y)
 		End
 	End
-	if (!Hovering) && MX>Graphics.Width-70 && MY>Graphics.Height-(60+18+SPI_CardSize.H) && MY<Graphics.Height-(60+18) && SPI_Packages[0]
+	if (!Hovering) && (!Dragging) && MX>Graphics.Width-70 && MY>Graphics.Height-(60+18+SPI_CardSize.H) && MY<Graphics.Height-(60+18) && SPI_Packages[0]
 		PPP.Stretch(Graphics.Width-190,Graphics.Height-(198+SPI_CardSize.H),120,120)
 		IF ML
 			Bool Allow = True
@@ -240,11 +348,29 @@ Void ShowCards()
 				int PI;PI = Len(SPI_Packages)-1
 				For CI,CD in ipairs(SPI_Packages[PI])
 					SPI_Row[CI][Len(SPI_Row[CI])]=CD
+					CheckStackClear(CI)
 				End
 				SFX("SLIDE")
 				SPI_Packages[PI]=nil
 			End
 		END
+	End
+	For SI,SC in ipairs(SPI_Cleared)
+		For CI,CC in ipairs(SC)
+			CC.GoToX=64+(SI*10)
+			CC.GoToY=Graphics.Height-64
+			CC.Visible=true
+			CC.Draw()
+		End
+	End
+	If Dragging
+		For DI,DC in ipairs(SPI_DragCards)
+			DC.GoToX = MX - (SPI_CardSize.W div 2)
+			DC.GoToY = (MY-5)+(DI*35)
+			DC.X=DC.GotoX
+			DC.Y=DC.GotoY
+			//MNI.Text(sprintf("DRAGGING: Mouse(%d,%d); Card #%d/%d: (%d,%d)->(%d,%d)",MX,MY,DI,len(SPI_DragCards),DC.GoToX,DC.GoToY,DC.X,DC.Y),MX,MY-(12*DI),2,1)
+		End
 	End
 End
 
@@ -268,11 +394,37 @@ Void ShowIcon()
 End
 #endregion
 
+Void UndoError(string Msg)
+	CSayF("UNDO ERROR> %s",MSG)
+	Sys.Annoy(sprintf("UNDO ERROR\n\n%s\n\nThis is likely due to a bug in the Spider script\n\nYou may go on, but expect odd behavior.\n\nFor safety reasons the action stack has been emptied!\n\nPlease report this on my issue tracker (if it wasn't reported before)",Msg))	
+	SPI_Actions.Clear()
+End
+
 Void UndoButton()
 	if SPI_State==1 || (!SPI_Actions.Value); Return; End
 	SetColor(255,255,255)
 	If MX<64 && MY>Graphics.height-64
 		SetColorHSV(Hue,1,1)
+		If ML
+			SPI_Score--
+			plua Act = SPI_Actions.Pop()
+			Switch Act.ActCmd
+			Case "GetPackage"
+				plua PKG = {}
+				for RI,RA in ipairs(SPI_Row)
+					PKG[Len(PKG)]=RA[Len(RA)-1]
+					RA[Len(RA)-1]=nil
+				End
+				SPI_Packages[Len(SPI_Packages)]=PKG
+			Case "KMA"
+				UndoError("Kiss My Ass!")
+				Return
+			Default
+				UndoError("Unknown undo action: "..Act.ActCmd)
+				Return
+			End
+			CSay("Undo not yet supported")
+		End
 	End
 	UND.Stretch(0,Graphics.Height-64,64,64)
 End
@@ -293,6 +445,7 @@ Global Bool GameFeatures_SaveExit_Allow(); Return False; End // TODO: Save Exit 
 
 Global Void GameNew(String CShuffle="")
 	SPI_Score = 500
+	SPI_Cleared = {}
 	GameFeatures.ShuffleTag="DECK_Spider"
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")

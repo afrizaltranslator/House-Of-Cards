@@ -4,3 +4,11 @@
 
 
  [Check it out on itch.io](https://phantasar-productions.itch.io/house-of-cards)
+
+
+## Supported games
+
+The current version of House of Cards supports the following games.
+(The links will lead you to a video in which I explain the rules of that game)
+
+- [King's Cornners](https://rumble.com/v4j9llu-how-to-play-kings-corners.html)

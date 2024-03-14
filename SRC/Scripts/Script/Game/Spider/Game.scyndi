@@ -209,9 +209,9 @@ Get Bool Dragging
 			For I,C in ipairs(SPI_DragCards)
 				// TODO: Log for undo (and score substraction)
 				SPI_Row[Row][len(SPI_Row[Row])]=C
-				SPI_Row[SPI_DragCards.Row][SPI_DragCards.Crd+I]=nil
-				SFX("SLIDE")
+				SPI_Row[SPI_DragCards.Row][SPI_DragCards.Crd+I]=nil				
 			End
+			SFX("SLIDE")
 			CheckStackClear(Row)
 		End
 		SPI_DragCards = nil 

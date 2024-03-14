@@ -12,3 +12,4 @@ The current version of House of Cards supports the following games.
 (The links will lead you to a video in which I explain the rules of that game)
 
 - [King's Cornners](https://rumble.com/v4j9llu-how-to-play-kings-corners.html)
+- [Pyramid](https://rumble.com/v4j9mwk-how-to-play-pyramid.html)

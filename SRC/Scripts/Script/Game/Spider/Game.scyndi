@@ -363,11 +363,20 @@ Void ShowCards()
 		END
 	End
 	For SI,SC in ipairs(SPI_Cleared)
-		For CI,CC in ipairs(SC)
-			CC.GoToX=64+(SI*10)
-			CC.GoToY=Graphics.Height-64
-			CC.Visible=true
-			CC.Draw()
+		If SC.Quick && SC[12]
+			SC[12].Draw()
+		Else
+			SC.Quick = true
+			For CI,CC in ipairs(SC)
+				CC.GoToX=64+(SI*10)
+				CC.GoToY=Graphics.Height-64
+				CC.Visible=true
+				CC.Draw()
+				SC.Quick = SC.Quick && CC.X==CC.GotoX && CC.Y==CC.GotoY
+				IF SC.Quick
+					CSayF("Clear stack #%d should only show the king now.",SI)
+				End
+			End
 		End
 	End
 	If Dragging

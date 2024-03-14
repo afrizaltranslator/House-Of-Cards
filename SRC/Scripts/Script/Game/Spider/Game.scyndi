@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.13
+// Version: 24.03.14
 // End License Information
 
 Script
@@ -441,6 +441,22 @@ Void ScoreAndTime()
 	End
 End
 
+Void VictoryState()
+	If SPI_State!=1
+		Return
+	End
+	SPI_TimeRuns = False
+	SetColor(255,255,255,255)
+	ESC.Draw(Graphics.Width div 2, Graphics.Height div 2)	
+	If MY > Graphics.Height - 64 && MX > (Graphics.Width div 2) - 32 && MX < (Graphics.Width div 2) + 32
+		SetColorHSV(hue,1,1)
+		If ML
+			Sys.CurrentFlow="SELECTGAME"
+		End
+	End
+	Oke.Stretch((Graphics.Width div 2)-32,Graphics.Height - 64,64,64)
+End
+
 Global Bool GameFeatures_SaveExit_Allow(); Return False; End // TODO: Save Exit allow!
 
 Global Void GameNew(String CShuffle="")
@@ -471,6 +487,7 @@ Global Void MainFlow()
 	GameFeatures.Button()
 	ScoreAndTime()
 	UndoButton()
+	VictoryState()
 	ShowIcon()
 	ShowMouse()
 End

@@ -205,6 +205,7 @@ Get Bool Dragging
 		Bool REmpty;REmpty = !SPI_Row[Row][0] 
 		Ok = Ok && (REmpty || SPI_Row[Row][Len(SPI_Row[Row])-1].Card.CardValue==SPI_DragCards[0].Card.CardValue+1)
 		If Ok
+			PlayAct.Add("Drag",SPI_DragCards.Row,Row,Len(SPI_DragCards))
 			For I,C in ipairs(SPI_DragCards)
 				// TODO: Log for undo (and score substraction)
 				SPI_Row[Row][len(SPI_Row[Row])]=C
@@ -243,7 +244,7 @@ Class PlayAct
 			For i,C in ipairs(SPI_Row[NROW])
 				If !C.Visible;ORowHidden=math.max(ORowHidden,i);End
 			End
-			For i=Len(SPI_Row[NRow]-1)-_Cards,Len(SPI_Row[NRow]-1)
+			For i=(Len(SPI_Row[NRow])-1)-_Cards,Len(SPI_Row[NRow])-1
 				Cards[len(Cards)]=SPI_Row[NRow][i]
 			End
 		End

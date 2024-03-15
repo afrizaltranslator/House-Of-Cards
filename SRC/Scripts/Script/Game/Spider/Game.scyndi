@@ -22,6 +22,7 @@
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
 // Version: 24.03.14
+// Version: 24.03.15
 // End License Information
 
 Script
@@ -510,8 +511,10 @@ End
 Global Bool GameFeatures_SaveExit_Allow(); Return False; End // TODO: Save Exit allow!
 
 Global Void GameNew(String CShuffle="")
+	SPI_Config.Value("Result","Played",SPI_Config.IntValue("Result","Played")+1)
 	SPI_Score = 500
 	SPI_Cleared = {}
+	SPI_State=0
 	GameFeatures.ShuffleTag="DECK_Spider"
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")

@@ -230,20 +230,24 @@ Class PlayAct
 	ReadOnly Int FromCard // Top Card to move back
 	ReadOnly Int ToCard // Bottom card to move back (likely unneeded, but key)
 	ReadOnly Table Cards // Check!
+	ReadOnly Int NumCards
 	ReadOnly Int ORowHidden=0
 	ReadOnly Int Cleared=0
 	Constructor(String C,Int OldRow=5000, Int NewRow=0,Int _Cards=0) //,Int _FromCard=0)
+		CSayF("Undo data for %s",C)
 		ActCmd = C
 		SPI_TimeRuns=true
-		If OldRow<5000
+		If OldRow<5000			
 			ORow=OldRow
 			NRow=NewRow
 			FromCard=Len(SPI_Row[NRow])
 			ToCard=FromCard+_Cards
+			NumCards=_Cards
 			Cards={}
-			For i,C in ipairs(SPI_Row[NROW])
+			For i,C in ipairs(SPI_Row[OROW])
 				If !C.Visible;ORowHidden=math.max(ORowHidden,i);End
 			End
+			CSayF("= Hidden cards before move: %d (So up to position #%d)",ORowHidden+1,ORowHidden)
 			For i=(Len(SPI_Row[NRow])-1)-_Cards,Len(SPI_Row[NRow])-1
 				Cards[len(Cards)]=SPI_Row[NRow][i]
 			End
@@ -306,10 +310,20 @@ Void ShowCards()
 			End
 			CA.Draw()
 			if CA.Visible; GoY = GoY + 30; Else; CntInvis++; End
-			if (!Dragging) && CA.Visible && ((!RA[CI+1]) || (RA[CI+1].Card.CardValue==CA.Card.CardValue-1 && RA[CI+1].Card.CardSuit==CA.Card.CardSuit)) && MX>CA.X && MY>CA.Y && MX<CA.X+SPI_CardSize.W && MY<CA.Y+SPI_CardSize.H				
-				Hovering = true
-				HovR=RI
-				HovC=CI
+			if (!Dragging) && CA.Visible && MX>CA.X && MY>CA.Y && MX<CA.X+SPI_CardSize.W && MY<CA.Y+SPI_CardSize.H
+				//((!RA[CI+1]) || (RA[CI+1].Card.CardValue==CA.Card.CardValue-1 && RA[CI+1].Card.CardSuit==CA.Card.CardSuit))
+				Int Chk;Chk=CI+1
+				Bool Ok=true
+				While RA[Chk]
+					//CSayF("Checking %d -> %d     Value:%d->%d",Chk-1,Chk,RA[Chk-1].Card.CardValue,RA[Chk].Card.CardValue+1)
+					Ok = Ok && (RA[Chk-1].Card.CardValue==RA[Chk].Card.CardValue+1 && RA[Chk].Card.CardSuit==CA.Card.CardSuit)
+					Chk++
+				End
+				if Ok
+					Hovering = true
+					HovR=RI
+					HovC=CI
+				End
 			End
 		End
 		If (CntInvis>0)
@@ -433,6 +447,25 @@ Void UndoButton()
 					RA[Len(RA)-1]=nil
 				End
 				SPI_Packages[Len(SPI_Packages)]=PKG
+			Case "Drag"
+				CSay("Undo: Drag")
+				plua UDC = new Stack()
+				plua NRow;NRow = SPI_Row[Act.NRow]
+				plua ORow;ORow = SPI_Row[Act.ORow]
+				int n;n = Len(SPI_Row[Act.NRow])
+				For i=0,Act.ORowHidden
+					CSayF("= Hide %d::%d (%d) (Len:%d)",Act.ORow,i,Act.ORowHidden,len(ORow))
+					ORow[i].Visible=False
+				End
+				For i=1,Act.NumCards
+					CSayF("= Pushing card %d/%d in row #%d for undo! (%d:%02d)",i,n,Act.ORow,NRow[n-i].Card.CardSuit,NRow[n-i].Card.CardValue)
+					UDC.push(NRow[n-i])
+					NRow[n-i] = nil
+				End
+				While UDC.Have
+					plua Crd;Crd=UDC.Pop()
+					ORow[Len(ORow)]=Crd
+				End
 			Case "KMA"
 				UndoError("Kiss My Ass!")
 				Return

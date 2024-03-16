@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.10
+// Version: 24.03.16
 // End License Information
 
 Script
@@ -40,6 +40,7 @@ Script
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 
+ReadOnly Var Mini = ObtainFont("MINI")
 
 String SaveFile
 Bool SaveFound
@@ -139,8 +140,20 @@ Class GameRecord
 	ReadOnly Table ConfigItems
 	ReadOnly Var Config
 	Static Delegate ASC = Lua.string.byte
+	ReadOnly Var Me
+	
+	Get String DevStage
+		String Ret;Ret = Me.Raw.Value("Development","Status")
+		if Ret==""; Return "WIP"; End
+		Return Ret
+	End
+	
+	Get Bool DebugOnly
+		Return Upper(Raw.Value("Development","Ready"))!="YES"
+	End
 		
 	Constructor(string GID)
+		Me = Self
 		CSayF("Creating Game Data Record: %s",GID)
 		ID = Upper(GID)
 		TID = ""
@@ -242,7 +255,22 @@ Global Void MainFlow()
 	SetColor(255,255,255)
 	DrawBackground()
 	GameRecord.Current.Banner.Draw(Graphics.Width div 2,20)
-	
+	If GameRecord.Current.DevStage=="WIP"
+		SetColor(100,100,100)
+		// Slow, but should normally not be visible for regular players anyway
+		For i,n in pairs{"Warning!","This game is still a work in progress.","Don't expect it to work properly","(If it works at all)"}
+			Mini.Dark(n,Graphics.Width div 2,(Graphics.height div 2) + i*20,2)
+		End
+	ElIf Upper(GameRecord.Current.DevStage)!="STABLE"
+		Mini.Dark("Development Status: "..GameRecord.Current.DevStage,Graphics.Width div 2,(Graphics.height div 2),2,2)
+	End
+	If GameRecord.Current.DebugOnly
+		If !Sys.DebugBuild
+			Sys.Annoy("I am very sorry, but this particular game\nis still in a too premture state\nof development.\n\nPlease wait for a later version\n\nof \"House of Cards\".")
+			Sys.CurrentFlow="SELECTGAME"
+		End
+		Mini.Dark("DEBUG ONLY!",Graphics.Width div 2,(Graphics.height)-90,2,1)
+	End	
 	// Config settings
 	For i,v in ipairs(GameRecord.Current.ConfigItems)
 		Int PY; PY = i - ScrollY

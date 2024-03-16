@@ -239,7 +239,7 @@ Global Void AcceptGame(String GID)
 	CSayF("Game Starter now uses Game ID: %s",GID)
 	GameRecord.Current = GameData[GID]
 	SaveFile = sprintf("House Of Cards.SaveGame.%s.jcr",GID)
-	SaveFound = SGJCR.Exists(SaveFile)
+	SaveFound = SGJCR.Exists(SaveFile)	
 	CSayF("= Save game '%s' found -> %s",SaveFile,SaveFound)
 End
 

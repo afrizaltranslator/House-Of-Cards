@@ -26,9 +26,11 @@
 Script
 
 #use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
 #use "Libs/XMath"
+#use "Libs/Stacker"
 
 #use "Script/Use/Lnk/Deck"
 #use "Script/Use/Lnk/Card"
@@ -41,23 +43,34 @@ Script
 
 
 plua KLO_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
+plua KLO_Card
 plua KLO_Draw
 plua KLO_Disc // Not the right word but by lack of a better term
 plua KLO_Clear
+plua KLO_RowNodes
 plua KLO_Row
+plua KLO_Deck
+plua KLO_DrawPile
+Plua KLO_DiscPile
+plua KLO_Config = GINIE.Obtain("CONFIG::KLONDIKE")
+plua KLO_Icon = LoadNewImage("Script/Game/Klondike/Klondike.png","KLONDIKE_ICON")
+
 int hue = os.time()
 
 Class CardNode
+	Static Int Num
 	Static Number Deg = os.time() % 360
 	Static Var First
 	Static Var Last
 	Var Next
+	ReadOnly Int ID
 	ReadOnly Int X
 	ReadOnly Int Y
 		
 	Void Draw()
-		Deg = Deg + 0.1
-		SetAlpha(XMath.Sin(Deg))
+		Deg = Deg + 0.01
+		SetColor(100,100,100)
+		SetAlpha(math.floor(math.abs(XMath.Sin(Deg+(ID*10))*255)))
 		Rect(X,Y,KLO_CardSize.W,KLO_CardSize.H)
 	End
 	
@@ -65,9 +78,11 @@ Class CardNode
 		For c in Each_Chain(First)
 			c.Draw()
 		End
+		SetAlpha(255)
 	End
 		
 	Constructor(Int _X,Int _Y)
+		ID = Num;Num++
 		First = First || Self
 		if (Last); Last.Next = Self; End
 		Last = Self
@@ -85,16 +100,10 @@ Class KlondikeCard
 	Int Y
 	Get Int W;Return KLO_CardSize.W; End
 	Get Int H;Return KLO_CardSize.H; End
+	Bool Visible = False
 	Var Card
 	
 	Void Go(V1,V2,V3)
-		switch math.rand(1,4)
-			case 1; X = graphics.width +math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
-			case 2; X =                -math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
-			case 3; Y = graphics.height+math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
-			case 4; Y =                -math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
-			default; X = -1000; Y=-1000 // Cash prevention. This is only cosmetic after all!
-		end
 		switch(lua.type(V1))
 			case "table";  GotoX = V1.X + (V2 || 0); GotoY = V1.Y + (V3 || 0);
 			case "number"; GotoX = V1; GotoY=V2
@@ -103,33 +112,109 @@ Class KlondikeCard
 		end
 	End
 	
+	Void Draw()
+		if X>GoToX; X = x - math.max(1,math.abs(X-GotoX) div 10); End
+		if Y>GoToY; Y = Y - math.max(1,math.abs(Y-GotoY) div 10); End
+		if X<GoToX; X = x + math.max(1,math.abs(GotoX-X) div 10); End
+		if Y<GoToY; Y = Y + math.max(1,math.abs(GotoY-Y) div 10); End
+		If Visible
+			KLO_Card.DrawCard(X,Y,Card.CardSuit,Card.CardValue)
+		Else
+			KLO_Card.DrawBack(X,Y)
+		End	
+	End
+	
 	Constructor(V1,V2,V3)
+		switch math.random(1,4)
+			case 1; X = graphics.width +math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
+			case 2; X =                -math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
+			case 3; Y = graphics.height+math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
+			case 4; Y =                -math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
+			default; X = -1000; Y=-1000 // Cash prevention. This is only cosmetic after all!
+		end
 		Self.Go(V1,V2,V3)
 	End
 End
 
 Init
+	KLO_Card = KLO_CardSize.Bind()
+
+	// Piles
 	KLO_Draw = new CardNode(5,5)
-	KLO_Disc = new CardNode(5,10+KLO_CardSize.W)
+	KLO_Disc = new CardNode(10+KLO_CardSize.W,5)
+	
+	// Cleared
 	KLO_Clear = {}
-	KLO_Clear[0] = New CardNode( 5               ,Graphics.Width-math.floor(KLO_CardSize.H * 2.5))
-	KLO_Clear[1] = New CardNode(10+KLO_CardSize.W,Graphics.Width-math.floor(KLO_CardSize.H * 2.5))
-	KLO_Clear[3] = New CardNode( 5               ,Graphics.Width-math.floor(KLO_CardSize.H * 1.25))
-	KLO_Clear[4] = New CardNode(10+KLO_CardSize.W,Graphics.Width-math.floor(KLO_CardSize.H * 1.25))
-	KLO_Row = {}
+	KLO_Clear[0] = New CardNode( 5               ,Graphics.Height-math.floor(KLO_CardSize.H * 2.5))
+	KLO_Clear[1] = New CardNode(10+KLO_CardSize.W,Graphics.Height-math.floor(KLO_CardSize.H * 2.5))
+	KLO_Clear[2] = New CardNode( 5               ,Graphics.Height-math.floor(KLO_CardSize.H * 1.25))
+	KLO_Clear[3] = New CardNode(10+KLO_CardSize.W,Graphics.Height-math.floor(KLO_CardSize.H * 1.25))
+	KLO_RowNodes = {}
 	For i=0,6
 		int x
-		x = Graphics.Width- ((KLO_CardSize.W*1.5)*(6-i))
-		KLO_Row[i] = New CardNode(x,5)
+		x = Graphics.Width- ((KLO_CardSize.W*1.25)*(7-i))
+		KLO_RowNodes[i] = New CardNode(x,5)
+	End
+End
+
+Void Deal()
+	int dp=0
+	KLO_Row = {}
+	For i2=0,6		
+		For i1=i2,6
+			KLO_Row[i1] = KLO_Row[i1] || {}
+			CSayF("Dealing card on row %d:%d",i1,i2)
+			plua crd;crd = new KlondikeCard(KLO_RowNodes[i1])
+			KLO_Row[i1][i2] = crd
+			crd.Card = KLO_Deck[dp]
+			dp++
+		End
+	End
+	KLO_DrawPile = New Stack()
+	KLO_DiscPile = New Stack()
+	For i=51,dp,-1
+		plua crd;crd = new KlondikeCard(KLO_Draw)
+		crd.Card = KLO_deck[i]
+		KLO_DrawPile.Push(crd)
+	End
+End
+
+Void DrawCards()
+	SetColor(255,255,255,255)
+	For ri,ra in pairs(KLO_Row)
+		int mody=0
+		For ci,ca in ipairs(ra)
+			ca.Go(KLO_RowNodes[ri],0,mody)
+			ca.Visible = ca.Visible || ci==len(ra)-1
+			ca.Draw()
+			If ca.Visible
+				Mody=Mody+31
+			Else
+				Mody=Mody+5
+			End
+		End
+	End
+	If KLO_DrawPile.Have
+		KLO_Card.DrawBack(KLO_Draw.X,KLO_Draw.Y)
 	End
 End
 	
-Global Void GameNew()
+Global Void GameNew(String CShuffle="")
+	GameFeatures.ShuffleTag="DECK_Klondike"
+	If CShuffle!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else
+		Klo_Deck = Deck.Shuffle("DECK_KLONDIKE",KLO_Config.Value("Shuffle","Shuffle"))
+	End
+	Deal()
 End
 
 Global Void MainFlow()
 	hue = (hue+1)%360
 	SetColor(255,255,255,255)
 	DrawBackground()
+	CardNode.DrawAll()
+	DrawCards()
+	KLO_Icon.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
 	ShowMouse()
 End

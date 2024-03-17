@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.12
+// Version: 24.03.17
 // End License Information
 
 Script
@@ -394,12 +394,55 @@ Global Void GameFeatures_SaveExit_Action()
 		End
 		NOut=Nout .. "\n"
 	End
+	NOut=NOut..sprintf("\n\n[Gen]\nScore=%d\nRest=%d\n\n",Pyr_Score,Pyr_ResetPile)
 	SG.Text["Nodes.ini"] = NOut
 	CSay("= Saving")
 	SG.Save()
 	CSay("= Done")
 	CSay("= Leaving")
 	Sys.CurrentFlow="SELECTGAME"
+End
+
+Global Void GameContinue()
+	GameFeatures.ShuffleTag="DECK_Pyramid"
+	CSay("Loading savegame")
+	plua SG = SGJCR.Create("LOAD:PYRAMID")
+	SG.Assign("House Of Cards.SaveGame.PYRAMID.jcr")
+	SG.Load()
+	CSay("= Shuffle")
+	Pyr_Card = Pyr_CardSize.Bind()
+	State = 0
+	Pyr_Deck = Deck.ShuffleIn("DECK_PYRAMID",SG.Text["Shuffle.ini"])
+	plua nodesdata;nodesdata = GINIE.Parse(SG.Text["Nodes.ini"],"NODES_TO_LOAD_FOR_PYARAMID")
+	//printf("-- NODES.INI --\n%s\n-- END NODES.INI --\n",SG.Text["Nodes.ini"])
+	CSay("= Nodes")
+	For ri=0,6
+		For ni=0,ri
+			plua cnode;cnode = PyrRow.Row[ri].Nodes[ni]
+			string ntag;ntag = sprintf("Node %d::%d",ri,ni)
+			//CSayF("  = Node %d:%d -> Has Card: ",ri,ni,nodesdata.value(ntag,"Card"))
+			If Upper(nodesdata.value(ntag,"Card"))=="YES"
+				cnode.card = new DeckCard(nodesdata.intvalue(ntag,"suit"),nodesdata.intvalue(ntag,"value"))
+				CSayF("  = Node %d:%d -> %s",ri,ni,card)
+			Else
+				cnode.card=nil
+			End
+		End
+	End
+	CSay("= Stacks")
+	Pyr_Draw = New Stack()
+	Pyr_Discard = New Stack()
+	For ktag,kstack in pairs { ["Draw"]=Pyr_Draw,["Discard"]=Pyr_Discard }		
+		int sl;sl = nodesdata.intvalue(ktag,"Count")
+		kstack.clear()
+		For i=sl-1,0,-1
+			kstack.push(New DeckCard(nodesdata.intvalue(ktag,sprintf("STACK%02dS",i)),nodesdata.intvalue(ktag,sprintf("STACK%02dV",i))))
+		End
+	End
+	Pyr_Score     = nodesdata.intvalue("gen","score")
+	Pyr_ResetPile = nodesdata.intvalue("gen","reset")
+	// TODO: Actions for Undo
+	CSay("= Complete")
 End
 
 Global Void GameNew(String CShuffle="")

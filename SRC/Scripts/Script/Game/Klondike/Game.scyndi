@@ -1,0 +1,129 @@
+// License Information:
+// House Of Cards
+// Klondike Script
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.17
+// End License Information
+Script
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/XMath"
+
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+
+
+plua KLO_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
+plua KLO_Draw
+plua KLO_Disc // Not the right word but by lack of a better term
+plua KLO_Clear
+plua KLO_Row
+int hue = os.time()
+
+Class CardNode
+	Static Number Deg = os.time() % 360
+	Static Var First
+	Static Var Last
+	Var Next
+	ReadOnly Int X
+	ReadOnly Int Y
+		
+	Void Draw()
+		Deg = Deg + 0.1
+		SetAlpha(XMath.Sin(Deg))
+		Rect(X,Y,KLO_CardSize.W,KLO_CardSize.H)
+	End
+	
+	Static Void DrawAll()
+		For c in Each_Chain(First)
+			c.Draw()
+		End
+	End
+		
+	Constructor(Int _X,Int _Y)
+		First = First || Self
+		if (Last); Last.Next = Self; End
+		Last = Self
+		X = _X
+		Y = _Y
+		CSayF("Card Node created at (%04d, %04d)",X,Y)
+	End
+End
+
+
+Class KlondikeCard
+	Int GoToX
+	Int GoToY
+	Int X
+	Int Y
+	Get Int W;Return KLO_CardSize.W; End
+	Get Int H;Return KLO_CardSize.H; End
+	Var Card
+	
+	Void Go(V1,V2,V3)
+		switch math.rand(1,4)
+			case 1; X = graphics.width +math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
+			case 2; X =                -math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
+			case 3; Y = graphics.height+math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
+			case 4; Y =                -math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
+			default; X = -1000; Y=-1000 // Cash prevention. This is only cosmetic after all!
+		end
+		switch(lua.type(V1))
+			case "table";  GotoX = V1.X + (V2 || 0); GotoY = V1.Y + (V3 || 0);
+			case "number"; GotoX = V1; GotoY=V2
+			case "nil";
+			default; Lua.error("Illegal card constructor") 
+		end
+	End
+	
+	Constructor(V1,V2,V3)
+		Self.Go(V1,V2,V3)
+	End
+End
+
+Init
+	KLO_Draw = new CardNode(5,5)
+	KLO_Disc = new CardNode(5,10+KLO_CardSize.W)
+	KLO_Clear = {}
+	KLO_Clear[0] = New CardNode( 5               ,Graphics.Width-math.floor(KLO_CardSize.H * 2.5))
+	KLO_Clear[1] = New CardNode(10+KLO_CardSize.W,Graphics.Width-math.floor(KLO_CardSize.H * 2.5))
+	KLO_Clear[3] = New CardNode( 5               ,Graphics.Width-math.floor(KLO_CardSize.H * 1.25))
+	KLO_Clear[4] = New CardNode(10+KLO_CardSize.W,Graphics.Width-math.floor(KLO_CardSize.H * 1.25))
+	KLO_Row = {}
+	For i=0,6
+		int x
+		x = Graphics.Width- ((KLO_CardSize.W*1.5)*(6-i))
+		KLO_Row[i] = New CardNode(x,5)
+	End
+End
+	
+Global Void GameNew()
+End
+
+Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	ShowMouse()
+End

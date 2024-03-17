@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.15
+// Version: 24.03.17
 // End License Information
 
 Script
@@ -507,7 +507,7 @@ Void VictoryState()
 	Oke.Stretch((Graphics.Width div 2)-32,Graphics.Height - 64,64,64)
 End
 
-Global Bool GameFeatures_SaveExit_Allow(); Return False; End // TODO: Save Exit allow!
+Global Bool GameFeatures_SaveExit_Allow(); Return SPI_State==0; End
 
 Global Void GameNew(String CShuffle="")
 	SPI_Config.Value("Result","Played",SPI_Config.IntValue("Result","Played")+1)
@@ -528,6 +528,119 @@ Global Void GameNew(String CShuffle="")
 		End
 	End
 	Deal()
+End
+
+Global Void GameFeatures_SaveExit_Action()
+	plua SG;
+	plua SG = SGJCR.Create("SAVE:SPIDER")
+	SG.Assign("House Of Cards.SaveGame.SPIDER.jcr")
+	SG.Clear()	
+	CSay("= General"); SG.Text["General.ini"] = sprintf("[Check]\nEngine=Scyndi's Creative Interpreter\nProject=House Of Cards\nGame=Spider\n\n[Data]\nScore=%d\nTime=%d\n\n\n",SPI_Score,SPI_Time)
+	
+	CSay("= Table")
+	string Tafel = "# The cards on the table\n\n"
+	For ri,ra in ipairs(SPI_Row)
+		Tafel = Tafel .. sprintf("[Row %d]\nCnt=%d\n",ri,len(ra))
+		For ci,cd in ipairs(ra)
+			Tafel = Tafel .. sprintf("Visible%02d=%s\n",ci,cd.Visible)
+			Tafel = Tafel .. sprintf("Suit%02d=%s\n",ci,cd.Card.CardSuit)
+			Tafel = Tafel .. sprintf("Value%02d=%s\n",ci,cd.Card.CardValue)
+		End
+	End
+	SG.Text["Table.ini"] = Tafel
+	
+	CSay("= Packages")
+	string Pakketje = "# The packages to get\n\n"
+	For pi,pa in pairs(SPI_Packages)
+		Pakketje = Pakketje .. sprintf("[P%d]\n",pi)
+		For ci,cd in pairs(pa)
+			Pakketje = Pakketje .. sprintf("Suit%02d=%s\n",ci,cd.Card.CardSuit)
+			Pakketje = Pakketje .. sprintf("Value%02d=%s\n",ci,cd.Card.CardValue)
+		End
+	End
+	SG.Text["Packages.ini"] = Pakketje
+
+	CSay("= Cleared")
+	string Weg = "# Cleared\n\n[Cleared]\n"
+	for i=0,7
+		Weg = Weg .. sprintf("C%dCleared=%s\n",i,SPI_Cleared[i]!=nil)
+		If SPI_Cleared[i]
+			Weg = Weg .. sprintf("S%d=%d\n",i,SPI_Cleared[i][0].Card.CardSuit)
+		End
+	End
+	SG.Text["Cleared.ini"] = Weg
+	
+	CSay("= Saving")
+	SG.Save()
+	GoToFlow("SELECTGAME")
+End
+
+Global Void GameContinue()	
+	Int CMod=1000	
+	plua SG
+	plua d
+	SPI_Actions = new Stack()
+	SPI_Card = SPI_CardSize.Bind()	
+	SG = SGJCR.Create("LOAD:SPIDER")
+	CSay("Loading SPIDER game")
+	SG.Assign("House Of Cards.SaveGame.SPIDER.jcr")
+	SG.Load()
+	// Shuffle
+	CSay("= Shuffle")
+	Spi_Deck = Deck.ShuffleIn("DECK_PYRAMID",SG.Text["Shuffle.ini"])
+	// General
+	CSay("= General")
+	d = GINIE.Parse(SG.Text["General.ini"])	
+	SPI_Score=d.IntValue("Data","Score")
+	SPI_Time=d.IntValue("Data","Time")
+	// Table
+	CSay("= Rows on the table")
+	d = GINIE.Parse(SG.Text["Table.ini"])
+	SPI_Row = {}
+	For ri=0,9
+		String RT;RT=sprintf("Row %d",ri)
+		SPI_Row[ri] = {}
+		For ci=0,d.IntValue(RT,"Cnt")-1
+			plua crd
+			int suit;suit = d.IntValue(RT,sprintf("Suit%02d",ci))
+			int value;value = d.IntValue(RT,sprintf("Value%02d",ci))
+			bool visible;visible = Lower(d.value(RT,sprintf("Visible%02d",ci)))=="true"
+			crd = New SpiderCard(New DeckCard(Suit,Value),-CMod,Graphics.Height+CMod)
+			crd.visible = visible
+			SPI_Row[ri][len(SPI_Row[ri])] = crd
+			CMod = CMod + 250
+		End
+	End
+	// Packages
+	d = GINIE.Parse(SG.Text["Packages.ini"])
+	SPI_Packages = {}
+	For pi=0,9
+		String PT;PT=sprintf("P%d",pi)
+		If d.IntValue(PT,"Value01")>0
+			plua pkg = {}
+			SPI_Packages[pi]=pkg
+			For ci=0,9
+				int suit;suit = d.IntValue(PT,sprintf("Suit%02d",ci))
+				int value;value = d.IntValue(PT,sprintf("Value%02d",ci))
+				pkg[ci] = New SpiderCard(New DeckCard(Suit,Value),-CMod,-CMod)
+				CMod = CMod + 250
+			End
+		End
+	End
+	// Cleared
+	d = GINIE.Parse(SG.Text["Cleared.ini"])
+	SPI_Cleared = {}
+	For cli=0,7
+		If lower(d.Value("Cleared",sprintf("C%dCleared",cli)))=="true"
+			plua cl = {}
+			SPI_Packages[cli] = cl			
+			int Suit; Suit = d.IntVaue("Cleared",sprintf("S%d",cli))
+			For v=1,13
+				cl = New SpiderCard(New DeckCard(Suit,v),Graphics.Width+CMod,-CMod)
+				CMod = CMod - 1000
+			End
+		End
+	End
 End
 
 Global Void MainFlow()

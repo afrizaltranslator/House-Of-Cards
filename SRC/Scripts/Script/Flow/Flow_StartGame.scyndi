@@ -199,7 +199,12 @@ End
 #region "Bottom buttons"
 Bool AllowContinue(); Return SaveFound; End
 Void Cancel(); Sys.CurrentFlow="SELECTGAME"; End
-Void Continue(); End
+Void Continue(Rec)
+	String G_ID;G_ID = sprintf("FLOW_GAME_%s",Rec.TID)
+	Sys.LoadNewState(G_ID,sprintf("Script/Game/%s/Game.lbc",Rec.ID))
+	Sys.Call(G_ID,"GameContinue")
+	GoToFlow(sprintf("GAME_%s",Rec.TID))
+End
 
 Void NewGame(Rec)
 	String G_ID;G_ID = sprintf("FLOW_GAME_%s",Rec.TID)

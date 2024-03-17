@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.12
+// Version: 24.03.17
 // End License Information
 
 
@@ -72,7 +72,7 @@ End
 #Region "Save & Exit"
 Bool NoSave
 Get Delegate GF_SaveExit_Allow; If NoSave; Return Never; End; Return Lua.Scyndi.Globals.GameFeatures_SaveExit_Allow; End
-Get Delegate GF_SaveExit_Action; Return Lua.Scyndi.Globals.GameFeatures_SaveExit_Action; End
+Get Delegate GF_SaveExit_Action; Stay=False; Return Lua.Scyndi.Globals.GameFeatures_SaveExit_Action; End
 #EndRegion
 
 

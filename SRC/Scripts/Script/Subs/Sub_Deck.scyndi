@@ -21,10 +21,11 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.10
+// Version: 24.03.17
 // End License Information
 Script
 
+#use "Libs/SCI/GINIE"
 #use "Libs/SCI/InterVar"
 
 #use "Script/Use/Lnk/Deck"
@@ -86,4 +87,19 @@ Global Void ShufOut(String Tag)
 	End
 	R = R .. sprintf("Jokers=%d\nSuits=%d\nLowest=%d\nHighest=%d\n",Jokers,Suits,Lowest,Highest)
 	DRet = R.."\n\n"..S
+End
+
+Global Void ShufIn(String Tag,String Src)
+	Tag  = Upper(Tag)
+	_Reg = _Reg || {}
+	plua d;d=GINIE.Parse(Src,"SHUFFLE_IN")
+	int l;l = d.IntValue("Data","Len")
+	_Reg[Tag] = {}	
+	For i=0,l-1
+		int s;s = d.IntValue("Shuffle",sprintf("P%03d_S",i))
+		int v;v = d.IntValue("Shuffle",sprintf("P%03d_V",i))
+		plua Crd;Crd = New DeckCard(S,V)
+		_Reg[Tag][i] = Crd
+	End
+	gInt.Deck_ShufInLen = l
 End

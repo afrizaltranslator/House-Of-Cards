@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.09
+// Version: 24.03.17
 // End License Information
 
 Module
@@ -95,4 +95,15 @@ String ShuffleOut(String Tag)
 	_LoadSubDeck()
 	Sys.Call("SUB_DECK","ShufOut",Tag)
 	return gString.Deck_ReturnedString
+End
+
+Var ShuffleIn(String Tag,String GINIESource)
+	_LoadSubDeck()
+	Sys.Call("SUB_DECK","ShufIn",Tag,GINIESource)
+	plua ret = {}
+	ret.___Tab = {}
+	ret.___Tag = Tag
+	ret.___Size = gInt.Deck_ShufInLen //(High-(Low-1))*Decks*Suits
+	ret = SetMetaTable(ret,{["__index"] = _ShufIndex, ["__newindex"]=_ShufNewIndex})
+	Return ret
 End

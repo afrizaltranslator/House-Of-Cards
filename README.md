@@ -12,5 +12,6 @@ The current version of House of Cards supports the following games.
 (The links will lead you to a video in which I explain the rules of that game)
 
 - [King's Cornners](https://rumble.com/v4j9llu-how-to-play-kings-corners.html)
+- [Klondike](https://rumble.com/v4khod6-how-to-play-klondike.html)
 - [Pyramid](https://rumble.com/v4j9mwk-how-to-play-pyramid.html)
 - [Spider](https://rumble.com/v4j9qj0-how-to-play-spider.html)

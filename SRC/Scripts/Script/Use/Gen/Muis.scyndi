@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.13
+// Version: 24.03.19
 // End License Information
 
 Module
@@ -45,6 +45,10 @@ End
 
 Global get Bool MR
 	Return Events.MouseHit(3)
+End
+
+Global Get Bool MDL
+	Return Events.MouseDown(1)
 End
 
 Global Void ShowMouse()

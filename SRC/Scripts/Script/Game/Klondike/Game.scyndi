@@ -42,13 +42,17 @@ Script
 
 
 ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP") // Why not re-use stuff, eh?
-
+ReadOnly Var MNI = ObtainFont("MINI")
+ReadOnly Var RYA = ObtainFont("RYANNA")
+ReadOnly Var ESC = ObtainImage("SUCCESS")
+ReadOnly Var OKE  = ObtainImage("OK")
 
 plua KLO_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
 plua KLO_Card
 plua KLO_Draw
 plua KLO_Disc // Not the right word but by lack of a better term
 plua KLO_Clear
+plua KLO_Cleared // Clear = nodes, Cleared = cards
 plua KLO_RowNodes
 plua KLO_Row
 plua KLO_Deck
@@ -58,6 +62,8 @@ plua KLO_DiscShow = {}
 plua KLO_Config = GINIE.Obtain("CONFIG::KLONDIKE")
 plua KLO_Icon = LoadNewImage("Script/Game/Klondike/Klondike.png","KLONDIKE_ICON")
 plua KLO_DragCards = nil
+bool KLO_TimeRunning
+int  KLO_Time
  
 
 Int KLO_State = 0
@@ -172,8 +178,45 @@ End
 
 Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return KLO_State==0; End
 
-Get Bool Dragging
+Bool ClearCard(c)
+	plua suit;suit = c.card.cardsuit
+	plua val; val  = c.card.cardvalue
+	KLO_Cleared[suit] = KLO_Cleared[suit] || {}
+	plua cpil; cpil=KLO_Cleared[suit]
+	CSayF("Trying to clear %d:%d",suit,val)
+	CSayF("- Pile for suit #%d has size %d",suit,len(cpil))
+	if val==len(cpil)+1
+		KLO_TimeRunning=true
+		cpil[len(cpil)]=c		
+		cpil.Quick=false 
+		c.Go(KLO_Clear[suit])
+		bool win=true
+		int cnt=0
+		for _,cp in pairs(KLO_Cleared)
+			cnt++
+			win = win && (len(cp)==13)
+		end
+		if Win && cnt==4
+			KLO_State=1
+			SFX("COMPLETE")
+			KLO_Config.Value("RESULT","WON",KLO_Config.IntValue("Result","Won")+1)
+		End
+		return true
+	end
+	CSayF("- Card %d:%d cannot be cleared",suit,val)
+	return false
+end
+
+Get Bool Dragging	
 	If !KLO_DragCards		
+		Return False
+	ElIf MY>KLO_Clear[0].Y && MX<KLO_Clear[1].X + KLO_Clear[1].W && Len(KLO_DragCards)==1 && (!MDL) && ClearCard(KLO_DragCards[0]) 
+		if KLO_DragCards.Row==-1
+			KLO_DiscPile.Pop()
+		Else 
+			KLO_Row[KLO_DragCards.Row][len(KLO_Row[KLO_DragCards.Row])-1]=nil
+		End
+		KLO_DragCards = nil
 		Return False
 	ElIf !MDL
 		//Int AtRow = -1
@@ -188,9 +231,13 @@ Get Bool Dragging
 				// Two loops to prevent conflicts
 				if KLO_DragCards.Row==-1
 					KLO_DiscPile.Pop()
+					KLO_DiscShow = KLO_DiscPile.Array
 				Else 
-					For di,dc in ipairs(KLO_DragCards)
-						KLO_Row[KLO_DragCards.Row][di+KLO_DragCards.Card] = nil
+					plua OldRow;OldRow = KLO_Row[ KLO_DragCards.Row ]
+					//For di,dc in ipairs(KLO_DragCards)
+					For di=Len(OldRow)-1,Len(OldRow)-(Len(KLO_Dragcards)),-1
+						//KLO_Row[KLO_DragCards.Row][di+KLO_DragCards.Card] = nil
+						OldRow[di]=nil
 					End
 				End
 				KLO_DragCards = nil
@@ -210,12 +257,13 @@ Get Bool Dragging
 			DC.Y = DC.GotoY
 		End
 	End
+	KLO_TimeRunning=true
 	Return True 
 End
 
 Void Deal()
 	int dp=0
-	KLO_Row = {}
+	KLO_Row = {}	
 	For i2=0,6		
 		For i1=i2,6
 			KLO_Row[i1] = KLO_Row[i1] || {}
@@ -228,6 +276,8 @@ Void Deal()
 	End
 	KLO_DrawPile = New Stack()
 	KLO_DiscPile = New Stack()
+	//KLO_DrawShow = {}
+	KLO_DiscShow = {}
 	For i=51,dp,-1
 		plua crd;crd = new KlondikeCard(KLO_Draw)
 		crd.Card = KLO_deck[i]
@@ -235,32 +285,49 @@ Void Deal()
 	End
 End
 
-Void DrawCards()
+Void DrawCards()	
 	SetColor(255,255,255,255)
 	// Rows on the table
+	plua _DoubleML = DoubleML
+	plua _Dragging;_Dragging=(!_DoubleML) && Dragging
 	For ri,ra in ipairs(KLO_Row)
+		int Hovering=-1
 		int mody=0
+		int cinvisible=0
 		For ci,ca in ipairs(ra)
-			If (!Dragging)
+			If (!_Dragging)
 				ca.Go(KLO_RowNodes[ri],0,mody)
 			End
 			ca.Visible = ca.Visible || ci==len(ra)-1
 			ca.Draw()
 			If ca.Visible
 				Mody=Mody+31
-				If (!Dragging) && MX>ca.X && MY>ca.Y && MX<ca.X+ca.W && MY<ca.Y+ca.H
-					PPP.Stretch(ca.X-64,ca.Y-64,64,64)
-					If MDL 
-						KLO_DragCards = { ["Row"]=ri, ["Card"]=ci }
-						Int di=0
-						Repeat
-							KLO_DragCards[len(KLO_DragCards)]=ra[di+ci]
-							di++
-						LoopWhile ra[di+ci]
-					End
+				If (!_Dragging) && MX>ca.X && MY>ca.Y && MX<ca.X+ca.W && MY<ca.Y+ca.H
+					Hovering=ci
 				End
 			Else
+				cinvisible++
 				Mody=Mody+5
+			End
+		End
+		if (cinvisible>0); MNI.Dark(Lua.tostring(cinvisible),KLO_RowNodes[ri].X,KLO_RowNodes[ri].Y); End
+		if Hovering>=0
+			plua ci;ci=Hovering
+			plua ca;ca=ra[ci]
+			if ca
+				PPP.Stretch(ca.X-64,ca.Y-64,64,64)
+				If _DoubleML && Hovering+1==len(ra)
+					If ClearCard(ca)
+						ra[Hovering]=nil
+					End
+				ElIf MDL
+					KLO_DragCards = { ["Row"]=ri, ["Card"]=ci }
+					Int di=0
+					Repeat
+						KLO_DragCards[len(KLO_DragCards)]=ra[di+ci]
+						di++
+					LoopWhile ra[di+ci]
+				End
 			End
 		End
 	End
@@ -271,6 +338,7 @@ Void DrawCards()
 			PPP.Stretch(0,0,64,64)
 			If ML
 				SFX("SLIDE")
+				KLO_TimeRunning=true
 				For k in Each(KLO_DiscPile.Array); k.GotoY=KLO_Disc.Y; k.Y = KLO_Disc.Y; End 				
 				For i=0,KLO_CONFIG.INTVALUE("CONFIG","FROMPILE")-1
 					// Seems double, but the 3 card draw needs it.
@@ -289,7 +357,7 @@ Void DrawCards()
 			End
 		End
 	Else
-		If (!Dragging) && MX>KLO_Draw.X && MY>KLO_Draw.Y && MX<KLO_Draw.X+KLO_Draw.W && MY<KLO_Draw.Y+KLO_Draw.H
+		If (!_Dragging) && MX>KLO_Draw.X && MY>KLO_Draw.Y && MX<KLO_Draw.X+KLO_Draw.W && MY<KLO_Draw.Y+KLO_Draw.H
 			PPP.Stretch(0,0,64,64)
 			If ML
 				SFX("SLIDE")
@@ -298,33 +366,152 @@ Void DrawCards()
 					plua dcard = KLO_DiscPile.Pop()
 					dcard.visible=0
 					KLO_DrawPile.Push(dcard)
-				End
+				End // While
 				KLO_DiscPile = New Stack()
 				KLO_DiscShow = {}
-			End
-		End
-	End
+			End // If Mouse click
+		End // If (check if I should drag cards)
+	End // Else
 	// Disc pile
 	For i=len(KLO_DiscShow)-1,0,-1
 		KLO_DiscShow[i].Draw()		
 	End
 	plua top = KLO_DiscShow[0]
-	If top && MX>KLO_Disc.x && MY>top.y && MX<top.x+top.w && MY<top.y+top.h && (!Dragging)
+	If top && MX>KLO_Disc.x && MY>top.y && MX<top.x+top.w && MY<top.y+top.h && (!_Dragging)
 		PPP.Stretch(top.x-(top.w div 2),0,64,64)
-		if MDL
+		if _DoubleML
+			CSayF("Pile card clear request")
+			If ClearCard(top)
+				KLO_DiscPile.Pop()
+				KLO_DiscShow = KLO_DiscPile.Array
+			End
+		elif MDL
 			KLO_DragCards = { ["Row"]=-1, ["Card"]=0,[0]=top, ["OY"]=top.gotoY }
 		End
 	End
+	// Clear Piles
+	for i,cp in pairs(KLO_Cleared)
+		//CSayF("Drawing cleared pile #%d (L:%02d)",i,len(cp)) // DEBUG ONLY!
+		If len(cp)!=0			
+			If cp.Quick
+				KLO_Cleared[i][len(KLO_Cleared[i])-1].Draw()
+			Else				
+				cp.Quick = true
+				For cpi,cpc in ipairs(cp)
+					cpc.Go(KLO_Clear[i])
+					cp.Quick = cp.Quick && cpc.X==cpc.GoToX && cpc.Y==cpc.GoToY
+					cpc.Draw()
+				End
+				if cp.Quick; CSayF("Clear pile #%d set to quick!",i); End
+			End
+		End
+	End
+	
+End
+
+Int AutoSolveFrames=5
+
+Void StateControl()
+	Switch KLO_State
+		Case 0
+			Return
+		Case 1
+			int okx = (Graphics.Width div 2)-32
+			int oky = (Graphics.Height)-64
+			ESC.Draw(Graphics.Width div 2,Graphics.Height div 2)
+			If MX>okx && MY>oky && MX<okx+64
+				SetColorHSV(hue,1,1)
+				If ML
+					GotoFlow("SELECTGAME")
+				End
+			End
+			OKE.Stretch(okx,oky,64,64)
+			SetColor(255,255,255,255)
+		Case 2
+			If AutosolveFrames>0
+				AutosolveFrames--
+			Else
+				If KLO_DiscPile.Have && ClearCard(KLO_DiscPile.Value)
+					KLO_DiscPile.Pop()
+					KLO_DiscShow=KLO_DiscPile.Array
+					AutosolveFrames=5
+				ElIf (!KLO_DiscPile.Have) && (KLO_DrawPile.Have)
+					plua c=KLO_DrawPile.Pop()
+					KLO_DiscPile.Push(c)
+					KLO_DiscShow=KLO_DiscPile.Array
+					AutosolveFrames=5
+				ElIf (KLO_DiscPile.Have) && (!KLO_DrawPile.Have)
+					While KLO_DiscPile.Have
+						plua c = KLO_DiscPile.Pop()
+						KLO_DrawPile.Push(c)
+						KLO_DiscShow=KLO_DiscPile.Array
+					End
+					AutosolveFrames=5
+				End
+				For ri,ra in ipairs(KLO_Row)
+					plua ci;ci=len(ra)-1
+					plua ca;ca=ra[ci]
+					If ca && ClearCard(ca)
+						ra[ci]=nil
+						AutosolveFrames=5
+					End
+				End
+			End
+			//Lua.error("Auto-solve not yet operational")
+			If (os.time() % 2 == 0)
+				Rya.Dark("Auto solve",Graphics.Width div 2, Graphics.Height div 2,2,2)
+			End
+		Default
+			Lua.error("Unknown Klondike State")
+	End
+End
+
+
+Void CheckAutoSolve()
+	If (KLO_State!=0); Return; End
+	For i,r in ipairs(KLO_Row)
+		//if len(r)!=0; Return; End
+		For ci,cc in ipairs(r)
+			If !cc.visible; Return; End
+		End
+	End
+	If KLO_CONFIG.INTVALUE("CONFIG","FROMPILE")!=1
+		if KLO_DrawPile.Have || KLO_DiscPile.Have; Return; End
+	End
+	if MY>250 && MY<280 && MX<Rya.Width("Autosolve")
+		SetColor(Hue,1,1)
+		If ML;KLO_State=2; End
+	End
+	Rya.Dark("Autosolve",0,250)
+	SetColor(255,255,255)
 End
 	
+	
 Global Void GameNew(String CShuffle="")
+	KLO_State=0
+	KLO_Config.Value("Result","Played",KLO_Config.IntValue("Result","Played")+1)
 	GameFeatures.ShuffleTag="DECK_Klondike"
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else
 		Klo_Deck = Deck.Shuffle("DECK_KLONDIKE",KLO_Config.Value("Shuffle","Shuffle"))
 	End
+	KLO_Cleared = {}
 	Deal()
+	KLO_Time=0
+	KLO_TimeRunning=False
+End
+
+Int OldTime
+Void CheckTime()
+	if KLO_TimeRunning && KLO_State==0
+		If OldTime!=0 && OldTime!=os.time()
+			KLO_Time++
+		End
+		OldTime=os.time()
+	End
+	SetColor(255,255,255,255)
+	ShowTime(KLO_Time,5,KLO_Draw.Y+KLO_Draw.H+10)
 End
 
 Global Void MainFlow()
@@ -333,7 +520,27 @@ Global Void MainFlow()
 	DrawBackground()
 	CardNode.DrawAll()
 	DrawCards()
+	CheckTime()
 	KLO_Icon.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
 	GameFeatures.Button()
+	StateControl()
+	CheckAutoSolve()
 	ShowMouse()
+End
+
+
+// DEBUG
+global Void DBG_JAT()
+	for ri,ra in ipairs(KLO_Row)
+		if ra[0] && (!ra[0].visible)
+			KLO_DiscPile.Push(ra[0])
+			ra[0].visible=true
+			ra[0].Go(KLO_Disc)
+			for i=0,len(ra)-1;ra[i]=ra[i+1];end
+			CSayF("Nicked a card from row #%d",ri)
+		end
+	end
+End
+Init
+	Sys.ConsoleLocal("JAT","DBG_JAT")
 End

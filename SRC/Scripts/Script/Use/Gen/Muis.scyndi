@@ -21,15 +21,22 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.19
+// Version: 24.03.20
 // End License Information
 
 Module
 
+#use "Libs/SCI/Sys"
 #use "Libs/SCI/Events"
 #use "Libs/SCI/Graphics"
 
 PLUA _MIMG = { [true]=ObtainImage("MOUSE_TRUE"),[false]=ObtainImage("MOUSE_FALSE")}
+
+Int DoubleTickTime = 500
+
+int _LastTick=0
+
+Global Bool DoubleML = False
 
 Global Get Int MX
 	Return Events.MouseX
@@ -40,7 +47,12 @@ Global Get Int MY
 End
 
 Global Get Bool ML
-	Return Events.MouseHit(1)
+	plua ret = Events.MouseHit(1)
+	//plua tck = Sys.Ticks
+	//DoubleML = ret && _LastTick!=0 && (tck-_LastTick<DoubleTickTime)
+	//if ret;	CSayF("ML: %d - %d = %d -> Double %s",_LastTick,tck,tck-_LastTick,_LastTick!=0 && DoubleML); end // DEBUG ONLY!	
+	//_LastTick = Sys.Ticks
+	Return ret
 End
 
 Global get Bool MR
@@ -48,9 +60,21 @@ Global get Bool MR
 End
 
 Global Get Bool MDL
-	Return Events.MouseDown(1)
+	Return (!DoubleML) && Events.MouseDown(1)
 End
 
-Global Void ShowMouse()
+Global Void CheckMouse()
+	plua c;c=ML
+	plua tck = Sys.Ticks
+	DoubleML = false
+	If c
+		DoubleML = _LastTick!=0 && (tck-_LastTick<DoubleTickTime)
+		CSayF("ML: %d - %d = %d -> Double %s",_LastTick,tck,tck-_LastTick,_LastTick!=0 && DoubleML) // DEBUG ONLY!	
+		_LastTick = Sys.Ticks
+	End
+End
+
+Global Void ShowMouse(NoDoubleCheck)
+	If !NoDoubleCheck; CheckMouse(); End
 	_MIMG[Events.MouseDown(1)].Stretch(MX,MY,64,32)
 End

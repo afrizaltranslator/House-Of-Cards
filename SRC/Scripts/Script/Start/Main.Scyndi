@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.16
+// Version: 24.03.20
 // End License Information
 
 // Main
@@ -53,7 +53,7 @@ Class ToLoad
 	End
 End
 
-Void Img(String Tag,String File,Hot)
+Void Img(String Tag,String File,Hot)	
 	ToLoad.Lijst[Len(ToLoad.Lijst)]=New ToLoad("IMAGE",Tag,File,{["Hot"]=Hot})
 End
 
@@ -74,6 +74,7 @@ End
 Init
 	// Take note of debug situation!
 	CSaySetConfig("ALLOW","DEBUGONLY")
+		
 	
 	// Global Config
 	CSay("Loading Global Config")
@@ -111,7 +112,7 @@ Init
 End
 
 Int Idx=0
-Global Void MainFlow()
+Global Void MainFlow()	
 	If Idx>=Len(ToLoad.Lijst)
 		Sys.CurrentFlow = "MAINMENU"
 		Return

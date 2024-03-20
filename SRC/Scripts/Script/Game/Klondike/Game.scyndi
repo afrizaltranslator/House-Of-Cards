@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.17
+// Version: 24.03.20
 // End License Information
 Script
 
@@ -41,6 +41,8 @@ Script
 #use "Script/Use/Gen/GameFeatures"
 
 
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP") // Why not re-use stuff, eh?
+
 
 plua KLO_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
 plua KLO_Card
@@ -52,8 +54,16 @@ plua KLO_Row
 plua KLO_Deck
 plua KLO_DrawPile
 Plua KLO_DiscPile
+plua KLO_DiscShow = {}
 plua KLO_Config = GINIE.Obtain("CONFIG::KLONDIKE")
 plua KLO_Icon = LoadNewImage("Script/Game/Klondike/Klondike.png","KLONDIKE_ICON")
+plua KLO_DragCards = nil
+ 
+
+Int KLO_State = 0
+// 0 = Playing
+// 1 = Win
+// 2 = Auto-Solving
 
 int hue = os.time()
 
@@ -66,6 +76,9 @@ Class CardNode
 	ReadOnly Int ID
 	ReadOnly Int X
 	ReadOnly Int Y
+	Static Get Int W;Return KLO_CardSize.W; End
+	Static Get Int H;Return KLO_CardSize.H; End
+
 		
 	Void Draw()
 		Deg = Deg + 0.01
@@ -153,8 +166,51 @@ Init
 	For i=0,6
 		int x
 		x = Graphics.Width- ((KLO_CardSize.W*1.25)*(7-i))
-		KLO_RowNodes[i] = New CardNode(x,5)
+		KLO_RowNodes[i] = New CardNode(x,10)
 	End
+End
+
+Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return KLO_State==0; End
+
+Get Bool Dragging
+	If !KLO_DragCards		
+		Return False
+	ElIf !MDL
+		//Int AtRow = -1
+		For Ri,RA in ipairs(KLO_Row)
+			plua RN;RN=KLO_RowNodes[Ri]
+			   // Mouse position          Not the same row            // Kings on an empty row                            // Other card value                                                   // Red is not black and vice versa
+			If MX>RN.X && MX<RN.X+RN.W && ri!=KLO_DragCards.Row && ( (KLO_DragCards[0].Card.CardValue==13 && Len(RA)==0) || (Len(RA)>0 && KLO_DragCards[0].Card.CardValue==RA[Len(RA)-1].Card.CardValue-1 && KLO_DragCards[0].Card.CardSuit % 2!=RA[Len(RA)-1].Card.CardSuit % 2)) 
+				For di,dc in ipairs(KLO_DragCards)
+					RA[Len(RA)]=DC
+					SFX("SLIDE")
+				End
+				// Two loops to prevent conflicts
+				if KLO_DragCards.Row==-1
+					KLO_DiscPile.Pop()
+				Else 
+					For di,dc in ipairs(KLO_DragCards)
+						KLO_Row[KLO_DragCards.Row][di+KLO_DragCards.Card] = nil
+					End
+				End
+				KLO_DragCards = nil
+				Return False
+			End
+		End
+		if KLO_DragCards.Row==-1
+			KLO_DragCards[0].GoToX = KLO_Disc.X
+			KLO_DragCards[0].GoToY = KLO_DragCards.OY
+		End
+		KLO_DragCards = nil
+	Else
+		For di,dc in ipairs(KLO_DragCards)
+			DC.GotoX = MX - (DC.W div 2)
+			DC.GotoY = MY + (di*45)
+			DC.X = DC.GotoX
+			DC.Y = DC.GotoY
+		End
+	End
+	Return True 
 End
 
 Void Deal()
@@ -181,21 +237,83 @@ End
 
 Void DrawCards()
 	SetColor(255,255,255,255)
-	For ri,ra in pairs(KLO_Row)
+	// Rows on the table
+	For ri,ra in ipairs(KLO_Row)
 		int mody=0
 		For ci,ca in ipairs(ra)
-			ca.Go(KLO_RowNodes[ri],0,mody)
+			If (!Dragging)
+				ca.Go(KLO_RowNodes[ri],0,mody)
+			End
 			ca.Visible = ca.Visible || ci==len(ra)-1
 			ca.Draw()
 			If ca.Visible
 				Mody=Mody+31
+				If (!Dragging) && MX>ca.X && MY>ca.Y && MX<ca.X+ca.W && MY<ca.Y+ca.H
+					PPP.Stretch(ca.X-64,ca.Y-64,64,64)
+					If MDL 
+						KLO_DragCards = { ["Row"]=ri, ["Card"]=ci }
+						Int di=0
+						Repeat
+							KLO_DragCards[len(KLO_DragCards)]=ra[di+ci]
+							di++
+						LoopWhile ra[di+ci]
+					End
+				End
 			Else
 				Mody=Mody+5
 			End
 		End
 	End
+	// Draw Pile
 	If KLO_DrawPile.Have
 		KLO_Card.DrawBack(KLO_Draw.X,KLO_Draw.Y)
+		If MX>KLO_Draw.X && MY>KLO_Draw.Y && MX<KLO_Draw.X+KLO_Draw.W && MY<KLO_Draw.Y+KLO_Draw.H 
+			PPP.Stretch(0,0,64,64)
+			If ML
+				SFX("SLIDE")
+				For k in Each(KLO_DiscPile.Array); k.GotoY=KLO_Disc.Y; k.Y = KLO_Disc.Y; End 				
+				For i=0,KLO_CONFIG.INTVALUE("CONFIG","FROMPILE")-1
+					// Seems double, but the 3 card draw needs it.
+					If KLO_DrawPile.Have
+						plua dcard = KLO_DrawPile.Pop()
+						KLO_DiscPile.Push(dcard)
+						dcard.x = KLO_Draw.X
+						dcard.y = KLO_Draw.Y
+						dcard.gotox = KLO_Disc.X
+						dcard.gotoy = KLO_Disc.Y + (i*40)
+						dcard.visible = true
+						//KLO_DiscShow[i] = dcard
+					End					
+				End
+				KLO_DiscShow = KLO_DiscPile.Array
+			End
+		End
+	Else
+		If (!Dragging) && MX>KLO_Draw.X && MY>KLO_Draw.Y && MX<KLO_Draw.X+KLO_Draw.W && MY<KLO_Draw.Y+KLO_Draw.H
+			PPP.Stretch(0,0,64,64)
+			If ML
+				SFX("SLIDE")
+				KLO_DrawPile = New Stack()
+				While KLO_DiscPile.have
+					plua dcard = KLO_DiscPile.Pop()
+					dcard.visible=0
+					KLO_DrawPile.Push(dcard)
+				End
+				KLO_DiscPile = New Stack()
+				KLO_DiscShow = {}
+			End
+		End
+	End
+	// Disc pile
+	For i=len(KLO_DiscShow)-1,0,-1
+		KLO_DiscShow[i].Draw()		
+	End
+	plua top = KLO_DiscShow[0]
+	If top && MX>KLO_Disc.x && MY>top.y && MX<top.x+top.w && MY<top.y+top.h && (!Dragging)
+		PPP.Stretch(top.x-(top.w div 2),0,64,64)
+		if MDL
+			KLO_DragCards = { ["Row"]=-1, ["Card"]=0,[0]=top, ["OY"]=top.gotoY }
+		End
 	End
 End
 	
@@ -216,5 +334,6 @@ Global Void MainFlow()
 	CardNode.DrawAll()
 	DrawCards()
 	KLO_Icon.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
+	GameFeatures.Button()
 	ShowMouse()
 End

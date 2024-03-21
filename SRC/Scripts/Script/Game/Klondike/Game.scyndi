@@ -21,12 +21,13 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.20
+// Version: 24.03.21
 // End License Information
 Script
 
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/GINIE"
+#use "Libs/SCI/SGJCR"
 #use "Libs/SCI/Graphics"
 
 #use "Libs/XMath"
@@ -38,6 +39,7 @@ Script
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/SeedLog"
 #use "Script/Use/Gen/GameFeatures"
 
 
@@ -62,6 +64,7 @@ plua KLO_DiscShow = {}
 plua KLO_Config = GINIE.Obtain("CONFIG::KLONDIKE")
 plua KLO_Icon = LoadNewImage("Script/Game/Klondike/Klondike.png","KLONDIKE_ICON")
 plua KLO_DragCards = nil
+plua KLO_SeedLog
 bool KLO_TimeRunning
 int  KLO_Time
  
@@ -176,6 +179,47 @@ Init
 	End
 End
 
+Global Void GameFeatures_SaveExit_Action()
+	plua SG;
+	plua SG = SGJCR.Create("SAVE:KLONDIKE")
+	SG.Assign("House Of Cards.SaveGame.KLONDIKE.jcr")
+	SG.Clear()	
+	CSay("= General"); SG.Text["General.ini"] = sprintf("[Check]\nEngine=Scyndi's Creative Interpreter\nProject=House Of Cards\nGame=Klondike\n\n[Data]\nScore=%d\nTime=%d\nFromPile=%d\n\n\n",0,KLO_Time,KLO_CONFIG.INTVALUE("CONFIG","FROMPILE"))
+	
+	CSay("= Table")
+	plua oput = "# Rows: Klondike\n\n"
+	For ri,ra in pairs(KLO_Row)
+		oput = oput .. sprintf("\n[R%d]\nSize=%d\n",ri,len(ra))
+		for ci,ca in pairs(ra)
+			oput = oput .. sprintf("C%02dSuit=%d\n",ci,ca.Card.CardSuit)
+			oput = oput .. sprintf("C%02dValue=%d\n",ci,ca.Card.CardValue)
+			oput = oput .. sprintf("C%02dVisble=%s\n",ci,ca.Visible)
+		end
+	End
+	SG.Text["Table.ini"] = oput
+	
+	CSay("= Piles")
+	oput = "# Klondike piles\n\n"
+	For k,p in pairs{["Draw"]=KLO_DrawPile.Array,["Disc"]=KLO_DiscPile.Array}
+		oput = oput .. sprintf("\n[%s]\nsize=%d\n",k,len(p))
+		For i,c in ipairs(p)
+			oput = oput .. sprintf("C%02dSuit=%d\nC%02dValue=%d\n",i,c.Card.CardSuit,i,c.card.CardValue)
+		End
+	End
+	SG.Text["Piles.ini"] = oput
+	
+	CSay("= Cleared")
+	oput = "# Klondike Cleared\n\n[Clear]\n"
+	For i=0,3
+		oput = oput .. sprintf("P%d=%d\n",i,len(KLO_Cleared[i] || {}))	
+	End
+	SG.Text["Cleared.ini"] = oput
+	CSay("= Saving")
+	SG.Save()
+	CSay("= Done")
+	GoToFlow("SELECTGAME")
+End
+
 Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return KLO_State==0; End
 
 Bool ClearCard(c)
@@ -200,6 +244,7 @@ Bool ClearCard(c)
 			KLO_State=1
 			SFX("COMPLETE")
 			KLO_Config.Value("RESULT","WON",KLO_Config.IntValue("Result","Won")+1)
+			KLO_SeedLog.Won++
 		End
 		return true
 	end
@@ -491,6 +536,9 @@ Global Void GameNew(String CShuffle="")
 	KLO_State=0
 	KLO_Config.Value("Result","Played",KLO_Config.IntValue("Result","Played")+1)
 	GameFeatures.ShuffleTag="DECK_Klondike"
+	plua slxn = sprintf("Draw%d",KLO_CONFIG.INTVALUE("CONFIG","FROMPILE"))
+	KLO_SeedLog = SeedLog.StartLog("KLONDIKE",slxn)
+	KLO_SeedLog.Played++
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else
@@ -526,6 +574,7 @@ Global Void MainFlow()
 	StateControl()
 	CheckAutoSolve()
 	ShowMouse()
+	KLO_SeedLog.ShowSeed()
 End
 
 

@@ -1,0 +1,111 @@
+Module
+
+// SeedLog is a kind of feature only meant to be used during development
+// It will log on your harddrive how games you played ended when the cards
+// are shuffeld under certain seeds. These seeds can then be used as seeds
+// which may be bound to get a winning deal or not in upcoming versions.
+
+// These logs are only stored on your PC, so it's all completely safe, however
+// if you wish to contribute your logs hoping to get me more data about what 
+// seeds are certainly winnable or not, all you have to do is to open your
+// favorite text editor and add the next lines to the file 
+// "House Of Cards.GLOBALCONFIG.ini" in your savegame directory.
+
+// [SEEDLOG]
+// LOG=Yes
+
+// Of course without the // prefixes I needed to use in this source or the Scyndi
+// compiler would get confused. In order to send your logs to me, you can best
+// turn the "seedlog" folder into a github repository (or any other service that
+// is compatible with git), and write a ticket about it on the House of Cards
+// issue tracker, so I can add it to my databuilder. Now please note, if I find 
+// out that you are deliberately falsifying data in order to spook up my system
+// I *will* kick you out, and you will also be banned from ALL my github 
+// repositories. This should go without saying.
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/Graphics"
+
+#use "Script/Use/Gen/Config"
+
+ReadOnly Var CFG = Config.CFG
+ReadOnly Var MiniFont = ObtainFont("MINI")
+	
+Get Bool Allow
+	return Upper(CFG.Value("SeedLog","Log"))=="YES"
+End
+
+Get String Signature
+	if !Allow; Return "*** NOTHING ***"; End
+	Return CFG.Value("SeedLog","Signature")
+End
+
+Get Int NewSeed
+	if !Allow; Return 0; End
+	CFG.NewValue("SeedLog","Type","Time")
+	Switch Upper(CFG.Value("SeedLog","Type"))
+		Case "INC"
+			Int ret = math.max(1,CFG.IntValue("SeedLog","IncSeed"))
+			CSayF("Setting seed (incremental) it %08x",ret)
+			CFG.Value("SeedLog","IncSeed",sprintf("$%08x",ret+1))
+			return Ret
+		Case "TIME"
+			return os.time()
+		Case "RAND"
+			return math.random(1,os.time())
+		Default; lua.error("Unknown seedlog type: "..CFG.Value("SeedLog","Type"))
+	End
+End
+
+Void SetSeed(int s=0)
+	if !Allow; Return; End
+	If (s==0); s = NewSeed; End
+	CSayF("SeedLog: Seed Set to %08x",s)
+	math.randomseed(s)
+End
+
+Class TSeedLog
+	ReadOnly Var Data
+	ReadOnly Int Seed
+	ReadOnly String File
+	ReadOnly String XName
+	Get String Tag;
+		if XName==""
+			return sprintf("%08x",Seed);
+		else
+			return sprintf("%08x::%s",Seed,XName);
+		end
+	End
+	Get Int Played; Return Data.IntValue(Tag,"Played"); End
+	Set Int Played; Data.Value(Tag,"Played",Value); End
+	Get Int Won; Return Data.IntValue(Tag,"Won"); End
+	Set Int Won; Data.Value(Tag,"Won",Value); End
+	
+	Void ShowSeed(int X=5,int Y=5)
+		If Allow
+			SetColor(100,100,100)
+			MiniFont.Dark(sprintf("Seed: %08x",Seed),X,Y)
+		End
+	End
+	
+	Constructor(string GINIETag,_XName)
+		File = sprintf("SeedLog/%s_%s.ini",GINIETag,Signature)
+		Seed = NewSeed
+		XName = _XName
+		SetSeed(Seed)
+		if Allow
+			CSayF("Loading Seedlog: %s",File)
+			Data = GINIE.LoadHomeNew(File,sprintf("SEEDLOG::%s::%s",GINIETAG,Signature),File,"House Of Cards - (c) Jeroen P. Broks\nSeedlog file!")
+			Data.NewValue(Tag,"Seed%",sprintf("$%08x",Seed))
+			Data.NewValue(Tag,"Seedx",sprintf("0x%08x",Seed))
+		Else
+			CSayF("Not allowed, just creating a distraction GINIE")
+			Data = GINIE.CreateNew("Het zal wel!") // Not important, you know, but it prevents crashes!
+		End
+	End
+End
+
+Var StartLog(GINIETag,_XName)
+	Return New TSeedLog(GINIETag,_XName)
+End

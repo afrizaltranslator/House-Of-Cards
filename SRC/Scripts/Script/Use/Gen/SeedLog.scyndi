@@ -53,6 +53,7 @@ Module
 #use "Libs/SCI/Graphics"
 
 #use "Script/Use/Gen/Config"
+#use "Script/use/Lnk/Deck"
 
 ReadOnly Var CFG = Config.CFG
 ReadOnly Var MiniFont = ObtainFont("MINI")
@@ -72,7 +73,7 @@ Get Int NewSeed
 	Switch Upper(CFG.Value("SeedLog","Type"))
 		Case "INC"
 			Int ret = math.max(1,CFG.IntValue("SeedLog","IncSeed"))
-			CSayF("Setting seed (incremental) it %08x",ret)
+			CSayF("Setting seed (incremental) to %08x",ret)
 			CFG.Value("SeedLog","IncSeed",sprintf("$%08x",ret+1))
 			return Ret
 		Case "TIME"
@@ -87,7 +88,8 @@ Void SetSeed(int s=0)
 	if !Allow; Return; End
 	If (s==0); s = NewSeed; End
 	CSayF("SeedLog: Seed Set to %08x",s)
-	math.randomseed(s)
+	//math.randomseed(s)
+	Deck.SeedShuffle(s)
 End
 
 Class TSeedLog

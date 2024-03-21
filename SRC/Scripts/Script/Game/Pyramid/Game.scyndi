@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.17
+// Version: 24.03.21
 // End License Information
 
 Script
@@ -41,6 +41,7 @@ Script
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/SeedLog"
 #use "Script/Use/Gen/GameFeatures"
 
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
@@ -65,6 +66,7 @@ plua Pyr_Draw
 plua Pyr_Discard
 plua Pyr_CardSize = CardSize.FromH(200)
 plua Pyr_Card
+plua Pyr_Seedlog
 Int  Pyr_Score
 Int  Pyr_ResetPile
 
@@ -226,6 +228,7 @@ Class SelectedCard
 			If Row==0
 				Bonus.Go(ESC)
 				SFX("COMPLETE")
+				if Pyr_SeedLog; Pyr_SeedLog.Won++; End
 				State = 1
 			Else 
 				SFX("BONUS")
@@ -451,6 +454,11 @@ Global Void GameNew(String CShuffle="")
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else
+		plua shuf=Pyr_Config.Value("Shuffle","Shuffle")
+		if Upper(shuf)=="RANDOM"
+			Pyr_SeedLog=SeedLog.StartLog("Pyramid")
+			Pyr_seedLog.Played++
+		End
 		Pyr_Deck = Deck.Shuffle("DECK_PYRAMID",Pyr_Config.Value("Shuffle","Shuffle"))
 	End
 	Int DIdx = 0
@@ -607,5 +615,6 @@ Global Void MainFlow()
 	UndoButton()
 	OkayButton()
 	SetColor(255,255,255); Ico.Stretch(Graphics.Width-65,Graphics.height-65,64,64)
+	if Pyr_SeedLog; Pyr_SeedLog.ShowSeed(5,35); End
 	ShowMouse()
 End

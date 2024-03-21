@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.17
+// Version: 24.03.21
 // End License Information
 
 Script
@@ -37,6 +37,7 @@ Script
 
 #use "Script/Use/Lnk/Deck"
 #use "Script/Use/Lnk/Card"
+#use "Script/use/Gen/SeedLog"
 
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/Sound"
@@ -125,6 +126,7 @@ End
 
 
 Plua CardSize = Lua.Scyndi.Class.CardSize
+Plua SPI_SeedLog
 PLUA SPI_Deck
 plua SPI_CardSize = CardSize.FromW(Graphics.Width div (Rows+1))
 plua SPI_Card
@@ -173,9 +175,10 @@ Void CheckStackClear(int Row)
 	SPI_Score = SPI_Score + 100 
 	If StacksCleared==8
 		SPI_State=1
-		SFX("COMPLETE")
+		SFX("COMPLETE")		
 		SPI_Config.Value("RESULT","WON",SPI_Config.IntValue("Result","Won")+1)
 		SPI_Config.Value("RESULT","BESTSCORE",math.max(SPI_Config.IntValue("Result","BestScore"),SPI_Score))
+		SPI_SeedLog.Won++
 		If SPI_Config.IntValue("Result","BestTime")==0
 			SPI_Config.Value("Result","BestTime",SPI_Time)
 		Else
@@ -510,16 +513,20 @@ End
 Global Bool GameFeatures_SaveExit_Allow(); Return SPI_State==0; End
 
 Global Void GameNew(String CShuffle="")
+	plua slxn
 	SPI_Config.Value("Result","Played",SPI_Config.IntValue("Result","Played")+1)
 	SPI_Score = 500
 	SPI_Cleared = {}
 	SPI_State=0
 	GameFeatures.ShuffleTag="DECK_Spider"
+	slxn = sprintf("%d_Suits::allowempty.%s",Suits,AllowEmpty)
+	SPI_SeedLog = SeedLog.StartLog("SPIDER",slxn)
+	SPI_SeedLog.Played++
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else		
 		Switch Suits
-		Case 1
+		Case 1		
 			SPI_Deck = Deck.Shuffle("DECK_Spider",ShuffleMethod,1, 13, 8,1)
 		Case 2
 			SPI_Deck = Deck.Shuffle("DECK_Spider",ShuffleMethod,1, 13, 4,2)
@@ -655,4 +662,5 @@ Global Void MainFlow()
 	VictoryState()
 	ShowIcon()
 	ShowMouse()
+	SPI_SeedLog.ShowSeed()
 End

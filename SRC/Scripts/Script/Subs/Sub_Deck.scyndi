@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.17
+// Version: 24.03.21
 // End License Information
 Script
 
@@ -52,6 +52,10 @@ Global Void ShuffleDeck(String Tag,String ShufMethod,Int Low, Int High, Int Deck
 	Tag = Upper(Tag)
 	_Reg      = _Reg || {}
 	_Reg[Tag] = GetMethod(ShufMethod).DoShuffle(Low,High,Decks,Suits)
+End
+
+Global Void ShuffleSeed(int s)
+	math.randomseed(s)
 End
 
 Global Void GetCard(String Tag,int Index)

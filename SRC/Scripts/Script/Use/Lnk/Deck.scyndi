@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.17
+// Version: 24.03.21
 // End License Information
 
 Module
@@ -106,4 +106,9 @@ Var ShuffleIn(String Tag,String GINIESource)
 	ret.___Size = gInt.Deck_ShufInLen //(High-(Low-1))*Decks*Suits
 	ret = SetMetaTable(ret,{["__index"] = _ShufIndex, ["__newindex"]=_ShufNewIndex})
 	Return ret
+End
+
+Void SeedShuffle(int s)
+	_LoadSubDeck()
+	Sys.Call("SUB_DECK","ShuffleSeed",s)
 End

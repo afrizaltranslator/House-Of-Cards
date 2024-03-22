@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.10
+// Version: 24.03.22
 // End License Information
 Script
 
@@ -41,6 +41,8 @@ Script
 ReadOnly Var Fnt  = ObtainFont("RYANNA")
 ReadOnly Var ESC  = ObtainImage("SUCCESS")
 ReadOnly Var EFL  = ObtainImage("FAIL")
+	
+ReadOnly Var ICO  = LoadNewImage("Script/Game/King's Corners/Icon.png","KCI")
 
 plua CardSize = Lua.Scyndi.Class.CardSize
 
@@ -273,5 +275,6 @@ Global Void MainFlow()
 	KC_Score.DrawAll()
 	TopPile()
 	CheckEnd()
-	ShowMouse()
+	ICO.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
+	ShowMouse()	
 End

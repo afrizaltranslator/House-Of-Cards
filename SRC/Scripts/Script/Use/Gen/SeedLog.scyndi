@@ -116,7 +116,7 @@ Class TSeedLog
 		End
 	End
 	
-	Constructor(string GINIETag,_XName)
+	Constructor(string GINIETag,string _XName="")
 		File = sprintf("SeedLog/%s_%s.ini",GINIETag,Signature)
 		Seed = NewSeed
 		XName = _XName

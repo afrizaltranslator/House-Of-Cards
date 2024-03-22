@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.21
+// Version: 24.03.22
 // End License Information
 Script
 
@@ -419,7 +419,8 @@ Void DrawCards()
 	End // Else
 	// Disc pile
 	For i=len(KLO_DiscShow)-1,0,-1
-		KLO_DiscShow[i].Draw()		
+		KLO_DiscShow[i].Draw()
+		KLO_DiscShow[i].Visible=true
 	End
 	plua top = KLO_DiscShow[0]
 	If top && MX>KLO_Disc.x && MY>top.y && MX<top.x+top.w && MY<top.y+top.h && (!_Dragging)
@@ -551,6 +552,70 @@ Global Void GameNew(String CShuffle="")
 	KLO_TimeRunning=False
 End
 
+Global Void GameContinue()
+	plua SG;
+	plua SG = SGJCR.Create("LOAD:KLONDIKE")
+	SG.Assign("House Of Cards.SaveGame.KLONDIKE.jcr")
+	SG.Load()
+	plua d
+	
+	// General
+	d = GINIE.Parse(SG.Text["General.ini"],"KLONDIKE:LOAD")
+	KLO_Time = d.IntValue("Data","Time")
+	KLO_CONFIG.VALUE("CONFIG","FROMPILE",d.IntValue("Data","FromPile"))
+	
+	// Cleared
+	d = GINIE.Parse(SG.Text["Cleared.ini"],"KLONDIKE:LOAD")
+	KLO_Cleared = {}
+	for i=0,3
+		int c;c = d.IntValue("Clear",sprintf("P%d",i))
+		KLO_Cleared[i] = {}
+		if c>0
+			for j=1,c				
+				KLO_Cleared[i][j-1] = new KlondikeCard(KLO_Clear[i])
+				KLO_Cleared[i][j-1].Card = New DeckCard(i,j)
+			end
+		end
+	end
+	
+	// Piles
+	d = GINIE.Parse(SG.Text["Piles.ini"],"KLONDIKE:LOAD")
+	KLO_DrawPile = New Stack()
+	KLO_DiscPile = New Stack()
+	For k,p in pairs{["Draw"]={KLO_DrawPile,KLO_Draw},["Disc"]={KLO_DiscPile,KLO_Disc}}		
+		int c;c = d.Intvalue(k,"size")
+		if c>0
+			plua pa = {}
+			For i=0,c-1
+				plua crd; crd = new KlondikeCard(p[2])
+				crd.Card = New DeckCard(D.IntValue(k,sprintf("C%02dSuit",i)),D.IntValue(k,sprintf("C%02dValue",i)))
+				pa[len(pa)]=crd
+				//crd.Visible = lower(D.Value(k,sprintf("C%02dVisible",i)))=="true"
+			End
+			CSayF("= Stacking %s (%s)",lua.type(pa),pa)
+			p[1].PushArray(pa)
+		end		
+	End
+	
+	// Table
+	d = GINIE.Parse(SG.Text["Table.ini"],"KLONDIKE:LOAD")
+	KLO_Row={}
+	for ri=0,6
+		string tag;tag = sprintf("R%d",ri)
+		int l;l = d.intvalue(tag,"size")
+		plua ra = {}
+		KLO_Row[ri]=ra
+		if l>0
+			For ci=0,l-1
+				plua ca;ca = new KlondikeCard(0,0)
+				ra[len(ra)]=ca
+				ca.Card = New DeckCard(D.IntValue(tag,sprintf("C%02dSuit",ci)),D.IntValue(tag,sprintf("C%02dValue",ci)))
+				ca.Visible = lower(D.Value(tag,sprintf("C%02dVisible",ci)))=="true"
+			End
+		end
+	end
+End
+
 Int OldTime
 Void CheckTime()
 	if KLO_TimeRunning && KLO_State==0
@@ -575,7 +640,7 @@ Global Void MainFlow()
 	StateControl()
 	CheckAutoSolve()
 	ShowMouse()
-	KLO_SeedLog.ShowSeed()
+	If KLO_SeedLog; KLO_SeedLog.ShowSeed(); End
 End
 
 

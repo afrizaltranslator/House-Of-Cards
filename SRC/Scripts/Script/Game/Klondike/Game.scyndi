@@ -443,6 +443,7 @@ Void DrawCards()
 			Else				
 				cp.Quick = true
 				For cpi,cpc in ipairs(cp)
+					cpc.Visible=true
 					cpc.Go(KLO_Clear[i])
 					cp.Quick = cp.Quick && cpc.X==cpc.GoToX && cpc.Y==cpc.GoToY
 					cpc.Draw()

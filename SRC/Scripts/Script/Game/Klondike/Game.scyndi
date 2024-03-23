@@ -452,6 +452,8 @@ Void DrawCards()
 			End // If Mouse click
 		End // If (check if I should drag cards)
 	End // Else
+	
+	
 	// Disc pile
 	For i=len(KLO_DiscShow)-1,0,-1
 		KLO_DiscShow[i].Draw()

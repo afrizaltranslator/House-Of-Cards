@@ -158,6 +158,39 @@ Class KlondikeCard
 	End
 End
 
+Class KlondikeAction
+	ReadOnly Static Var UndoButton = ObtainImage("UNDO")
+	ReadOnly Static Var Stacked = New Stack()
+	ReadOnly String     Cmd
+	ReadOnly Int        FromRow
+	ReadOnly Int        ToRow
+	ReadOnly Int        NumCards
+	Constructor(String _Cmd,Int _FR=0,Int _TR=0,Int _NC=1)
+		Cmd      = Upper(_Cmd)
+		FromRow  = _FR
+		ToRow    = _TR
+		NumCards = _NC
+	End
+	
+	Static Void Add(String _Cmd,Int _FR=0,Int _TR=0,Int _NC=1)
+		plua n
+		n = new KlondikeAction(_Cmd,_FR,_TR,_NC)
+		Stacked.Push(n)
+		CSayF("Stacked action: %s - From %d to %d - Cards moved: %d",_Cmd,_FR,_TR,_NC)
+	End
+	
+	Static Void Undo()
+		CSay("Undo not yet implemnted")
+	End
+	
+	Static Void CheckUndoButton()
+		If KLO_State!=0 || (!Stacked.Have)
+			Return
+		End
+		UndoButton.Stretch(0,Graphics.Height-64,64,64)
+	End
+End
+
 Init
 	KLO_Card = KLO_CardSize.Bind()
 

@@ -475,7 +475,7 @@ Void DrawCards()
 				If _DoubleML && Hovering+1==len(ra)
 					If ClearCard(ca)
 						SFX("SLIDE")
-						KlondikeAction.Add("Clear",ri,KLO_DragCards[0].Card.CardSuit)
+						KlondikeAction.Add("Clear",ri,ca.Card.CardSuit)
 						ra[Hovering]=nil
 					End
 				ElIf MDL

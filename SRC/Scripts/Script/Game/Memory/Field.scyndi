@@ -1,0 +1,95 @@
+// License Information:
+// House Of Cards
+// Memory - Field Module
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.23
+// End License Information
+Module
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/Bank"
+
+plua _B
+
+int FW
+int FH
+
+Void Create(Int W,Int H)
+	FW=W
+	FH=H
+	_B = new TBank(W*H*3,"Memory_Field")
+	_B.Clean()
+End
+
+Void Put(Int X,Int Y,Int Suit,Int Value)
+	Lua.assert(X<FW && Y<FH,sprintf("Out of bounds (%d,%d) -> %dx%d",X,Y,FW,FH))
+	_B.Poke((Y+(X*FW))*3+0,Suit)
+	_B.Poke((Y+(X*FW))*3+1,Value)
+End
+
+Void IPut(Int idx,Int Suit,Int Value)
+	_B.Poke((idx*3)+0,Suit)
+	_B.Poke((idx*3)+1,Value)
+	_B.Poke((idx*3)+2,0)
+End
+
+Int Suit(Int X,Int Y);  Return _B.Peek((Y+(X*FW))*3+0); End
+Int Value(Int X,Int Y); Return _B.Peek((Y+(X*FW))*3+1); End
+Void Clear(Int X,Int Y); _B.Poke((Y+(X*FW))*3+2,1); End
+
+Bool Cleared(Int X,Int Y);
+	//CSayF("Cleared (%d,%d) == %d",x,y,_B.Peek((Y+(X*FW))*3+2)) // DEBUG ONLY!
+	Return _B.Peek((Y+(X*FW))*3+2)>0; 
+End
+	
+	
+Int IValue(int idx); return _B.Peek((idx*3)+1); End
+
+Class _FC
+	ReadOnly Int Suit
+	ReadOnly Int Value
+	Constructor(Int S,Int V)
+		Suit=S
+		Value=V
+	End
+End
+
+Var Card(Int X,Int Y)
+	plua idx;idx=(Y+(X*FW))*3
+	return new _FC(_B.Peek(idx),_B.Peek(idx+1))
+End
+
+Var XC(Int X,Int Y)
+	plua idx;idx=(Y+(X*FW))*3
+	return _B.Peek(idx),_B.Peek(idx+1)
+end
+
+
+Global Void DEBUG_BankDump()
+	For i=0,(FW*FH)-1
+		printf("\x1b[32m%04d \x1b[33m%d -> \x1b[37m%d\x1b[0m\n",i,i%3,_B.Peek(i))
+	End
+End
+
+Init
+	Sys.ConsoleLocal("MEMDUMP","DEBUG_BankDUMP")
+End

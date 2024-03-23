@@ -1,0 +1,79 @@
+// License Information:
+// House Of Cards
+// Memory - Cards Management
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.23
+// End License Information
+Module
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/SString"
+#use "Libs/SCI/Graphics"
+
+#use "Script/Use/Lnk/Card"
+
+plua _Reg = {}
+plua _CTag
+
+Int FldW
+Int FldH
+ReadOnly Int ScrW = Graphics.Width
+ReadOnly Int ScrH = Graphics.Height-35
+	
+Get Var CurrentSize;return _reg[_CTag].Size; End
+Get Var CurrentDeck;return _reg[_CTag].Deck; End
+
+Get Var MEM_Config;Return Lua.Scyndi.Globals.Mem_Config; End
+Get String FldSizeString;Return Mem_Config.Value("Config","FieldSize"); End
+
+Void ConfigField()
+	plua fs;fs=XSplit(FldSizeString,"x")
+	_CTag = fs
+	if _Reg[fs]; return; end
+	//plua r = {};_Reg[fs]=r;
+	plua ret
+	FldW=Lua.tonumber(fs[0])
+	FldH=Lua.tonumber(fs[1])
+	int PW = FldW * Card.Width
+	int PH = FldH * Card.Height
+	number rw;rw = ScrW/PW
+	number rh;rh = ScrH/PH
+	CSayF("Card: %dx%d ->   %f/%f",Card.Width,Card.Height,rw,rh)
+	If PW>ScrW && PH>ScrH
+		If rh<rw
+			number r;r=ScrH/(Card.Height*FldH)
+			ret = New CardSize(math.floor(r*Card.Width),math.floor(r*Card.Height))
+		Else
+			number r;r=ScrW/(Card.Width*FldW)
+			ret = New CardSize(math.floor(r*Card.Width),math.floor(r*Card.Height))
+		End
+	Elif PW>ScrW
+		number r;r=ScrW/(Card.Width*FldW)
+		ret = New CardSize(math.floor(r*Card.Width),math.floor(r*Card.Height))
+	Else
+		number r;r=ScrH/(Card.Height*FldH)
+		ret = New CardSize(math.floor(r*Card.Width),math.floor(r*Card.Height))
+	End
+	_Reg[fs] = {["Size"]=ret,["Deck"]=ret.Bind()}
+	CSayF("Screen: %dx%d; Card: %dx%d; Field: %dx%d",ScrW,ScrH,ret.Width,ret.Height,ret.Width*FldW,ret.Height*FldH)
+End

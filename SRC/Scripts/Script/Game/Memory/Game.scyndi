@@ -1,0 +1,85 @@
+// License Information:
+// House Of Cards
+// Memory - Main Game
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.23
+// End License Information
+Script
+
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/Graphics"
+
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Config"
+
+#use "Script/Use/Lnk/Card"
+
+#use "Script/Game/Memory/Field"
+#use "Script/Game/Memory/StartGame"
+#use "Script/Game/Memory/MemoryCards"
+
+Global Var MEM_Config = GINIE.Obtain("CONFIG::MEMORY")
+
+Global Int MEM_Score
+Global Int MEM_Time
+Global Int MEM_Matches
+Global Int MEM_Left
+Global Int Hue = os.time()
+
+Get Var MEM_Deck;return MemoryCards.CurrentDeck; end
+Get Var MEM_Card;return MemoryCards.CurrentSize; end
+
+plua MEM_Visible = {}
+int MEM_ShowTime
+Bool Visible(int X,Int Y)
+	if len(MEM_Visible)>=2
+		MEM_ShowTime--
+		if Mem_ShowTime==0; Mem_Visible={}; End
+	End
+	For v in each(MEM_Visible)
+		if v.x==x && v.y==y; return true; end
+	End
+	return false
+End
+
+
+Void DrawCards()
+	For _y=0,Field.FH-1
+		For _x=0,Field.FW-1
+			int dx;dx =_x*Mem_Card.w
+			int dy;dy =_y*Mem_Card.h
+			If Visible(_x,_Y)
+				Mem_Deck.Draw(dx,dy,Field.XC(_x,_y))				
+			ElIf !Field.Cleared(_x,_y)
+				Mem_Deck.DrawBack(dx,dy)
+			End
+		End
+	End
+End
+
+Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	DrawCards()
+	ShowMouse()
+End

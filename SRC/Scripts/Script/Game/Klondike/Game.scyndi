@@ -438,7 +438,6 @@ Void DrawCards()
 			End
 		End
 	Else
-		If (!_Dragging) && MX>KLO_Draw.X && MY>KLO_Draw.Y && MX<KLO_Draw.X+KLO_Draw.W && MY<KLO_Draw.Y+KLO_Draw.H
 			PPP.Stretch(0,0,64,64)
 			If ML
 				SFX("SLIDE")

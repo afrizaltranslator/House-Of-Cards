@@ -29,13 +29,17 @@ Script
 #use "Libs/SCI/Graphics"
 
 #use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/GameFeatures"
 
 #use "Script/Use/Lnk/Card"
 
 #use "Script/Game/Memory/Field"
 #use "Script/Game/Memory/StartGame"
 #use "Script/Game/Memory/MemoryCards"
+
+ReadOnly Var ICO = LoadNewImage("Script/Game/Memory/Icon.png","MEMORY_ICON")
 
 Global Var MEM_Config = GINIE.Obtain("CONFIG::MEMORY")
 
@@ -44,6 +48,9 @@ Global Int MEM_Time
 Global Int MEM_Matches
 Global Int MEM_Left
 Global Int Hue = os.time()
+
+global int MEM_OldTime
+Global Bool MEM_RunTime
 
 Get Var MEM_Deck;return MemoryCards.CurrentDeck; end
 Get Var MEM_Card;return MemoryCards.CurrentSize; end
@@ -60,6 +67,21 @@ Bool Visible(int X,Int Y)
 	End
 	return false
 End
+Bool Show(int X,Int Y)
+	Switch Len(Mem_Visible)
+		Case 2
+			Mem_Visible = {}
+			Show(X,Y)
+		Case 1
+			Mem_ShowTime=1000
+			FallThrough
+		case 0
+			Mem_Visible[Len(Mem_Visible)]={["x"]=X,["y"]=Y}
+		default
+			printf("\1xb[31mERROR!\x1b[37mVisibility overload (%d), resetting\n",Len(Mem_Visible))
+			Mem_Visible = {}
+	End
+End
 
 
 Void DrawCards()
@@ -68,12 +90,22 @@ Void DrawCards()
 			int dx;dx =_x*Mem_Card.w
 			int dy;dy =_y*Mem_Card.h
 			If Visible(_x,_Y)
-				Mem_Deck.Draw(dx,dy,Field.XC(_x,_y))				
+				SetColor(255,255,255)
+				Mem_Deck.DrawCard(dx,dy,Field.XC(_x,_y))				
 			ElIf !Field.Cleared(_x,_y)
+				SetColor(255,255,255)
 				Mem_Deck.DrawBack(dx,dy)
+				If MX>dx && MY>dy && MX<dx+Mem_Deck.W && MY<Mem_Deck.H+dy
+					SetColorHSV(Hue,1,1)					
+					Rect(dx,dy,Mem_Deck.W,Mem_Deck.H,1)
+					If ML
+						Show(_x,_y)
+					End
+				End	
 			End
 		End
 	End
+	SetColor(255,255,255)
 End
 
 Global Void MainFlow()
@@ -81,5 +113,9 @@ Global Void MainFlow()
 	SetColor(255,255,255,255)
 	DrawBackground()
 	DrawCards()
-	ShowMouse()
+	ICO.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
+	ShowTime(MEM_Time,0,Graphics.Height-30)
+	ShowScore(MEM_Score,Graphics.Width div 3,Graphics.Height-30,2)
+	GameFeatures.Button()
+	ShowMouse()	
 End

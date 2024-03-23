@@ -37,6 +37,8 @@ plua GL=Lua.Scyndi.Globals
 Global Void GameNew()
 	GL.Mem_Score=0
 	GL.Mem_Time=0
+	GL.Mem_RunTime=False
+	Gl.MEM_OldTime=os.time()
 	MemoryCards.ConfigField()
 	Field.Create(MemoryCards.FldW,MemoryCards.FldH)
 	Int Max=MemoryCards.FldW*MemoryCards.FldH

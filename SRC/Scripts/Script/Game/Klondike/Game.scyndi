@@ -519,7 +519,8 @@ Void StateControl()
 					KLO_DiscPile.Pop()
 					KLO_DiscShow=KLO_DiscPile.Array
 					AutosolveFrames=5
-				ElIf (!KLO_DiscPile.Have) && (KLO_DrawPile.Have)
+				//ElIf (!KLO_DiscPile.Have) && (KLO_DrawPile.Have)
+				ElIf (KLO_DrawPile.Have)
 					plua c=KLO_DrawPile.Pop()
 					KLO_DiscPile.Push(c)
 					KLO_DiscShow=KLO_DiscPile.Array

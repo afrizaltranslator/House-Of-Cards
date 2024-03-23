@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.21
+// Version: 24.03.23
 // End License Information
 
 Script
@@ -518,6 +518,7 @@ Global Void GameNew(String CShuffle="")
 	SPI_Score = 500
 	SPI_Cleared = {}
 	SPI_State=0
+	SPI_Time=0
 	GameFeatures.ShuffleTag="DECK_Spider"
 	slxn = sprintf("%d_Suits::allowempty.%s",Suits,AllowEmpty)
 	SPI_SeedLog = SeedLog.StartLog("SPIDER",slxn)

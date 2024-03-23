@@ -255,7 +255,7 @@ End
 
 Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return KLO_State==0; End
 
-Bool ClearCard(c)
+Global Bool ClearCard(c)
 	plua suit;suit = c.card.cardsuit
 	plua val; val  = c.card.cardvalue
 	KLO_Cleared[suit] = KLO_Cleared[suit] || {}

@@ -165,29 +165,105 @@ Class KlondikeAction
 	ReadOnly Int        FromRow
 	ReadOnly Int        ToRow
 	ReadOnly Int        NumCards
-	Constructor(String _Cmd,Int _FR=0,Int _TR=0,Int _NC=1)
-		Cmd      = Upper(_Cmd)
-		FromRow  = _FR
-		ToRow    = _TR
-		NumCards = _NC
+	ReadOnly Int        HiddenCards
+	Constructor(String _Cmd,Int _FR=0,Int _TR=0,Int _NC=1,Int _HC=0)
+		Cmd         = Upper(_Cmd)
+		FromRow     = _FR
+		ToRow       = _TR
+		NumCards    = _NC
+		//HiddenCards = _HC
+		If (Cmd=="DRAG" || Cmd=="CLEAR") && _FR>=0 
+			int Cnt=0
+			for c in each(KLO_Row[_FR])
+				If !c.visible; cnt++; end
+			end
+			HiddenCards=cnt
+		End
 	End
 	
-	Static Void Add(String _Cmd,Int _FR=0,Int _TR=0,Int _NC=1)
+	Static Void Add(String _Cmd,Int _FR=0,Int _TR=0,Int _NC=1,Int _HC=0)
 		plua n
-		n = new KlondikeAction(_Cmd,_FR,_TR,_NC)
-		Stacked.Push(n)
-		CSayF("Stacked action: %s - From %d to %d - Cards moved: %d",_Cmd,_FR,_TR,_NC)
+		n = new KlondikeAction(_Cmd,_FR,_TR,_NC,_HC)
+		Stacked.Push(n)		
+		CSayF("Stacked action: %s - From %d to %d - Cards moved: %d",_Cmd,_FR,_TR,_NC,_HC)
 	End
 	
 	Static Void Undo()
-		CSay("Undo not yet implemnted")
+		//CSay("Undo not yet implemented")
+		plua Act;Act = Stacked.Pop()
+		Switch Act.Cmd
+			Case "DRAW"
+				for i=1,Act.NumCards
+					plua p = KLO_DiscPile.pop()
+					if (!p); Lua.error("Internal error! Undo with empty discpile. Please report!"); End
+					KLO_DrawPile.Push(p)
+					KLO_DiscShow = KLO_DiscPile.Array					
+				End
+				SFX("SLIDE")
+			Case "RESET"
+				SFX("SLIDE")
+				While KLO_DrawPile.Have
+					plua p = KLO_DrawPile.Pop()
+					KLO_DiscPile.Push(p)
+					p.X=math.random(Graphics.Width,Graphics.Width*10)
+					p.y=math.random(Graphics.Height,Graphics.Height*10)
+				End
+				KLO_DiscShow = KLO_DiscPile.Array
+			Case "CLEAR"
+				plua p
+				p = KLO_Cleared[Act.ToRow][len(KLO_Cleared[Act.ToRow])-1]
+				if (!p); Lua.error(sprintf("Internal error! Undo with empty clearpile (%d). Please report!",Act.ToRow)); End
+				KLO_Cleared[Act.ToRow][len(KLO_Cleared[Act.ToRow])-1]=nil
+				KLO_Row[Act.FromRow][len(KLO_Row[Act.FromRow])]=p
+				for i,c in ipairs(KLO_Row[Act.FromRow])
+					c.visible=i>=Act.HiddenCards
+				end
+				SFX("SLIDE")
+			case "DRAG"
+				SFX("SLIDE")
+				switch -Act.FromRow
+				Case 1
+					int p;p=len(KLO_Row[Act.ToRow])-1
+					KLO_DiscPile.Push(KLO_Row[Act.ToRow][p])
+					KLO_Row[Act.ToRow][p].Go(KLO_Disc)
+					KLO_Row[Act.ToRow][p]=nil
+					KLO_DiscShow = KLO_DiscPile.Array
+					
+				Case 2
+					int p;p=len(KLO_Row[Act.ToRow])-1
+					Lua.assert(Lua.Scyndi.Globals.ClearedCard(p),"Internal error: Undo drag back from clear didn't work! Please report!")
+					KLO_Row[Act.ToRow][p]=nil
+				Default
+					//plua c = {}
+					Int l;l=len(KLO_Row[Act.ToRow])
+					For i=1,Act.NumCards
+						plua crd;crd=KLO_Row[Act.ToRow][l-i]
+						//c[Cmd.NumCards-i]=KLO_Row[Act.FromRow][l-i]
+						KLO_Row[Act.ToRow][l-i]=nil
+						KLO_Row[Act.FromRow][len(KLO_Row[Act.FromRow])]=crd
+						
+					End
+					For i,c in ipairs(KLO_Row[Act.FromRow])
+						c.visible=i>=Act.HiddenCards
+					End
+				end			
+			Default
+				Lua.error("Undo: Unknown Action: "..Act.Cmd)
+		End
 	End
 	
 	Static Void CheckUndoButton()
 		If KLO_State!=0 || (!Stacked.Have)
 			Return
 		End
+		If MX<64 && MY>Graphics.Height-64
+			SetColorHSV(Hue,1,1)
+			If ML
+				KlondikeAction.Undo()
+			End
+		End
 		UndoButton.Stretch(0,Graphics.Height-64,64,64)
+		SetColor(255,255,255)
 	End
 End
 
@@ -200,10 +276,10 @@ Init
 	
 	// Cleared
 	KLO_Clear = {}
-	KLO_Clear[0] = New CardNode( 5               ,Graphics.Height-math.floor(KLO_CardSize.H * 2.5))
-	KLO_Clear[1] = New CardNode(10+KLO_CardSize.W,Graphics.Height-math.floor(KLO_CardSize.H * 2.5))
-	KLO_Clear[2] = New CardNode( 5               ,Graphics.Height-math.floor(KLO_CardSize.H * 1.25))
-	KLO_Clear[3] = New CardNode(10+KLO_CardSize.W,Graphics.Height-math.floor(KLO_CardSize.H * 1.25))
+	KLO_Clear[0] = New CardNode( 5               ,Graphics.Height-math.floor(KLO_CardSize.H * 2.6))
+	KLO_Clear[1] = New CardNode(10+KLO_CardSize.W,Graphics.Height-math.floor(KLO_CardSize.H * 2.6))
+	KLO_Clear[2] = New CardNode( 5               ,Graphics.Height-math.floor(KLO_CardSize.H * 1.50))
+	KLO_Clear[3] = New CardNode(10+KLO_CardSize.W,Graphics.Height-math.floor(KLO_CardSize.H * 1.50))
 	KLO_RowNodes = {}
 	For i=0,6
 		int x
@@ -304,9 +380,10 @@ Get Bool Dragging
 			   // Mouse position          Not the same row            // Kings on an empty row                            // Other card value                                                   // Red is not black and vice versa
 			If MX>RN.X && MX<RN.X+RN.W && ri!=KLO_DragCards.Row && ( (KLO_DragCards[0].Card.CardValue==13 && Len(RA)==0) || (Len(RA)>0 && KLO_DragCards[0].Card.CardValue==RA[Len(RA)-1].Card.CardValue-1 && KLO_DragCards[0].Card.CardSuit % 2!=RA[Len(RA)-1].Card.CardSuit % 2)) 
 				For di,dc in ipairs(KLO_DragCards)
-					RA[Len(RA)]=DC
-					SFX("SLIDE")
+					RA[Len(RA)]=DC					
 				End
+				KlondikeAction.Add("Drag",KLO_DragCards.Row,ri,Len(KLO_Dragcards))
+				SFX("SLIDE")
 				// Two loops to prevent conflicts
 				if KLO_DragCards.Row==-1
 					KLO_DiscPile.Pop()
@@ -364,7 +441,7 @@ Void Deal()
 	End
 End
 
-Void DrawCards()	
+Void DrawCards()
 	SetColor(255,255,255,255)
 	// Rows on the table
 	plua _DoubleML = DoubleML
@@ -412,6 +489,7 @@ Void DrawCards()
 			End
 		End
 	End
+
 	// Draw Pile
 	If KLO_DrawPile.Have
 		KLO_Card.DrawBack(KLO_Draw.X,KLO_Draw.Y)
@@ -420,9 +498,10 @@ Void DrawCards()
 			If ML
 				SFX("SLIDE")
 				KLO_TimeRunning=true
-				For k in Each(KLO_DiscPile.Array); k.GotoY=KLO_Disc.Y; k.Y = KLO_Disc.Y; End 				
+				For k in Each(KLO_DiscPile.Array); k.GotoY=KLO_Disc.Y; k.Y = KLO_Disc.Y; k.visible=true; End
+ 				KlondikeAction.Add("Draw",0,0,KLO_CONFIG.INTVALUE("CONFIG","FROMPILE"))
 				For i=0,KLO_CONFIG.INTVALUE("CONFIG","FROMPILE")-1
-					// Seems double, but the 3 card draw needs it.
+					// Seems double, but the 3 card draw needs it.					
 					If KLO_DrawPile.Have
 						plua dcard = KLO_DrawPile.Pop()
 						KLO_DiscPile.Push(dcard)
@@ -433,15 +512,17 @@ Void DrawCards()
 						dcard.visible = true
 						//KLO_DiscShow[i] = dcard
 					End					
-				End
+				End 
 				KLO_DiscShow = KLO_DiscPile.Array
-			End
-		End
+			End // if ML
+		End // if
 	Else
+		If (!_Dragging)  && KLO_DiscPile.Have && MX>KLO_Draw.X && MY>KLO_Draw.Y && MX<KLO_Draw.X+KLO_Draw.W && MY<KLO_Draw.Y+KLO_Draw.H
 			PPP.Stretch(0,0,64,64)
 			If ML
 				SFX("SLIDE")
 				KLO_DrawPile = New Stack()
+				KlondikeAction.Add("Reset")
 				While KLO_DiscPile.have
 					plua dcard = KLO_DiscPile.Pop()
 					dcard.visible=0
@@ -513,6 +594,7 @@ Void StateControl()
 			OKE.Stretch(okx,oky,64,64)
 			SetColor(255,255,255,255)
 		Case 2
+			// AutoSolve
 			If AutosolveFrames>0
 				AutosolveFrames--
 			Else
@@ -678,6 +760,7 @@ Global Void MainFlow()
 	GameFeatures.Button()
 	StateControl()
 	CheckAutoSolve()
+	KlondikeAction.CheckUndoButton()
 	ShowMouse()
 	If KLO_SeedLog; KLO_SeedLog.ShowSeed(); End
 End

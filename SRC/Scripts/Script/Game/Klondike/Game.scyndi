@@ -397,6 +397,7 @@ Void DrawCards()
 				PPP.Stretch(ca.X-64,ca.Y-64,64,64)
 				If _DoubleML && Hovering+1==len(ra)
 					If ClearCard(ca)
+						SFX("SLIDE")
 						KlondikeAction.Add("Clear",ri,KLO_DragCards[0].Card.CardSuit)
 						ra[Hovering]=nil
 					End

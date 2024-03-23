@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.12
+// Version: 24.03.23
 // End License Information
 
 Module
@@ -63,6 +63,8 @@ Class DDeck
 	ReadOnly String DeckFile
 	ReadOnly String BackSideName
 	ReadOnly Var Back
+	Get Int W; return sz.W; End
+	Get Int H; return sz.H; End
 	Constructor(_Sz,string _Deck,string _BackSide = "" )
 		Sz=_Sz
 		If _Deck=="*"

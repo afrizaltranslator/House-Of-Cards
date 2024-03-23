@@ -288,7 +288,8 @@ end
 Get Bool Dragging	
 	If !KLO_DragCards		
 		Return False
-	ElIf MY>KLO_Clear[0].Y && MX<KLO_Clear[1].X + KLO_Clear[1].W && Len(KLO_DragCards)==1 && (!MDL) && ClearCard(KLO_DragCards[0]) 
+	ElIf MY>KLO_Clear[0].Y && MX<KLO_Clear[1].X + KLO_Clear[1].W && Len(KLO_DragCards)==1 && (!MDL) && ClearCard(KLO_DragCards[0])
+		KlondikeAction.Add("Clear",KLO_DragCards.Row,KLO_DragCards[0].Card.CardSuit)
 		if KLO_DragCards.Row==-1
 			KLO_DiscPile.Pop()
 		Else 
@@ -396,6 +397,7 @@ Void DrawCards()
 				PPP.Stretch(ca.X-64,ca.Y-64,64,64)
 				If _DoubleML && Hovering+1==len(ra)
 					If ClearCard(ca)
+						KlondikeAction.Add("Clear",ri,KLO_DragCards[0].Card.CardSuit)
 						ra[Hovering]=nil
 					End
 				ElIf MDL
@@ -461,6 +463,7 @@ Void DrawCards()
 		if _DoubleML
 			CSayF("Pile card clear request")
 			If ClearCard(top)
+				KlondikeAction.Add("Clear",-1,KLO_DragCards[0].Card.CardSuit)
 				KLO_DiscPile.Pop()
 				KLO_DiscShow = KLO_DiscPile.Array
 			End

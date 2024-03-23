@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.22
+// Version: 24.03.23
 // End License Information
 Script
 
@@ -262,7 +262,7 @@ Bool ClearCard(c)
 	plua cpil; cpil=KLO_Cleared[suit]
 	CSayF("Trying to clear %d:%d",suit,val)
 	CSayF("- Pile for suit #%d has size %d",suit,len(cpil))
-	if val==len(cpil)+1
+	if val==len(cpil)+1		
 		KLO_TimeRunning=true
 		cpil[len(cpil)]=c		
 		cpil.Quick=false 

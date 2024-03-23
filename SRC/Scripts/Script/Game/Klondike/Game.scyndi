@@ -465,6 +465,7 @@ Void DrawCards()
 		if _DoubleML
 			CSayF("Pile card clear request")
 			If ClearCard(top)
+				SFX("SLIDE")
 				KlondikeAction.Add("Clear",-1,KLO_DragCards[0].Card.CardSuit)
 				KLO_DiscPile.Pop()
 				KLO_DiscShow = KLO_DiscPile.Array

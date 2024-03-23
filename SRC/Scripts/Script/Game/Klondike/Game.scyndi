@@ -458,7 +458,7 @@ Void DrawCards()
 	For i=len(KLO_DiscShow)-1,0,-1
 		KLO_DiscShow[i].Draw()
 		KLO_DiscShow[i].Visible=true
-	End
+	End // For 
 	plua top = KLO_DiscShow[0]
 	If top && MX>KLO_Disc.x && MY>top.y && MX<top.x+top.w && MY<top.y+top.h && (!_Dragging)
 		PPP.Stretch(top.x-(top.w div 2),0,64,64)
@@ -468,11 +468,11 @@ Void DrawCards()
 				KlondikeAction.Add("Clear",-1,KLO_DragCards[0].Card.CardSuit)
 				KLO_DiscPile.Pop()
 				KLO_DiscShow = KLO_DiscPile.Array
-			End
+			End // cleared?
 		elif MDL
 			KLO_DragCards = { ["Row"]=-1, ["Card"]=0,[0]=top, ["OY"]=top.gotoY }
-		End
-	End
+		End // double for clear 
+	End // if top card
 	// Clear Piles
 	for i,cp in pairs(KLO_Cleared)
 		//CSayF("Drawing cleared pile #%d (L:%02d)",i,len(cp)) // DEBUG ONLY!
@@ -486,13 +486,12 @@ Void DrawCards()
 					cpc.Go(KLO_Clear[i])
 					cp.Quick = cp.Quick && cpc.X==cpc.GoToX && cpc.Y==cpc.GoToY
 					cpc.Draw()
-				End
+				End // For loop
 				if cp.Quick; CSayF("Clear pile #%d set to quick!",i); End
-			End
-		End
-	End
-	
-End
+			End // sp.quick if ith else
+		End // if length of cp
+	End	// for loop i,cp
+End // End function
 
 Int AutoSolveFrames=5
 

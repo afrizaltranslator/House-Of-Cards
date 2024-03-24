@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.21
+// Version: 24.03.24
 // End License Information
 
 Module
@@ -80,9 +80,9 @@ plua _ShufNewIndex(s,Index,Value)
 	Lua.error(sprintf("Shuffled decks are readonly so you cannot assign %s to index %s",Value,Index))
 End
 
-Var Shuffle(String Tag,String ShufMethod="Random",Int Low=1, Int High=13, Int Decks=1,Int Suits=4)
+Var Shuffle(String Tag,String ShufMethod="Random",Int Low=1, Int High=13, Int Decks=1,Int Suits=4,int includeJokers=0)
 	_LoadSubDeck()
-	Sys.Call("SUB_DECK","ShuffleDeck",Tag, ShufMethod,Low,High, Decks,Suits)
+	Sys.Call("SUB_DECK","ShuffleDeck",Tag, ShufMethod,Low,High, Decks,Suits, includeJokers)
 	plua ret = {}
 	ret.___Tab = {}
 	ret.___Tag = Tag

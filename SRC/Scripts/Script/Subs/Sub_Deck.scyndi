@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.21
+// Version: 24.03.24
 // End License Information
 Script
 
@@ -48,10 +48,10 @@ Var GetMethod(String _meth)
 	Return _Method[_meth]
 End
 
-Global Void ShuffleDeck(String Tag,String ShufMethod,Int Low, Int High, Int Decks, Int Suits)
+Global Void ShuffleDeck(String Tag,String ShufMethod,Int Low, Int High, Int Decks, Int Suits,int IncludeJokers)
 	Tag = Upper(Tag)
 	_Reg      = _Reg || {}
-	_Reg[Tag] = GetMethod(ShufMethod).DoShuffle(Low,High,Decks,Suits)
+	_Reg[Tag] = GetMethod(ShufMethod).DoShuffle(Low,High,Decks,Suits,IncludeJokers)
 End
 
 Global Void ShuffleSeed(int s)

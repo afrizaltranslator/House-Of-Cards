@@ -21,16 +21,18 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.23
+// Version: 24.03.24
 // End License Information
 Script
 
+#use "Libs/SCI/Sys"
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/GameFeatures"
 
 #use "Script/Use/Lnk/Card"
@@ -40,17 +42,22 @@ Script
 #use "Script/Game/Memory/MemoryCards"
 
 ReadOnly Var ICO = LoadNewImage("Script/Game/Memory/Icon.png","MEMORY_ICON")
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Var WON = ObtainImage("SUCCESS")
 
 Global Var MEM_Config = GINIE.Obtain("CONFIG::MEMORY")
+
 
 Global Int MEM_Score
 Global Int MEM_Time
 Global Int MEM_Matches
 Global Int MEM_Left
+Global Int MEM_Combo
 Global Int Hue = os.time()
 
 global int MEM_OldTime
 Global Bool MEM_RunTime
+Global Bool MEm_Won
 
 Get Var MEM_Deck;return MemoryCards.CurrentDeck; end
 Get Var MEM_Card;return MemoryCards.CurrentSize; end
@@ -67,16 +74,39 @@ Bool Visible(int X,Int Y)
 	End
 	return false
 End
+
+Void CheckCorrect()
+	if len(Mem_Visible)<2; Return; End
+	If Field.Suit(MEM_Visible[1].x,MEM_Visible[1].y)==Field.Suit(MEM_Visible[0].x,MEM_Visible[0].y) && Field.Value(MEM_Visible[1].x,MEM_Visible[1].y)==Field.Value(MEM_Visible[0].x,MEM_Visible[0].y)
+		Field.Clear(MEM_Visible[0].x,MEM_Visible[0].y)
+		Field.Clear(MEM_Visible[1].x,MEM_Visible[1].y)
+		MEM_Combo++
+		MEM_Score=MEM_Score+Mem_Combo
+		Bool Victory=true
+		for y=0,Field.FH-1;for x=0,Field.FW-1;Victory=Victory && Field.Cleared(x,y); end; end
+		If Victory
+			Mem_Won=true
+			SFX("COMPLETE")
+		Else
+			SFX("BONUS")
+		End
+	Else
+		Mem_Combo=0
+	end
+end
+
 Bool Show(int X,Int Y)
+	Mem_RunTime=true
 	Switch Len(Mem_Visible)
 		Case 2
 			Mem_Visible = {}
 			Show(X,Y)
 		Case 1
-			Mem_ShowTime=1000
+			Mem_ShowTime=1000			
 			FallThrough
 		case 0
 			Mem_Visible[Len(Mem_Visible)]={["x"]=X,["y"]=Y}
+			CheckCorrect()
 		default
 			printf("\1xb[31mERROR!\x1b[37mVisibility overload (%d), resetting\n",Len(Mem_Visible))
 			Mem_Visible = {}
@@ -108,14 +138,38 @@ Void DrawCards()
 	SetColor(255,255,255)
 End
 
+Void DoTime()
+	ShowTime(MEM_Time,0,Graphics.Height-30)
+	int nt = os.time()
+	if Mem_RunTime && (!Mem_Won) && Mem_oldTime!=nt
+		Mem_Time++
+		Mem_OldTime=nt
+	End
+End
+
+Void GameVictory()
+	If Mem_Won
+		WON.Draw(Graphics.Width div 2,Graphics.Height div 2)
+		if MY>Graphics.Height-64 && MX>(Graphics.Width div 2)-32 && MX<(Graphics.Width div 2)+32
+			SetColorHSV(Hue,1,1)
+			If ML
+				GotoFlow("SELECTGAME")
+			End
+		End		
+		OKE.Stretch((Graphics.Width div 2)-32,Graphics.Height-64,64,64)
+	End
+	SetColor(255,255,255,255)
+End	
+
 Global Void MainFlow()
 	hue = (hue+1)%360
 	SetColor(255,255,255,255)
 	DrawBackground()
 	DrawCards()
 	ICO.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
-	ShowTime(MEM_Time,0,Graphics.Height-30)
+	DoTime()
 	ShowScore(MEM_Score,Graphics.Width div 3,Graphics.Height-30,2)
 	GameFeatures.Button()
+	GameVictory()
 	ShowMouse()	
 End

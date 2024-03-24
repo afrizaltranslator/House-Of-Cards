@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.23
+// Version: 24.03.24
 // End License Information
 Module
 
@@ -32,37 +32,48 @@ plua _B
 
 int FW
 int FH
+Int Size
 
 Void Create(Int W,Int H)
 	FW=W
 	FH=H
-	_B = new TBank(W*H*3,"Memory_Field")
+	Size=(W*H*3)+3
+	CSayF("Memory field %dx%d -> %d",W,H,Size)
+	_B = new TBank((W*H*3)+3,"Memory_Field")
 	_B.Clean()
 End
 
 Void Put(Int X,Int Y,Int Suit,Int Value)
 	Lua.assert(X<FW && Y<FH,sprintf("Out of bounds (%d,%d) -> %dx%d",X,Y,FW,FH))
-	_B.Poke((Y+(X*FW))*3+0,Suit)
-	_B.Poke((Y+(X*FW))*3+1,Value)
+	_B.Poke((X+(Y*FW))*3+0,Suit)
+	_B.Poke((X+(Y*FW))*3+1,Value)
 End
 
 Void IPut(Int idx,Int Suit,Int Value)
+	//CSayF("IPut %d -> %d",idx,idx*3)
 	_B.Poke((idx*3)+0,Suit)
 	_B.Poke((idx*3)+1,Value)
 	_B.Poke((idx*3)+2,0)
 End
 
-Int Suit(Int X,Int Y);  Return _B.Peek((Y+(X*FW))*3+0); End
-Int Value(Int X,Int Y); Return _B.Peek((Y+(X*FW))*3+1); End
-Void Clear(Int X,Int Y); _B.Poke((Y+(X*FW))*3+2,1); End
+Int Suit(Int X,Int Y);  Return _B.Peek(((X+(Y*FW))*3)+0); End
+Int Value(Int X,Int Y); Return _B.Peek(((X+(Y*FW))*3)+1); End
+Void Clear(Int X,Int Y); _B.Poke(((X+(Y*FW))*3)+2,1); End
 
 Bool Cleared(Int X,Int Y);
-	//CSayF("Cleared (%d,%d) == %d",x,y,_B.Peek((Y+(X*FW))*3+2)) // DEBUG ONLY!
-	Return _B.Peek((Y+(X*FW))*3+2)>0; 
+	//CSayF("Cleared (%d,%d) == %d",x,y,_B.Peek((X+(Y*FW))*3+2)) // DEBUG ONLY!
+	PLUA RET
+	plua idx;idx = (X+(Y*FW))*3
+	//CSayF("Cleared (%d,%d); index: %d",x,y,idx+2) // DEBUG ONLY!
+	Ret = _B.Peek(idx+2)>0;
+	return Ret
 End
 	
 	
-Int IValue(int idx); return _B.Peek((idx*3)+1); End
+Int IValue(int idx)
+	//CSayF("IValue(%d): %d/%d",idx,idx*3,Size)
+	return _B.Peek((idx*3)+1); 
+End
 
 Class _FC
 	ReadOnly Int Suit
@@ -74,13 +85,17 @@ Class _FC
 End
 
 Var Card(Int X,Int Y)
-	plua idx;idx=(Y+(X*FW))*3
+	plua idx;idx=(X+(Y*FW))*3
 	return new _FC(_B.Peek(idx),_B.Peek(idx+1))
 End
 
 Var XC(Int X,Int Y)
-	plua idx;idx=(Y+(X*FW))*3
-	return _B.Peek(idx),_B.Peek(idx+1)
+	//CSayF("XC(%d,%d)")
+	plua idx;idx=(X+(Y*FW))*3
+	plua s
+	plua v
+	s,v = _B.Peek(idx),_B.Peek(idx+1)
+	return s,v
 end
 
 

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.05
+// Version: 24.03.24
 // End License Information
 Module
 
@@ -35,10 +35,21 @@ Module
 
 #define Debug_RandomShuffle
 
-Table DoShuffle(Int Low, Int High, Int Decks, Int Suits)
-	Int MaxCards;MaxCards = (High-(Low-1))*Decks*Suits
+Table DoShuffle(Int Low, Int High, Int Decks, Int Suits, Int IncludeJokers)
+	Int MaxCards;MaxCards = ((High-(Low-1))*Decks*Suits)+IncludeJokers
 	plua ret = {}
 	plua ts 
+	For i=1,includejokers
+		int timeout=10000
+		Int Pos;Pos = math.random(0,MaxCards-1)
+		while Ret[Pos]
+			lua.assert(TimeOut>0,"Shuffle Timeout on jokers") // Security measure to prevent infinite loops on bugs
+			Pos = math.random(0,MaxCards-1)
+			Timeout--
+		end
+		CSayF("Joker #%d placed on position %d",i,pos)
+		Ret[Pos] = new DeckCard(i,-1)
+	End
 	Switch Suits
 		Case 1; ts = NewArray(math.random(0,3))
 		Case 2; ts = NewArray(math.random(0,1)*2,(math.random(0,1)*2)+1)

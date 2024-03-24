@@ -62,6 +62,7 @@ Get String SLS_ShuffleMethod; Return SLS_Config.Value("Shuffle","Shuffle"); End
 Var SLS_Stock
 Var SLS_Deck
 Var SLS_DeckIndex
+Int SLS_Slag
 #endregion
 
 
@@ -199,6 +200,7 @@ Global Void GameNew(String CShuffle="")
 	End
 	SLS_DeckIndex=0
 	SLS_Stock = {}
+	SLS_Slag = 1
 End
 
 Global Void MainFlow()

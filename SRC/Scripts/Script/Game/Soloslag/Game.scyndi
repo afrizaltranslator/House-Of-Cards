@@ -1,0 +1,212 @@
+// License Information:
+// House of Cards
+// Soloslag
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.24
+// End License Information
+Script
+
+#region Use
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/XMath"
+
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+#use "Script/use/Gen/SeedLog"
+
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Sound"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/GameFeatures"
+
+#endregion
+
+
+#region Declarations
+Const Int Horizontal=0
+Const Int Vertical=1
+int Hue = os.time()
+#endregion
+
+#region "Game Vars"
+Plua CardSize = Lua.Scyndi.Class.CardSize
+ReadOnly Var SLS_CardSize = CardSize.FromW((Graphics.Width div 2) div 3)
+ReadOnly Var SLS_Card = SLS_CardSize.Bind()
+ReadOnly Var SLS_Config = GINIE.Obtain("CONFIG::SOLOSLAG")
+Get Int SLS_MaxStock; Return SLS_Config.IntValue("Config","Stock"); End
+Get String SLS_ShuffleMethod; Return SLS_Config.Value("Shuffle","Shuffle"); End
+Var SLS_Stock
+Var SLS_Deck
+Var SLS_DeckIndex
+#endregion
+
+
+#region "Wind Nodes"
+Class TWind
+	ReadOnly Static Var SuitNames = NewArray("Hearts","Clubs","Diamonds","Spades")
+	ReadOnly Static Var Nodes = {}
+	ReadOnly Static Var SuitPic = {}
+	ReadOnly Static Var Data = GINIE.LoadNew("Script/Game/Soloslag/Wind.ini","SOLOSLAGWIND")
+	ReadOnly Static Int TWidth = Graphics.Width div 2
+	ReadOnly Static Int THeight = Graphics.Height - 30
+
+	ReadOnly Int CardX
+	ReadOnly Int CardY
+	ReadOnly Int CardCX
+	ReadOnly Int CardCY
+	ReadOnly Int IconX
+	ReadOnly Int IconY
+	ReadOnly Var Icon
+	ReadOnly Int SuitStripDir
+	ReadOnly String Tag
+	
+	// Hearts
+	ReadOnly Int Suit0X
+	ReadOnly Int Suit0Y
+	
+	// Clubs
+	ReadOnly Int Suit1X
+	ReadOnly Int Suit1Y
+	
+	// Diamonds
+	ReadOnly Int Suit2X
+	ReadOnly Int Suit2Y
+
+	// Spades
+	ReadOnly Int Suit3X
+	ReadOnly Int Suit3Y
+		
+	// Game vars
+	Var Bekend
+		
+	Constructor(String _Tag)
+		CSayF("Creating wind node: %s",_Tag)
+		Tag=_Tag
+		plua l
+		l = Data.List("Lists","Absolute")
+		For v in each(L)
+			Self[v]=Data.IntValue(_Tag,v)
+		End
+		l = Data.List("Lists","PromilleW")
+		For vr in each(L)
+			int vl;vl = Data.IntValue(_Tag,vr)
+			number r1;r1=vl/1000			
+			Self[vr] = XMath.round(TWidth*r1)
+			CSayF("%s = %d",Vr,Self[vr])
+		End
+		l = Data.List("Lists","PromilleH")
+		For vr in each(L)
+			int vl;vl = Data.IntValue(_Tag,vr)
+			number r1;r1=vl/1000			
+			Self[vr] = XMath.round(THeight*r1)
+			CSayF("%s = %d",Vr,Self[vr])
+		End
+		Switch SuitStripDir
+			Case 0 
+				// ---
+				Suit0X=IconX-64
+				Suit1X=IconX-32
+				Suit2X=IconX+32
+				Suit3X=IconX+64
+				for i=0,3
+					Self[sprintf("Suit%dY",i)]=IconY
+				end
+			case 1
+			    // |
+				Suit0Y=IconY-64
+				Suit1Y=IconY-32
+				Suit2Y=IconY+32
+				Suit3Y=IconY+64
+				for i=0,3
+					Self[sprintf("Suit%dX",i)]=IconX
+				end
+			default lua.error("Wind huh?  >>> "..SuitStripDir)
+		End
+		Icon = LoadNewImage(sprintf("Script/Game/Soloslag/%s.png",_Tag),"SOLOSLAG_WIND_".._Tag)
+	End
+
+End	
+
+Init
+	for w in each(NewArray("N","W","E","S"))
+		TWind.Nodes[w]=New TWind(w)
+	End
+End
+
+Void DrawWindNodes()
+	For w,d in pairs(TWind.Nodes)
+		d.Icon.Stretch(d.IconX-32,d.IconY-32,64,64)
+		For suit,suitname In ipairs(TWind.SuitNames)
+			if d.Bekend[suit]
+				TWind.SuitPic[Suit] = TWind.SuitPic[Suit] || LoadNewImage(sprintf("GFX/Cards/Scripted/Base/%s.png",TWind.SuitNames[Suit]),sprintf("SCRIPTED_CARD_SUIT_%d",Suit))
+				TWind.SuitPic[Suit].Stretch(d[sprintf("Suit%dX",suit)]-16,d[sprintf("Suit%dY",suit)]-16,32,32)
+			end
+		End
+	End
+End
+#endregion
+
+Void DrawStock()
+	For i=0,SLS_MaxStock-1
+		int bx;bx=i % 3
+		int by;by=i div 3
+		int dx;dx=Graphics.Width - ((bx+1)*SLS_Card.W)
+		int dy;dy=by*SLS_Card.H
+		if (!SLS_Stock[i]) && SLS_DeckIndex<SLS_Deck.Size			
+			SLS_Stock[i] = SLS_Deck[SLS_DeckIndex]
+			SLS_DeckIndex++
+		End
+		If SLS_Stock[i]
+			SLS_Card.DrawCard(dx,dy,SLS_Stock[i].CardSuit,SLS_Stock[i].CardValue)
+		End
+	End
+End
+
+
+#region "Main Callbacks"
+Global Void GameNew(String CShuffle="")
+	For k,v in pairs(TWind.Nodes)
+		v.Bekend = NewArray(true,true,true,true)
+	End
+	If CShuffle!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else		
+		SLS_Deck = Deck.Shuffle("DECK_Soloslag",SLS_ShuffleMethod,1,13,1,4,2)
+	End
+	SLS_DeckIndex=0
+	SLS_Stock = {}
+End
+
+Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	DrawWindNodes()
+	DrawStock()
+	ShowMouse()
+End
+#endregion

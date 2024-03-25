@@ -547,7 +547,7 @@ Void DrawCards()
 			CSayF("Pile card clear request")
 			If ClearCard(top)
 				SFX("SLIDE")
-				KlondikeAction.Add("Clear",-1,KLO_DragCards[0].Card.CardSuit)
+				KlondikeAction.Add("Clear",-1,top.Card.CardSuit) // KLO_DragCards[0].Card.CardSuit
 				KLO_DiscPile.Pop()
 				KLO_DiscShow = KLO_DiscPile.Array
 			End // cleared?
@@ -762,7 +762,7 @@ Global Void MainFlow()
 	CheckAutoSolve()
 	KlondikeAction.CheckUndoButton()
 	ShowMouse()
-	If KLO_SeedLog; KLO_SeedLog.ShowSeed(); End
+	If KLO_SeedLog; KLO_SeedLog.ShowSeed(5,Graphics.Height-20); End
 End
 
 

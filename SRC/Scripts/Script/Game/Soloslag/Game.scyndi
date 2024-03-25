@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.25
+// Version: 24.03.26
 // End License Information
 Script
 
@@ -32,6 +32,7 @@ Script
 #use "Libs/SCI/Graphics"
 
 #use "Libs/XMath"
+#use "Libs/Rosetta"
 
 #use "Script/Use/Lnk/Deck"
 #use "Script/Use/Lnk/Card"
@@ -47,6 +48,10 @@ Script
 
 #region "General assets"
 ReadOnly Var ICO = LoadNewImage("Script/Game/Soloslag/Icon.png","SOLOSLAG_ICON")
+ReadOnly Var ESC  = ObtainImage("SUCCESS")
+ReadOnly Var EFL  = ObtainImage("FAIL")
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Var FNT = ObtainFont("RYANNA")	
 #endregion
 
 
@@ -62,6 +67,7 @@ ReadOnly Var SLS_CardSize = CardSize.FromW((Graphics.Width div 2) div 3)
 ReadOnly Var SLS_Card = SLS_CardSize.Bind()
 //ReadOnly Var SLS_PlayedSize = CardSize.FromW(
 ReadOnly Var SLS_Config = GINIE.Obtain("CONFIG::SOLOSLAG")
+Get Bool SLS_AllowJokers; Return Upper(SLS_Config.Value("Config","Jokers"))=="YES"; End
 Get Int SLS_MaxStock; Return SLS_Config.IntValue("Config","Stock"); End
 Get String SLS_ShuffleMethod; Return SLS_Config.Value("Shuffle","Shuffle"); End
 Var SLS_Stock
@@ -70,6 +76,9 @@ Var SLS_DeckIndex
 Int SLS_Slag
 Int SLS_LSlag
 Int SLS_Turn
+Int SLS_Started
+Int SLS_State // 0=playing, 1=won, 2=lost, 3=short wait to clear table for next turn
+Int SLS_NextTime
 #endregion
 
 
@@ -82,6 +91,8 @@ Class TWind
 	ReadOnly Static Var Data = GINIE.LoadNew("Script/Game/Soloslag/Wind.ini","SOLOSLAGWIND")
 	ReadOnly Static Int TWidth = Graphics.Width div 2
 	ReadOnly Static Int THeight = Graphics.Height - 30
+	ReadOnly Static Var CardSize = CardSize.FromW(125)
+	ReadOnly Static Var Card = CardSize.Bind()
 	
 
 	ReadOnly Int CardX
@@ -90,9 +101,11 @@ Class TWind
 	ReadOnly Int CardCY
 	ReadOnly Int IconX
 	ReadOnly Int IconY
+	ReadOnly Int TrickCX
+	ReadOnly Int TrickCY
 	ReadOnly Var Icon
 	ReadOnly Int SuitStripDir
-	ReadOnly String Tag
+	ReadOnly String Tag				
 		
 	ReadOnly Var Arrow
 	
@@ -111,6 +124,14 @@ Class TWind
 	// Spades
 	ReadOnly Int Suit3X
 	ReadOnly Int Suit3Y
+		
+	// Current card
+	Int Tricks
+	Int CX
+	Int CY
+	Int GX
+	Int GY
+	Var PlayedCard
 		
 	// Game vars
 	Var Bekend
@@ -161,6 +182,8 @@ Class TWind
 		Icon  = LoadNewImage(sprintf("Script/Game/Soloslag/%s.png",_Tag), "SOLOSLAG_WIND_".._Tag)
 		Arrow = LoadNewImage(sprintf("Script/Game/Soloslag/A%s.png",_Tag),"SOLOSLAG_ARRW_".._Tag)
 		CSayF("Icon %s on (%04d,%04d); Card on (%04d,%04d)",_Tag,IconX,IconY,CardCX,CardCY)
+		CardX = CardCX-(CardSize.W div 2)
+		CardY = CardCY-(CardSize.H div 2)
 	End
 
 End	
@@ -172,15 +195,31 @@ Set String SLS_Beurt
 	End
 End
 
+Get Var SLS_AanDeBeurt; return TWind.Nodes[SLS_Beurt]; End
+
+Set Var SLS_StartTurn
+	switch lua.type(value)
+		case "string"
+			SLS_Beurt=value
+		case "number"
+			SLS_Turn=value
+		default 
+			lua.error(sprintf("I cannot start a turn with a %s (%s)!",lua.type(value),value))
+	end
+	SLS_Started = SLS_Turn
+end
+
 
 Init
-	for w in each(TWind.Winds)
+	for i,w in ipairs(TWind.Winds)
 		TWind.Nodes[w]=New TWind(w)
+		TWind.Nodes[i]=TWind.Nodes[w]
 	End
+	
 End
 
 Void DrawWindNodes()
-	TWind.Nodes[SLS_Beurt].Arrow.Stretch( (TWind.TWidth div 2) - 48, (TWind.THeight div 2) - 48,96,96) 
+	If SLS_State==0;TWind.Nodes[SLS_Beurt].Arrow.Stretch( (TWind.TWidth div 2) - 48, (TWind.THeight div 2) - 48,96,96);End 
 	For w,d in pairs(TWind.Nodes)
 		d.Icon.Stretch(d.IconX-32,d.IconY-32,64,64)
 		For suit,suitname In ipairs(TWind.SuitNames)
@@ -189,9 +228,85 @@ Void DrawWindNodes()
 				TWind.SuitPic[Suit].Stretch(d[sprintf("Suit%dX",suit)]-16,d[sprintf("Suit%dY",suit)]-16,32,32)
 			end
 		End
+		if d.PlayedCard
+			plua abs=math.abs
+			plua max=math.max
+			TWind.Card.DrawCard(d.CX,d.CY,d.PlayedCard.CardSuit,d.PlayedCard.CardValue)
+			if d.CX<d.GX; d.CX = d.CX+max(1,abs(d.GX-d.CX) div 4); elif d.CX>d.GX; D.CX =d.CX - max(1,abs(d.CX-d.GX) div 4); End
+			if d.CY<d.GY; d.CY = d.CY+max(1,abs(d.GY-d.CY) div 4); elif d.CY>d.GY; D.CY =d.CY - max(1,abs(d.CY-d.GY) div 4); End
+			//CSayF("is(%d,%d); go(%d,%d); puredif(%d,%d); divdif(%d,%d)",d.cx,d.cy,d.gx,d.gy,abs(d.CX-d.GX),abs(d.CY-d.GY),abs(d.CX-d.GX) div 4,abs(d.CY-d.GY) div 4)
+		end
+		SetColor(255,180,0)
+		Fnt.Text(Lua.tostring(d.Tricks),d.TrickCX,d.TrickCY,2,2)
+		SetColor(255,255,255)
 	End
 End
 #endregion
+
+void Fail()
+	SFX("BUZZ")
+	SLS_State=2
+end
+
+Void Play(i)
+	int bx;bx=i % 3
+	int by;by=i div 3
+	int dx;dx=Graphics.Width - ((bx+1)*SLS_Card.W)
+	int dy;dy=(by*SLS_Card.H)+64
+	plua AN = TWind.Nodes[SLS_Beurt]
+	AN.PlayedCard = SLS_Stock[i]
+	SLS_Stock[i] = nil
+	AN.GX = AN.CardX
+	AN.GY = AN.CardY
+	AN.CX = dx
+	AN.CY = dy
+	If SLS_Started!=SLS_Turn
+		// Following suit?
+		plua Starter; Starter = TWind.Nodes[SLS_Started]
+		lua.assert(Starter,sprintf("Wind Node %s is nil",SLS_Started))
+		int wantsuit;wantsuit=Starter.PlayedCard.CardSuit
+		CSayF("Wanted suit: %d; Played suit: %d. Followed: %s; followed before: %s",wantsuit,AN.PlayedCard.CardSuit,wantsuit==AN.PlayedCard.CardSuit,AN.Bekend[WantSuit])
+		if AN.Bekend[WantSuit] && WantSuit!=AN.PlayedCard.CardSuit
+			AN.Bekend[WantSuit]=false
+			Alert()
+			CSayF("Node #%s did not follow suit (%d!=%d)",AN.Tag,WantSuit,AN.PlayedCard.CardSuit) 
+		End
+	End
+	SLS_Turn = (SLS_Turn+1) % 4
+	if SLS_Started==SLS_Turn
+		plua Starter; Starter = TWind.Nodes[SLS_Started]
+		lua.assert(Starter,sprintf("Wind Node %s is nil",SLS_Started))
+		int wantsuit;wantsuit=Starter.PlayedCard.CardSuit
+		int win = SLS_Started
+		int high;high = Starter.PlayedCard.CardValue
+		plua winner;winner=Starter
+		for i,v in ipairs(TWind.Nodes)
+			Int pvalue
+			pvalue=v.PlayedCard.CardValue
+			if pvalue==1;pvalue=14;end
+			if pvalue>high && v.PlayedCard.CardSuit==wantsuit
+				win=i
+				high=pvalue//v.PlayedCard.CardValue
+				Winner=v
+			end
+		end
+		CSayF("%s/%s wins the trick",win,winner.Tag)
+		winner.Tricks++
+		for i,v in ipairs(TWind.Nodes)
+			If math.abs(winner.Tricks-v.Tricks)>=2; Fail(); Return; End
+		End
+		SLS_State=3
+		SLS_NextTime=100
+		SLS_Started=win
+		//CSayF("Trick checking not yet (fully) implemented")
+	Else
+		Bool CanDo=False
+		for i,v in pairs(SLS_Stock)
+		 	CanDo=Cando || TWind.Nodes[SLS_Beurt].Bekend[v.CardSuit]
+		End
+		If !Cando; Fail(); End
+	End
+End
 
 Void DrawStock()
 	For i=0,SLS_MaxStock-1
@@ -205,9 +320,75 @@ Void DrawStock()
 		End
 		If SLS_Stock[i]
 			SLS_Card.DrawCard(dx,dy,SLS_Stock[i].CardSuit,SLS_Stock[i].CardValue)
+			if SLS_Stock[i].CardValue>=1 && MX>dx && MY>dy && MX<dx+SLS_Card.W && MY<dy+SLS_Card.H && SLS_State==0 && SLS_AanDeBeurt.Bekend[SLS_Stock[i].CardSuit]
+				SetColorHSV(Hue,1,1)
+				SetAlpha(100)
+				Rect(dx,dy,SLS_Card.W,SLS_Card.H)
+				SetAlpha(255)
+				Rect(dx,dy,SLS_Card.W,SLS_Card.H,1)
+				If ML
+					//Bool Goedgekeurd = True // Should not be needed, but set here for any possible usage
+					//If GoedGekeurd
+						Play(i)
+					//Else
+					//	SFX("BUZZ")
+					//end
+				End
+			End
 		End
+		SetColor(255,255,255,255)
 	End
 End
+
+Void StateView()
+	Switch SLS_State
+		Case 0
+			Return
+		Case 1
+			ESC.Draw(Graphics.Width div 2,Graphics.Height div 2)
+		Case 2
+			EFL.Draw(Graphics.Width div 2,Graphics.Height div 2)
+		Case 3
+			// Timer & card
+			SLS_NextTime--
+			//CSayF("Wait: %03d",SLS_NextTime) // DEBUG!
+			if SLS_NextTime<50
+				Bool All=SLS_NextTime<=0
+				plua w=TWind.Nodes[SLS_Started]
+				for i,v in ipairs(TWind.Nodes)
+					v.GX=w.GX
+					v.GY=W.GY
+					All = All && v.CX==w.GX && v.CY==w.GY 
+				End
+				if All
+					SLS_Slag++
+					if SLS_Slag==13
+						SLS_State=1
+						SFX("COMPLETE")
+						SLS_Config.Value("RESULT","WON",SLS_Config.IntValue("Result","Won")+1)
+					Else
+						SFX("BONUS")
+						SLS_State=0
+						SLS_StartTurn=w.Tag
+						For i,v in ipairs(TWind.Nodes)
+							v.PlayedCard=nil
+						End
+					End
+				End
+			End
+			Return
+		Default; Lua.error("Unknown Game State: "..SLS_State)
+	End
+	int okx;okx=(Graphics.Width div 2)-32
+	int oky;oky=Graphics.Height-64
+	if MX>okx && MY>oky && MX<okx+64
+		SetColorHSV(Hue,1,1)
+		If ML
+			GoToFlow("SELECTGAME")
+		End
+	End
+	Oke.Stretch(okx,oky,64,64)
+End	
 
 
 #region "Main Callbacks"
@@ -216,28 +397,38 @@ Global Bool GAMEFEATURES_SAVEEXIT_ALLOW()
 End
 
 Global Void GameNew(String CShuffle="")
+	SLS_Config.Value("RESULT","Played",SLS_Config.IntValue("Result","Played")+1)
 	For k,v in pairs(TWind.Nodes)
 		v.Bekend = NewArray(true,true,true,true)
+		v.PlayedCard=nil
+		v.Tricks=0
 	End
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
-	Else		
-		SLS_Deck = Deck.Shuffle("DECK_Soloslag",SLS_ShuffleMethod,1,13,1,4,2)
+	Else
+		If SLS_AllowJokers
+			SLS_Deck = Deck.Shuffle("DECK_Soloslag",SLS_ShuffleMethod,1,13,1,4,2)			
+		Else
+			SLS_Deck = Deck.Shuffle("DECK_Soloslag",SLS_ShuffleMethod) //,1,13,1,4,2)
+		End
 	End
 	SLS_DeckIndex=0
 	SLS_Stock = {}
 	SLS_Slag = 1
-	SLS_Beurt = "S"
+	SLS_StartTurn = "S"
+	SLS_State = 0
 End
 
 Global Void MainFlow()
 	hue = (hue+1)%360
 	SetColor(255,255,255,255)
 	DrawBackground()
-	DrawWindNodes()
 	DrawStock()
+	DrawWindNodes()	
 	ICO.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
 	GameFeatures.Button()
+	If SLS_Slag<13;Fnt.Text(sprintf("%s: %2d",Rosetta.GetStr("SOLOSLAG","TRICK"),SLS_Slag),5,Graphics.Height-30);End
+	StateView()
 	ShowMouse()
 End
 #endregion

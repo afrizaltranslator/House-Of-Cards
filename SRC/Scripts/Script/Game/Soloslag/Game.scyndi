@@ -45,6 +45,10 @@ Script
 
 #endregion
 
+#region "General assets"
+ReadOnly Var ICO = LoadNewImage("Script/Game/Soloslag/Icon.png","SOLOSLAG_ICON")
+#endregion
+
 
 #region Declarations
 Const Int Horizontal=0
@@ -56,6 +60,7 @@ int Hue = os.time()
 Plua CardSize = Lua.Scyndi.Class.CardSize
 ReadOnly Var SLS_CardSize = CardSize.FromW((Graphics.Width div 2) div 3)
 ReadOnly Var SLS_Card = SLS_CardSize.Bind()
+//ReadOnly Var SLS_PlayedSize = CardSize.FromW(
 ReadOnly Var SLS_Config = GINIE.Obtain("CONFIG::SOLOSLAG")
 Get Int SLS_MaxStock; Return SLS_Config.IntValue("Config","Stock"); End
 Get String SLS_ShuffleMethod; Return SLS_Config.Value("Shuffle","Shuffle"); End
@@ -63,6 +68,8 @@ Var SLS_Stock
 Var SLS_Deck
 Var SLS_DeckIndex
 Int SLS_Slag
+Int SLS_LSlag
+Int SLS_Turn
 #endregion
 
 
@@ -75,6 +82,7 @@ Class TWind
 	ReadOnly Static Var Data = GINIE.LoadNew("Script/Game/Soloslag/Wind.ini","SOLOSLAGWIND")
 	ReadOnly Static Int TWidth = Graphics.Width div 2
 	ReadOnly Static Int THeight = Graphics.Height - 30
+	
 
 	ReadOnly Int CardX
 	ReadOnly Int CardY
@@ -85,6 +93,8 @@ Class TWind
 	ReadOnly Var Icon
 	ReadOnly Int SuitStripDir
 	ReadOnly String Tag
+		
+	ReadOnly Var Arrow
 	
 	// Hearts
 	ReadOnly Int Suit0X
@@ -130,28 +140,38 @@ Class TWind
 		Switch SuitStripDir
 			Case 0 
 				// ---
-				Suit0X=IconX-64
-				Suit1X=IconX-32
-				Suit2X=IconX+32
-				Suit3X=IconX+64
+				Suit0X=IconX-69
+				Suit1X=IconX-37
+				Suit2X=IconX+37
+				Suit3X=IconX+69
 				for i=0,3
 					Self[sprintf("Suit%dY",i)]=IconY
 				end
 			case 1
 			    // |
-				Suit0Y=IconY-64
-				Suit1Y=IconY-32
-				Suit2Y=IconY+32
-				Suit3Y=IconY+64
+				Suit0Y=IconY-69
+				Suit1Y=IconY-37
+				Suit2Y=IconY+37
+				Suit3Y=IconY+69
 				for i=0,3
 					Self[sprintf("Suit%dX",i)]=IconX
 				end
 			default lua.error("Wind huh?  >>> "..SuitStripDir)
 		End
-		Icon = LoadNewImage(sprintf("Script/Game/Soloslag/%s.png",_Tag),"SOLOSLAG_WIND_".._Tag)
+		Icon  = LoadNewImage(sprintf("Script/Game/Soloslag/%s.png",_Tag), "SOLOSLAG_WIND_".._Tag)
+		Arrow = LoadNewImage(sprintf("Script/Game/Soloslag/A%s.png",_Tag),"SOLOSLAG_ARRW_".._Tag)
+		CSayF("Icon %s on (%04d,%04d); Card on (%04d,%04d)",_Tag,IconX,IconY,CardCX,CardCY)
 	End
 
 End	
+
+Get String SLS_Beurt; return TWind.Winds[SLS_Turn]; End
+Set String SLS_Beurt
+	For i,s in ipairs(TWind.Winds)
+		if Left(Upper(Value,1),1)==s; SLS_Turn=i; End
+	End
+End
+
 
 Init
 	for w in each(TWind.Winds)
@@ -160,6 +180,7 @@ Init
 End
 
 Void DrawWindNodes()
+	TWind.Nodes[SLS_Beurt].Arrow.Stretch( (TWind.TWidth div 2) - 48, (TWind.THeight div 2) - 48,96,96) 
 	For w,d in pairs(TWind.Nodes)
 		d.Icon.Stretch(d.IconX-32,d.IconY-32,64,64)
 		For suit,suitname In ipairs(TWind.SuitNames)
@@ -177,8 +198,8 @@ Void DrawStock()
 		int bx;bx=i % 3
 		int by;by=i div 3
 		int dx;dx=Graphics.Width - ((bx+1)*SLS_Card.W)
-		int dy;dy=by*SLS_Card.H
-		if (!SLS_Stock[i]) && SLS_DeckIndex<SLS_Deck.Size			
+		int dy;dy=(by*SLS_Card.H)+64
+		if (!SLS_Stock[i]) && SLS_DeckIndex<SLS_Deck.Size
 			SLS_Stock[i] = SLS_Deck[SLS_DeckIndex]
 			SLS_DeckIndex++
 		End
@@ -190,6 +211,10 @@ End
 
 
 #region "Main Callbacks"
+Global Bool GAMEFEATURES_SAVEEXIT_ALLOW()
+	Return False
+End
+
 Global Void GameNew(String CShuffle="")
 	For k,v in pairs(TWind.Nodes)
 		v.Bekend = NewArray(true,true,true,true)
@@ -202,6 +227,7 @@ Global Void GameNew(String CShuffle="")
 	SLS_DeckIndex=0
 	SLS_Stock = {}
 	SLS_Slag = 1
+	SLS_Beurt = "S"
 End
 
 Global Void MainFlow()
@@ -210,6 +236,8 @@ Global Void MainFlow()
 	DrawBackground()
 	DrawWindNodes()
 	DrawStock()
+	ICO.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
+	GameFeatures.Button()
 	ShowMouse()
 End
 #endregion

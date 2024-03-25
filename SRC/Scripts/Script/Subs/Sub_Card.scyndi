@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.07
+// Version: 24.03.26
 // End License Information
 
 Script
@@ -117,6 +117,18 @@ Class QuickDeck
 	
 	Void DrawJoker(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
 		// Suit and Value sounds a bit strange for a joker, but the values can give some "other" information 
+		string Clown; Clown = Data.Value("Joker","Clown")
+		int JN;JN = (Suit % Data.IntValue("Joker","Num")) + 1
+		If Clown!=""
+			Pics.Clown = Pics.Clown || LoadNewImage(Clown,"JOKER_CLOWN_"..Clown)
+			self.WCStretch(Pics.Clown,X,Y,W,H)
+		End	
+		If Data.IntValue("Joker","Num")>0
+			string AfFile;AfFile = sprintf("%s/Joker%d.png",PicDir,JN)
+			String Tag; Tag=sprintf("QUICKDECK_Joker_%08x_%2d",ID,JN)
+			Pics[AfFile] = Pics[AfFile] || LoadNewImage(AfFile,Tag)
+			self.WCStretch(Pics[AfFile],X,Y,W,H)
+		End
 	End
 		
 	//Int Stack

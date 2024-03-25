@@ -21,11 +21,13 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.09
+// Version: 24.03.26
 // End License Information
 Module
 
+#use "Libs/SCI/JCR6"
 #use "Libs/SCI/Audio"
+
 
 #use "Script/Use/Gen/Config"
 
@@ -40,4 +42,11 @@ Global Void SFX(String Tag,String File="")
 	End
 	Reg[Tag] = Reg[Tag] || Audio.Obtain(Tag)
 	Reg[Tag].Play()
+End
+
+Global Void Alert()
+	If Reg.ALERT=="NOPE"; return; End
+	if !JCR6.EntryExists("SFX/Alert.wav"); Reg.ALERT="NOPE"; Return; End
+	Reg.ALERT = Reg.ALERT || Audio.LoadNew("SFX/Alert.Wav","ALERT")
+	SFX("ALERT")
 End

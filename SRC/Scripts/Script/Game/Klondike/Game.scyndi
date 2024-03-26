@@ -190,6 +190,7 @@ Class KlondikeAction
 	
 	Static Void Undo()
 		//CSay("Undo not yet implemented")
+		if (!Stacked.Have); Return; End
 		plua Act;Act = Stacked.Pop()
 		Switch Act.Cmd
 			Case "DRAW"

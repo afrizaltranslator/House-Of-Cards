@@ -44,9 +44,19 @@ Class PicDeck
 	ReadOnly Int ID
 	ReadOnly Table Cards
 	ReadOnly Var Data
-	Get String CardDir; Return Data.Value("Dirs","Cards"); End	
+	Get String CardDir; Return Data.Value("Dirs","Cards"); End
+	
+	Var JokerPic(Int Suit) //(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
+		// Suit and Value sounds a bit strange for a joker, but the values can give some "other" information 
+		int JN;JN = (Suit % Data.IntValue("Data","Jokers")) + 1
+		string AfFile;AfFile = sprintf("%s/Joker%d.png",CardDir,JN)
+		String Tag; Tag=sprintf("PICKDECK_Joker_%08x_%2d",ID,JN)
+		Cards[AfFile] = Cards[AfFile] || LoadNewImage(AfFile,Tag)
+		Return Cards[AfFile]
+	End
 	
 	Var CardPic(Int Suit,int Value)
+		If Value<1; Return Self.JokerPic(Suit); End
 		String T;T = sprintf("%d.%02d",Suit,Value)
 		Cards[T] = Cards[T] || LoadImage(sprintf("%s/%s%d.png",CardDir,L2S[Suit] || sprintf("Unk.%d.",Suit),Value),sprintf("DECK_CARD_%04x.%s",ID,T))
 		Return Cards[T]

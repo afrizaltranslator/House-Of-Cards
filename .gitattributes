@@ -5,3 +5,4 @@
 *.png -text
 *.jpg -text
 *.pdf -text
+*.rar -text

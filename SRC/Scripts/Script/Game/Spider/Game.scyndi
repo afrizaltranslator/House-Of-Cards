@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.23
+// Version: 24.03.27
 // End License Information
 
 Script
@@ -43,6 +43,7 @@ Script
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/QCardWrite"
 #use "Script/Use/Gen/GameFeatures"
 
 #Region "Base Configuration"
@@ -338,6 +339,7 @@ Void ShowCards()
 		plua HC;HC=SPI_Row[HovR][HovC]
 		if (HC)
 			PPP.Stretch(HC.X-100,HC.Y-100,100,100)
+			QCardWrite.Show(Graphics.Width div 2, Graphics.Height - 96,HC.Card.CardSuit,HC.Card.CardValue)
 			If Events.MouseDown(Events.MouseLeftButton)
 				SPI_DragCards = {}
 				SPI_DragCards.Row = HovR

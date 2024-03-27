@@ -21,10 +21,12 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.26
+// Version: 24.03.27
 // End License Information
 
 Script
+
+#region Use
 
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/GINIE"
@@ -32,7 +34,7 @@ Script
 #use "Libs/SCI/Events"
 #use "Libs/SCI/Graphics"
 
-//#use "Libs/xMath"
+#use "Libs/xMath"
 #use "Libs/Stacker"
 
 #use "Script/Use/Lnk/Deck"
@@ -43,11 +45,381 @@ Script
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/QCardWrite"
 #use "Script/Use/Gen/GameFeatures"
 
+#endregion
 
-Global Void GameNew()
+#region "General Assets"
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")
+ReadOnly Var Fnt = ObtainFont("RYANNA")
+ReadOnly Var ESC = ObtainImage("SUCCESS")
+ReadOnly Var EFL = ObtainImage("FAIL")
+ReadOnly Var UND = ObtainImage("UNDO")
+ReadOnly Var ICO = LoadNewImage("Script/Game/Free Cell/Icon.png","FreeCell_ICON")
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Var MNI = ObtainFont("MINI")
+#endregion
+
+#Region Cards
+Plua CardSize = Lua.Scyndi.Class.CardSize
+ReadOnly Var FRC_CardSize = CardSize.FromW(Graphics.Width div 11)
+ReadOnly Var FRC_FreeCell = {}
+ReadOnly Var FRC_Clear    = {}
+ReadOnly Var FRC_Row      = {}
+ReadOnly Var FRC_Config = GINIE.Obtain("CONFIG::FREE CELL")
+	
+ReadOnly Var W4 = Graphics.Width div 4
+	
+
+Var FRC_Deck
+Int FRC_State
+Var FRC_Card
+Int FRC_Time
+Int FRC_Moves
+Int FRC_Undone
+
+
+#EndRegion
+
+#region "Crap"
+Int Hue
+#endregion
+
+#region "Free Cells and clearing spots"
+Bool Cleared(Crd)
+	FRC_Clear[Crd.Suit].Cards = FRC_Clear[Crd.Suit].Cards || {}
+	if Crd.Val==Len(FRC_Clear[Crd.Suit].Cards)+1
+		Frc_Clear[Crd.Suit].Cards[Len(FRC_Clear[Crd.Suit].Cards)]=Crd
+		Frc_Clear[Crd.Suit].Quick=False
+		Return True
+	End
+	Return False; 
+End 
+
+Bool ToFreeCell(Crd)
+	for i,fc in ipairs(FRC_FreeCell) 
+		If !fc.Cards
+			fc.Cards=Crd
+			Crd.GX=fc.X
+			Crd.GY=fc.Y
+			Return true
+		End
+	End
+	Return False
+End
+
+Var GetFreeCell(Crd)
+	for i,fc in pairs(FRC_FreeCell)
+		If fc.Cards && Crd.Val==fc.Cards.Val && Crd.Suit==Fc.Cards.Suit; Return fc; End
+	End
+	Return nil
+End
+#endregion
+
+Class Action
+	ReadOnly Static Var Stck = New Stack()
+	ReadOnly String Act
+	ReadOnly Var Crd
+	ReadOnly Var Node
+	ReadOnly Var NNode
+		
+	Constructor(String _Act,_Crd,_Node,_NNode)
+		Act   = Upper(_Act)
+		Crd   = _Crd
+		Node  = _Node
+		NNode = _NNode
+		FRC_Moves++
+	End
+	
+	Static Var Add(_Act,_Crd,_Node,_NNode)
+		plua ret;ret = new Action(_Act,_Crd,_Node,_NNode)
+		Stck.Push(ret)
+		Return ret
+	End
+	
+End
+
+Class FCard
+	Static Int StartTimer=0
+	Int GX
+	Int GY
+	Int X = math.random(0,graphics.width)
+	Int Y = math.random(graphics.height,graphics.height*2)	
+	Int Timer
+	Var Crd
+	Get Int Suit;return Crd.CardSuit;End
+	Get Int Val;Return Crd.CardValue;End
+	Get Int W;Return FRC_CardSize.W; End
+	Get Int H;Return FRC_CardSize.H; End
+	
+	Void Draw()
+		SetAlpha(255)
+		If Timer>0
+			Timer--
+			Return
+		End
+		FRC_Card.DrawCard(X,Y,Crd.CardSuit,Crd.CardValue)
+		If X<GX; X = X + math.max(1,(GX-X) div 10); ElIf X>GX; X = X - math.max(1,(X-GX) div 10); End
+		If Y<GY; Y = Y + math.max(1,(GY-Y) div 10); ElIf Y>GY; Y = Y - math.max(1,(Y-GY) div 10); End
+		//CSayF("Card on (%d,%d) is going to (%d,%d)",X,Y,GX,GY)
+	End
+	
+	Constructor(C)
+		Timer = StartTimer
+		StartTimer = StartTimer + 6
+		Crd=C
+	End
+End
+	
+
+Class CardNode
+	Static ReadOnly Var TN = NewArray("Row","FreeCell","Clear")
+	Static ReadOnly Var NT = {}
+	Static ReadOnly Var Nodes = {}
+	ReadOnly Var Me
+	ReadOnly Int X
+	ReadOnly Int Y
+	ReadOnly Int Type
+	Get String TypeString; Return TN[Type]; End
+	Var Cards
+	Bool Quick = False
+	
+	Void Draw()
+		plua _ML = ML
+		plua _DoubleML = DoubleML
+		SetAlpha(150)
+		SetColorHSV(hue,1,1)
+		Rect(X,Y,FRC_CardSize.W,FRC_CardSize.H)
+		SetColor(255,255,255)
+		Fnt.Text(sprintf("NT: %d",Type),X,Y) // Debug only!
+		Switch Type
+			Case 0
+				Int Hover=-1
+				Bool ValidHover=False
+				Bool LastHover
+				if lua.type(Cards)!="table"; CSayF("ALARM! CARDS HAS HAD A TYPE CHANGE TO %s",lua.type(Cards)); End
+				For i,crd in ipairs(Cards || {})
+					Crd.GX=X
+					Crd.GY=Y+(i*30)
+					Crd.Draw()
+					If MX>Crd.GX && MY>Crd.GY && MX<Crd.GX+Crd.W && MY<Crd.GY+Crd.H
+						Hover=i
+						ValidHover=True
+						LastHover = i ==len(Cards)-1
+						For i2,crd2 in pairs(Cards)							
+							if i2>i
+								ValidHover = ValidHover && (Cards[i2-1].Suit%2!=Cards[i2].Suit) && (Cards[i2-1].Val-1==Cards[i2].Val)
+							End
+						End
+					End
+				End
+				If ValidHover			
+						plua crd;crd=Cards[Hover]
+						SetColor(255,255,255,255)
+						//CSayF("Valid hover. DoubleClick:%s; Click:%s; LastHover:%s",_DoubleML,_ML,LastHover)
+						If _DoubleML && LastHover
+							If Cleared(Crd)
+								Action.Add("Clear",Crd,Self,FRC_Clear[Crd.Suit])
+								Cards[Hover]=nil
+								Return
+							ElIf ToFreeCell(Crd)
+								Action.Add("FreeCell",Crd,Self,GetFreeCell(Crd))
+								Cards[Hover]=nil
+								Return
+							End
+						End
+				Else
+						SetColor(100,100,100)
+				End
+				If Hover>=0					
+					plua crd;crd=Cards[Hover]
+					If (!crd)
+						CSayF("\007\x1b[32mWARNING!\x1b[0mNil hover detected! >> %d",Hover)
+						return
+					End
+					PPP.Stretch(Crd.GX-64,Crd.GY-64,64,64)
+					QCardWrite.Show(Graphics.Width div 2,Graphics.Height-96,crd.Suit,crd.Val)
+				End
+			Case 1
+				if Cards
+					Cards.GX=X
+					Cards.GY=Y
+					Cards.Draw()
+				End
+			Case 2
+				Cards = Cards || {}
+				If Len(Cards)>0
+					if Quick
+						Cards[Len(Cards)-1].Draw()
+					Else
+						Quick=True
+						For i,crd in ipairs(Cards)
+							Crd.GX=X
+							Crd.GY=Y
+							Quick = Quick && Crd.X==X && Crd.Y==Y
+							Crd.Draw()
+						End
+					End
+				End
+			Default;	Lua.error("Node type error on drawing")
+		End															
+	End
+	
+	Static Void DrawAll()
+		For n in Each(Nodes)
+			n.Draw()
+		End
+	End
+	
+	Bool Add(c)
+		If Type==1
+			if Cards; return False; End
+			Cards = c
+			Return true
+		End
+		Cards = Cards || {}
+		Cards[len(Cards)]=c
+		//CSay("Card %s added to %s",c,self)
+		Return True
+	End
+	
+	Constructor(_Type,Int _X,Int _Y,Int _Suit=0)
+		Me = Self
+		Switch Lua.type(_Type)
+			case "string"
+				_Type=upper(_Type)
+				if (!NT[_Type])
+					For i,v in ipairs(TN); NT[Upper(v)]=i; End
+				End
+				Type = NT[_Type]
+			case "number"
+				Type=_Type
+		End
+		Lua.assert(TN[Type],sprintf("Unknown Card Node Type: %s",_Type))
+		X = _X
+		Y = _Y
+		Nodes[len(Nodes)]=Self
+		CSayF("Node (%d:%s) created on (%d,%d)",Type,TN[Type],X,Y)
+	End					
+	
+End
+
+Init
+	Int BaseY = math.floor((Graphics.Height div 2)-(FRC_CardSize.Height*2.5))
+	For i=0,3
+		Int Y; Y = BaseY + math.floor((i*1.25)*FRC_CardSize.Height)
+		FRC_FreeCell[i] = New CardNode("FreeCell",0,Y)
+		FRC_Clear[i]    = New CardNode("Clear",Graphics.Width-FRC_CardSize.Width,Y,i)
+	End
+	for i=0,7
+		Int X; X = math.floor((i*1.123)*FRC_CardSize.Width)+(FRC_CardSize.Width*1.123)
+		FRC_Row[i] = New CardNode("Row",X,5)
+	End
+End
+	
+
+
+Void CellSpace()
+	SetColor(0,0,0)
+	SetAlpha(math.floor(math.abs(100*xmath.sin(hue))+150))
+	Rect(0,0,FRC_CardSize.W,Graphics.Height)
+	Rect(Graphics.Width-FRC_CardSize.W,0,FRC_CardSize.W,Graphics.Height)
+End
+
+Void Deal()
+	FCard.StartTimer=0
+	For i=0,7
+		FRC_Row[i].Cards=nil
+	End
+	For i=0,3
+		FRC_Clear[i].Cards=nil
+		FRC_FreeCell[i].Cards=nil
+	End	
+	For i=0,51
+		FRC_Row[i%8].Add(new FCard(FRC_Deck[i]))
+	End	
+End
+
+Void UndoAction()
+	If FRC_State!=0 || (!Action.Stck.Have)
+		Return
+	End
+	FRC_Undone++
+	plua LAct = Action.Stck.Pop()
+	Switch LAct.Act
+		Case "FREECELL" "TOFREECELL"
+			LAct.Node.Cards[Len(LAct.Node.Cards)]=LAct.NNode.Cards
+			LAct.NNode.Cards=nil
+		Case "CLEAR"
+			plua ccrd
+			ccrd = LAct.NNode.Cards[len(LAct.NNode.Cards)-1]
+			LAct.NNode.Cards[len(LAct.NNode.Cards)-1] = nil
+			LAct.Node.Cards[Len(LAct.Node.Cards)]=ccrd
+		Default; lua.error("I don't know how to undo: "..LAct.Act)
+	End
+End	
+
+Void UndoButton()
+	If FRC_State!=0 || (!Action.Stck.Have)
+		Return
+	End
+	SetColor(255,255,255)
+	if MX<96 && MY>Graphics.Height-96
+		SetColorHSV(Hue,1,os.time() % 2)
+		If ML
+			UndoAction()
+		End
+	End
+	UND.Stretch(0,Graphics.Height-96,96,96)
+End
+
+Int OldTime
+Void GameStats()
+	Int NewTime=os.time()
+	Int Y = Graphics.Height-30
+	If (OldTime!=NewTime) && FRC_Moves>0 && FRC_State==0
+		FRC_Time++
+		OldTime=NewTime
+	End
+	ShowTime(FRC_Time,W4,Y,2)
+	ShowMoves(FRC_Moves,FRC_Undone,W4*3,Y,2)
+End
+
+#region General Callbacks
+Global Bool GameFeatures_SaveExit_Allow(); Return False; End
+
+Global Void GameNew(String CShuffle="")
+	FRC_Card = FRC_CardSize.Bind()
+	
+	FRC_State=0
+	FRC_Moves=0
+	FRC_Time=0
+	
+	//KLO_Config.Value("Result","Played",KLO_Config.IntValue("Result","Played")+1)
+	GameFeatures.ShuffleTag="DECK_Free_Cell"
+	//FRC_SeedLog = SeedLog.StartLog("FREECELL")
+	//FRC_SeedLog.Played++
+	If CShuffle!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else
+		FRC_Deck = Deck.Shuffle("DECK_FREECELL",FRC_Config.Value("Shuffle","Shuffle"))
+	End
+	Deal()
 End
 
 Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	CellSpace()
+	CardNode.DrawAll()
+	UndoButton()
+	GameFeatures.Button()
+	ICO.Stretch(Graphics.Width-96,Graphics.Height-96,96,96)
+	GameStats()
+	ShowMouse()	
+	//FRC_SeedLog.ShowSeed()
+
 End
+#endregion

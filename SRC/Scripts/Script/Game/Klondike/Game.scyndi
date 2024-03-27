@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.26
+// Version: 24.03.27
 // End License Information
 Script
 
@@ -40,6 +40,7 @@ Script
 #use "Script/Use/Gen/RText"
 #use "Script/Use/Gen/Config"
 #use "Script/Use/Gen/SeedLog"
+#use "Script/Use/Gen/QCardWrite"
 #use "Script/Use/Gen/GameFeatures"
 
 
@@ -473,6 +474,7 @@ Void DrawCards()
 			plua ca;ca=ra[ci]
 			if ca
 				PPP.Stretch(ca.X-64,ca.Y-64,64,64)
+				QCardWrite.Show(Graphics.Width div 2,Graphics.Height-96,ca.Card.CardSuit,ca.Card.CardValue)
 				If _DoubleML && Hovering+1==len(ra)
 					If ClearCard(ca)
 						SFX("SLIDE")
@@ -544,6 +546,7 @@ Void DrawCards()
 	plua top = KLO_DiscShow[0]
 	If top && MX>KLO_Disc.x && MY>top.y && MX<top.x+top.w && MY<top.y+top.h && (!_Dragging)
 		PPP.Stretch(top.x-(top.w div 2),0,64,64)
+		QCardWrite.Show(Graphics.Width div 2,Graphics.Height-96,top.Card.CardSuit,top.Card.CardValue)
 		if _DoubleML
 			CSayF("Pile card clear request")
 			If ClearCard(top)

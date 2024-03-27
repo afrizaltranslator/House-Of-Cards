@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.11
+// Version: 24.03.27
 // End License Information
 
 Module
@@ -54,4 +54,15 @@ Global Void ShowTime(Int Time,Int X, Int Y, Int ha=0,Int va=0)
 		End
 	End
 	_Fnt.Text( sprintf("%s: %s",Rosetta.GetStr("ALGEMEEN","TIME"),Show) , x,y,ha,va)
+End
+
+Global Void ShowMoves(Int Moves,Int Undone,Int X,Int Y, Int Ha=0,int Va=0)
+	If Moves<=0; Return; End
+	String Show
+	Show = sprintf("%s: %d",Rosetta.GetStr("ALGEMEEN","MOVES"),Moves)
+	If UnDone>0
+		//Show = sprintf("%s (%s: %d)",Show,Rosetta.GetStr("ALGEMEEN","UNDONE"),Undone)
+		Show = sprintf("%s (-%d)",Show,Undone)
+	End
+	_Fnt.Text( Show , x,y,ha,va)
 End

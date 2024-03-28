@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.27
+// Version: 24.03.28
 // End License Information
 
 Script
@@ -78,6 +78,7 @@ Var FRC_Card
 Int FRC_Time
 Int FRC_Moves
 Int FRC_Undone
+Var FRC_DragCards
 
 
 #EndRegion
@@ -88,16 +89,26 @@ Int Hue
 
 #region "Free Cells and clearing spots"
 Bool Cleared(Crd)
+	//Sys.TraceBack()
+	Printf("\x1b[37mClear Request: (%d:%02d)",Crd.Suit,Crd.Val)
 	FRC_Clear[Crd.Suit].Cards = FRC_Clear[Crd.Suit].Cards || {}
 	if Crd.Val==Len(FRC_Clear[Crd.Suit].Cards)+1
 		Frc_Clear[Crd.Suit].Cards[Len(FRC_Clear[Crd.Suit].Cards)]=Crd
 		Frc_Clear[Crd.Suit].Quick=False
+		Crd.IsCleared=True
+		PrintF("\x1b[32m Granted!\x1b[0m\n")
 		Return True
 	End
-	Return False; 
+	PrintF("\x1b[31m Denied!\x1b[0m\n")
+	Return False
 End 
 
 Bool ToFreeCell(Crd)
+	FRC_Clear[Crd.Suit].Cards = FRC_Clear[Crd.Suit].Cards || {}
+	if Len(FRC_Clear[Crd.Suit].Cards)>=Crd.Val
+		CSayF("Trying to send a cleared card to a free cell! This should NEVER happen! Request ignored!")
+		Return False
+	End
 	for i,fc in ipairs(FRC_FreeCell) 
 		If !fc.Cards
 			fc.Cards=Crd
@@ -152,6 +163,7 @@ Class FCard
 	Get Int Val;Return Crd.CardValue;End
 	Get Int W;Return FRC_CardSize.W; End
 	Get Int H;Return FRC_CardSize.H; End
+	Bool IsCleared = False
 	
 	Void Draw()
 		SetAlpha(255)
@@ -167,7 +179,7 @@ Class FCard
 	
 	Constructor(C)
 		Timer = StartTimer
-		StartTimer = StartTimer + 6
+		StartTimer = StartTimer + 3
 		Crd=C
 	End
 End
@@ -180,36 +192,124 @@ Class CardNode
 	ReadOnly Var Me
 	ReadOnly Int X
 	ReadOnly Int Y
+	Get Int W; Return FRC_CardSize.W; End
+	Get Int H; Return FRC_CardSize.H; End
 	ReadOnly Int Type
 	Get String TypeString; Return TN[Type]; End
 	Var Cards
 	Bool Quick = False
 	
+	Static Void RemoveFrom(FromNode)
+		Switch FromNode.Type
+			case 0 2
+				if Len(FromNode.Cards)>0
+					FromNode.Cards[Len(FromNode.Cards)-1]=nil
+				End
+			case 1
+				FromNode.Cards=nil
+			default; Lua.error("Remove from unknown node type: #"..FromNode.Type)
+		End
+	End
+	
+	Static Void AddTo(Crd,ToNode)
+		If Crd.IsCleared
+			CSayF("Trying to add a cleared card to node (type:%d). Request ignored!")
+			Return
+		End
+		Switch ToNode.Type
+			case 0 2
+				ToNode.Cards = ToNode.Cards || {}
+				ToNode.Cards[Len(ToNode.Cards)] = Crd
+			Case 1
+				Lua.assert(ToNode.Cards==nil,"Trying to add a card to an occupied cell. This can only happen when there's a bug. Please report!")
+			default; Lua.error("Add to unknown node type: #"..ToNode.Type)
+		End
+	End
+	
+	Static Get Bool IsDragging
+		If (!FRC_DragCards)
+			Return False
+		End
+		For i,c in ipairs(FRC_DragCards)
+			c.GX = MX
+			c.GY = MY + (i*35)
+			c.X  = c.GX
+			c.Y  = c.GY
+		End
+		if (!MDL)
+			// TODO: Actions
+			For n in Each(Nodes)
+				Switch n.Type
+					case 0
+						If MX>n.X && MX<n.X+n.W && n!=FRC_DragCards.OldNode
+							// One card (the multiple card auto setup comes later)
+							SetAlpha(95); SetColorHSV(hue,1,1); Rect(n.x,0,n.W,Graphics.Height,2) // Debug
+							if Len(FRC_DragCards)==1
+								plua DC;DC=FRC_DragCards[0]
+								if (Len(n.Cards)==0) ||( n.Cards[len(n.Cards)-1].Val-1==DC.Val && n.Cards[len(n.Cards)-1].Suit%2!=DC.Suit%2)
+									n.Cards[len(n.Cards)]=DC							
+									Action.Add("Drag",DC,n,FRC_DragCards.OldNode)
+									Self.RemoveFrom(FRC_DragCards.OldNode)
+									//Self.AddTo(DC,n)
+									FRC_DragCards=nil
+									Break
+								End
+							Else
+							End
+						End
+					case 1
+						If MX<n.W && MY>n.Y && MY<n.y+n.H && (!n.Cards) && Len(FRC_DragCards)==1
+							n.Cards=FRC_DragCards[0]							
+							Action.Add("Drag",FRC_DragCards[0],n,FRC_DragCards.OldNode)
+							Self.RemoveFrom(FRC_DragCards.OldNode)
+							FRC_DragCards=nil
+							break // This ain't C/C++/Java/C#/php/JavaScript etc. Here "break" only terminates loops. Remember "FallThrough" is a keyword here.
+						End
+					case 2
+						//plua clr;clr=Cleared(FRC_DragCards[0])
+						//print( MX>Graphics.Width-n.W , MY>n.Y , MY<n.y+n.H , Len(FRC_DragCards)==1 , clr," Clear drag?" ) // DEBUG ONLY!
+						if MX>Graphics.Width-n.W && MY>n.Y && MY<n.y+n.H && Len(FRC_DragCards)==1 && Cleared(FRC_DragCards[0])
+							Action.Add("Drag",FRC_DragCards[0],n,FRC_DragCards.OldNode)
+							Self.RemoveFrom(FRC_DragCards.OldNode)
+							FRC_DragCards=nil
+							break
+						end
+					default; Lua.error("Dragging to unknown node type: "..n.Type)
+				End
+			End
+			FRC_DragCards=nil
+		End
+		Return FRC_DragCards!=nil
+	End
+	
 	Void Draw()
 		plua _ML = ML
 		plua _DoubleML = DoubleML
+		plua _Dragging = IsDragging
 		SetAlpha(150)
 		SetColorHSV(hue,1,1)
 		Rect(X,Y,FRC_CardSize.W,FRC_CardSize.H)
 		SetColor(255,255,255)
-		Fnt.Text(sprintf("NT: %d",Type),X,Y) // Debug only!
+		//Fnt.Text(sprintf("NT: %d",Type),X,Y) // Debug only!
 		Switch Type
 			Case 0
 				Int Hover=-1
 				Bool ValidHover=False
-				Bool LastHover
+				Bool LastHover=False
 				if lua.type(Cards)!="table"; CSayF("ALARM! CARDS HAS HAD A TYPE CHANGE TO %s",lua.type(Cards)); End
 				For i,crd in ipairs(Cards || {})
-					Crd.GX=X
-					Crd.GY=Y+(i*30)
 					Crd.Draw()
-					If MX>Crd.GX && MY>Crd.GY && MX<Crd.GX+Crd.W && MY<Crd.GY+Crd.H
-						Hover=i
-						ValidHover=True
-						LastHover = i ==len(Cards)-1
-						For i2,crd2 in pairs(Cards)							
-							if i2>i
-								ValidHover = ValidHover && (Cards[i2-1].Suit%2!=Cards[i2].Suit) && (Cards[i2-1].Val-1==Cards[i2].Val)
+					If !_Dragging
+						Crd.GX=X
+						Crd.GY=Y+(i*30)
+						If MX>Crd.GX && MY>Crd.GY && MX<Crd.GX+Crd.W && MY<Crd.GY+Crd.H
+							Hover=i
+							ValidHover=True
+							LastHover = i ==len(Cards)-1
+							For i2,crd2 in pairs(Cards)							
+								if i2>i
+									ValidHover = ValidHover && (Cards[i2-1].Suit%2!=Cards[i2].Suit) && (Cards[i2-1].Val-1==Cards[i2].Val)
+								End
 							End
 						End
 					End
@@ -220,13 +320,23 @@ Class CardNode
 						//CSayF("Valid hover. DoubleClick:%s; Click:%s; LastHover:%s",_DoubleML,_ML,LastHover)
 						If _DoubleML && LastHover
 							If Cleared(Crd)
+								CSayF("Clearing %d:%d",Crd.Suit,Crd.Val)
+								Crd.IsCleared=True
 								Action.Add("Clear",Crd,Self,FRC_Clear[Crd.Suit])
 								Cards[Hover]=nil
 								Return
 							ElIf ToFreeCell(Crd)
+								CSayF("To Free Cell %d:%d",Crd.Suit,Crd.Val)
 								Action.Add("FreeCell",Crd,Self,GetFreeCell(Crd))
 								Cards[Hover]=nil
 								Return
+							End
+						ElIf MDL
+							FRC_DragCards={["OldNode"]=Self}
+							For i,crd in ipairs(Cards)
+								If i>=Hover
+									FRC_DragCards[Len(FRC_DragCards)]=crd
+								End
 							End
 						End
 				Else
@@ -243,8 +353,18 @@ Class CardNode
 				End
 			Case 1
 				if Cards
-					Cards.GX=X
-					Cards.GY=Y
+					If !_Dragging
+						Cards.GX=X
+						Cards.GY=Y
+						If MX>X && MY>Y && MX<X+W && MY<Y+H
+							SetColor(255,255,255,255)
+							PPP.Stretch(X+(W div 2)-64,Y+(H div 2)-64,64,64)
+							QCardWrite.Show(Graphics.Width div 2,Graphics.Height-96,cards.Suit,cards.Val)
+							If MDL
+								FRC_DragCards = {[0]=Cards, ["OldNode"]=Self}
+							End	
+						End
+					End
 					Cards.Draw()
 				End
 			Case 2
@@ -254,12 +374,17 @@ Class CardNode
 						Cards[Len(Cards)-1].Draw()
 					Else
 						Quick=True
-						For i,crd in ipairs(Cards)
+						For i,crd in ipairs(Cards)						
 							Crd.GX=X
 							Crd.GY=Y
 							Quick = Quick && Crd.X==X && Crd.Y==Y
 							Crd.Draw()
+							Crd.IsCleared=True
 						End
+					End
+					if MX>self.X && MY>Self.Y && MY<self.Y+self.H && Len(Cards)>0
+						SetColor(100,100,100)
+						QCardWrite.Show(Graphics.Width div 2,Graphics.Height-96,cards[len(cards)-1].Suit,cards[len(cards)-1].Val)
 					End
 				End
 			Default;	Lua.error("Node type error on drawing")
@@ -312,7 +437,7 @@ Init
 		FRC_FreeCell[i] = New CardNode("FreeCell",0,Y)
 		FRC_Clear[i]    = New CardNode("Clear",Graphics.Width-FRC_CardSize.Width,Y,i)
 	End
-	for i=0,7
+	For i=0,7
 		Int X; X = math.floor((i*1.123)*FRC_CardSize.Width)+(FRC_CardSize.Width*1.123)
 		FRC_Row[i] = New CardNode("Row",X,5)
 	End

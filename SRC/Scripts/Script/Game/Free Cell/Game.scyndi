@@ -637,6 +637,7 @@ Global Void GameNew(String CShuffle="")
 	
 	FRC_State=0
 	FRC_Moves=0
+	FRC_Undone=0
 	FRC_Time=0
 	
 	//KLO_Config.Value("Result","Played",KLO_Config.IntValue("Result","Played")+1)

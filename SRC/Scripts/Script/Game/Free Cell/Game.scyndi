@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.28
+// Version: 24.03.29
 // End License Information
 
 Script
@@ -80,6 +80,12 @@ Int FRC_Moves
 Int FRC_Undone
 Var FRC_DragCards
 
+plua FRC_CheckAutoClear
+Get bool FRC_AutoClear
+	plua ret = FRC_CheckAutoClear && Upper(FRC_Config.Value("Config","AutoClear"))=="YES"	
+	if Ret;FRC_CheckAutoClear = False;End
+	Return Ret
+End
 
 #EndRegion
 
@@ -97,6 +103,7 @@ Bool Cleared(Crd)
 		Frc_Clear[Crd.Suit].Quick=False
 		Crd.IsCleared=True
 		PrintF("\x1b[32m Granted!\x1b[0m\n")
+		FRC_CheckAutoClear=true
 		Return True
 	End
 	PrintF("\x1b[31m Denied!\x1b[0m\n")
@@ -114,6 +121,7 @@ Bool ToFreeCell(Crd)
 			fc.Cards=Crd
 			Crd.GX=fc.X
 			Crd.GY=fc.Y
+			FRC_CheckAutoClear=true
 			Return true
 		End
 	End
@@ -126,6 +134,33 @@ Var GetFreeCell(Crd)
 	End
 	Return nil
 End
+
+Get Int FreeCells
+	int ret = 0
+	for n in each(FRC_FreeCell)
+		if !n.Cards;ret++;end
+	end
+	return ret
+End
+
+Int CFreeRows(cn)
+	if lua.type(cn)=="number"; return CFreeRows(FRC_Row[cn]); end
+	int ret=0
+	for n in each(FRC_Row) 		
+		if n!=cn && Len(n.Cards||{})==0;ret++;End
+	end
+	Return ret;
+end
+
+Get Int FreeRows
+	return CFreeRows(nil)
+End
+
+Bool CanMove(int c,n)
+	CSayF("Can I move %d cards with %d free cells and %d free rows at my disposal?",c,FreeCells,CFreeRows(n))
+	return c<=(Freecells+1)*(CFreeRows(n)+1)
+End
+
 #endregion
 
 Class Action
@@ -141,11 +176,13 @@ Class Action
 		Node  = _Node
 		NNode = _NNode
 		FRC_Moves++
+		SFX("SLIDE")
 	End
 	
 	Static Var Add(_Act,_Crd,_Node,_NNode)
 		plua ret;ret = new Action(_Act,_Crd,_Node,_NNode)
 		Stck.Push(ret)
+		FRC_CheckAutoClear=true
 		Return ret
 	End
 	
@@ -174,6 +211,7 @@ Class FCard
 		FRC_Card.DrawCard(X,Y,Crd.CardSuit,Crd.CardValue)
 		If X<GX; X = X + math.max(1,(GX-X) div 10); ElIf X>GX; X = X - math.max(1,(X-GX) div 10); End
 		If Y<GY; Y = Y + math.max(1,(GY-Y) div 10); ElIf Y>GY; Y = Y - math.max(1,(Y-GY) div 10); End
+		FRC_CheckAutoClear=FRC_CheckAutoClear||X!=GX||Y!=GY
 		//CSayF("Card on (%d,%d) is going to (%d,%d)",X,Y,GX,GY)
 	End
 	
@@ -244,8 +282,9 @@ Class CardNode
 						If MX>n.X && MX<n.X+n.W && n!=FRC_DragCards.OldNode
 							// One card (the multiple card auto setup comes later)
 							SetAlpha(95); SetColorHSV(hue,1,1); Rect(n.x,0,n.W,Graphics.Height,2) // Debug
+							plua DC;DC=FRC_DragCards[0]
 							if Len(FRC_DragCards)==1
-								plua DC;DC=FRC_DragCards[0]
+								//plua DC;DC=FRC_DragCards[0]
 								if (Len(n.Cards)==0) ||( n.Cards[len(n.Cards)-1].Val-1==DC.Val && n.Cards[len(n.Cards)-1].Suit%2!=DC.Suit%2)
 									n.Cards[len(n.Cards)]=DC							
 									Action.Add("Drag",DC,n,FRC_DragCards.OldNode)
@@ -254,7 +293,14 @@ Class CardNode
 									FRC_DragCards=nil
 									Break
 								End
-							Else
+							Elif CanMove(Len(FRC_DragCards),n)
+								if (Len(n.Cards)==0) ||( n.Cards[len(n.Cards)-1].Val-1==DC.Val && n.Cards[len(n.Cards)-1].Suit%2!=DC.Suit%2)
+									Action.Add("MultiDrag",FRC_DragCards,n,FRC_DragCards.OldNode)
+									For crd in Each(FRC_DragCards)
+										Self.RemoveFrom(FRC_DragCards.OldNode)
+										n.Cards[len(n.Cards)]=crd
+									End
+								End
 							End
 						End
 					case 1
@@ -452,6 +498,47 @@ Void CellSpace()
 	Rect(Graphics.Width-FRC_CardSize.W,0,FRC_CardSize.W,Graphics.Height)
 End
 
+Bool Safe2Clear(crd)
+	plua ret=true
+	if crd.X!=crd.GX || Crd.Y!=crd.GY; Return False; End
+	if crd.val<=2; return True; End
+	For s,n in pairs(FRC_Clear)
+		If s%2!=crd.Suit%2
+			ret = ret && len(n.Cards||{})>=crd.val-1
+		End
+	end
+	Return ret
+End
+
+Void CheckAutoClear()
+	If !FRC_AutoClear; Return; End
+	For n in each(CardNode.Nodes)
+		Switch n.Type
+			Case 0
+				plua crd
+				If Len(n.Cards||{})>=1
+					crd=n.Cards[Len(n.Cards)-1]
+					If Safe2Clear(crd) && Cleared(crd)
+						Action.Add("Clear",crd,n,FRC_Clear[crd.Suit])
+						CardNode.RemoveFrom(n)
+						Return
+					End
+				End
+			Case 1
+				plua crd;crd=n.Cards
+				if crd && Safe2Clear(crd) && Cleared(crd)
+					Action.Add("Clear",crd,n,FRC_Clear[crd.Suit])
+					CardNode.RemoveFrom(n)
+					Return
+				End
+			Case 2
+				// Do nothing. After all, this is already cleared
+			Default
+				Lua.error(sprintf("Unknown node type(%d) in autoclear",n.Type))
+		End											
+	End
+End
+
 Void Deal()
 	FCard.StartTimer=0
 	For i=0,7
@@ -507,10 +594,41 @@ Void GameStats()
 		FRC_Time++
 		OldTime=NewTime
 	End
+	SetColor(255,255,255)
 	ShowTime(FRC_Time,W4,Y,2)
 	ShowMoves(FRC_Moves,FRC_Undone,W4*3,Y,2)
 End
 
+Void CheckVictory()
+	Switch FRC_State
+		case 0
+			Plua Win=true
+			For i=0,3
+				Win=Win&&FRC_Clear[i].Cards&&Len(FRC_Clear[i].Cards)>=13
+			End
+			If Win
+				FRC_State=1
+				SFX("COMPLETE")
+				// TODO: Count win
+			End
+			Return
+		case 1
+			ESC.Draw(Graphics.Width div 2, Graphics.Height div 2)
+		case 2
+			EFL.Draw(Graphics.Width div 2, Graphics.Height div 2)
+		default; lua.error("Unknown game state: "..FRC_State)
+	End
+	Int X=(Graphics.Width div 2)-48
+	Int Y=(Graphics.Height) - 96
+	If MX>X && MX<X+90 && MY>Y
+		SetColorHSV(Hue,1,((os.time() % 2)/2)+0.5)
+		If ML
+			GoToFlow("SELECTGAME")
+		End
+	End
+	OKE.Stretch(X,Y,96,96)
+End
+		
 #region General Callbacks
 Global Bool GameFeatures_SaveExit_Allow(); Return False; End
 
@@ -542,6 +660,8 @@ Global Void MainFlow()
 	UndoButton()
 	GameFeatures.Button()
 	ICO.Stretch(Graphics.Width-96,Graphics.Height-96,96,96)
+	CheckAutoClear()
+	CheckVictory()
 	GameStats()
 	ShowMouse()	
 	//FRC_SeedLog.ShowSeed()

@@ -649,7 +649,90 @@ Void CheckVictory()
 End
 		
 #region General Callbacks
-Global Bool GameFeatures_SaveExit_Allow(); Return False; End
+Global Bool GameFeatures_SaveExit_Allow(); Return FRC_State==0; End
+
+Global Void GAMEFEATURES_SAVEEXIT_ACTION()
+	plua out={}
+	plua cnt={}
+	For n in each(CardNode.Nodes)
+		switch n.Type
+			case 0
+				cnt.rows = (cnt.rows || -1) + 1  
+				out.rows = (out.rows || "") .. sprintf("[Row%d]\nSize=%d\n",cnt.rows,len(n.Cards))				
+				for i,c in ipairs(n.Cards || {})
+					out.rows = out.rows .. sprintf("C%02dS=%d\nC%02dV=%s\n",i,c.suit,i,c.val)
+				End
+			case 1
+				plua c = n.Cards
+				If C
+					cnt.cells = (cnt.cells || -1) + 1				
+					out.cells = (out.cells || "[Cells]\n") .. sprintf("C%02dS=%d\nC%02dV=%s\n",cnt.cells,c.suit,cnt.cells,c.val)
+				end
+			case 2
+				if Len(n.Cards)>0
+					out.cleared = (out.cleared || "[Cleared]\n") .. sprintf("C%d=%d\n",n.Cards[0].Suit,len(n.Cards))
+				End
+		End
+	End
+	plua totalout = "# House Of Cards\n# Free Cell\n# (c) Jeroen P. Broks\n\n"
+	for k,v in pairs(out)
+		totalout = totalout .. v .. "\n\n"
+	End
+	totalout = totalout..sprintf("\n\n[General]\nMoves=%d\nUndone=%d\nTime=%d\n",FRC_Moves,FRC_Undone,FRC_Time)
+	plua SG = SGJCR.Create("SAVE:FREECELL")
+	SG.Assign("House Of Cards.SaveGame.Free Cell.jcr")
+	SG.Clear()
+	SG.Text.FreeCell = totalout
+	SG.Save()
+	GotoFlow("SELECTGAME")
+End
+
+Global Void GameContinue()
+	plua SG = SGJCR.Create("LOAD:FREECELL")
+	SG.Assign("House Of Cards.SaveGame.Free Cell.jcr")
+	FRC_Card = FRC_CardSize.Bind()
+	FCard.StartTimer=0
+	For i=0,7
+		FRC_Row[i].Cards=nil
+	End
+	For i=0,3
+		FRC_Clear[i].Cards=nil
+		FRC_FreeCell[i].Cards=nil
+	End
+	SG.Load()
+	plua SD;SD=GINIE.Parse(SG.Text.FreeCell,"FREE CELL LOADED DATA")
+	FRC_State = 0
+	FRC_Moves = SD.Intvalue("General","Moves")
+	FRC_Undone = SD.IntValue("Gneral","Undone")
+	FRC_Time = SD.Intvalue("General","Time")
+	For ri=0,7
+		Frc_Row[ri].Cards = {}
+		plua C;C=Frc_Row[ri].Cards
+		string Tag;Tag = sprintf("Row%d",ri)
+		for ci=0,SD.IntValue(Tag,"Size")-1
+			C[ci] = New FCard(New DeckCard(SD.IntValue(Tag,sprintf("C%02dS",ci)),SD.IntValue(Tag,sprintf("C%02dV",ci))))
+		End
+	End
+	For i=0,3
+		// Free Cell
+		plua fcs;fcs=SD.IntValue("Cells",sprintf("C%02dS",i))
+		plua fcv;fcv=SD.IntValue("Cells",sprintf("C%02dV",i))
+		CSayF("Cell: %d->%d:%02d",i,fcs,fcv)
+		If FCV>0
+			FRC_FreeCell[i].Cards = New FCard(New DeckCard(fcs,fcv))
+		End
+		// Cleared
+		For s=0,3
+			FRC_Clear[s].Cards={}
+			For v=1,SD.IntValue("Cleared",sprintf("C%d",s))
+				FRC_Clear[s].Cards[Len(FRC_Clear[s].Cards)]=new FCard(New DeckCard(s,v))
+			End
+		End
+	End
+	GameFeatures.ShuffleTag="DECK_Free_Cell"		
+End
+	
+	
 
 Global Void GameNew(String CShuffle="")
 	FRC_Card = FRC_CardSize.Bind()

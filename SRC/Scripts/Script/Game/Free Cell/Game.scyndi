@@ -581,7 +581,12 @@ Void UndoAction()
 					Lua.error("Undo drag old node type unknown: "..LAct.NNode.Type)
 			End
 			CSayF("Undo drag one card (%d:%02d)",ccrd.suit,ccrd.val)
-			CardNode.AddTo(ccrd,LAct.Node)			
+			CardNode.AddTo(ccrd,LAct.Node)		
+		Case "MULTIDRAG"
+			for crd in each(LAct.crd)
+				LAct.NNode.Cards[len(LAct.NNode.Cards)-1] = nil
+				CardNode.AddTo(crd,LAct.Node)
+			end
 		Default; lua.error("I don't know how to undo: "..LAct.Act)
 	End
 End	

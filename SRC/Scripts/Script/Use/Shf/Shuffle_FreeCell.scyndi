@@ -1,0 +1,67 @@
+// License Information:
+// House of Cards
+// Easy shuffle for Free Cell
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.30
+// End License Information
+Module
+
+#use "Libs/SCI/Sys"
+
+#use "Script/Use/Lnk/Deck"
+	
+ReadOnly Int MaxCards=4*13
+	
+
+
+int FRC_R(int m)
+	return math.min(MaxCards,math.random(1,math.max(8,m)))-1
+End
+
+Table DoShuffle(Int Low, Int High, Int Decks, Int Suits, Int IncludeJokers)
+	//Int MaxCards;MaxCards = ((High-(Low-1))*Decks*Suits)+IncludeJokers
+	plua ret = {}
+	For v=1,13
+		int mv=math.ceil(v*1.5)
+		For s=0,3
+			int R
+			Int TimeOut=1000
+			Repeat
+				R = FRC_R(mv)
+				TimeOut--
+				//CSayF("%03d: Trying rnd spot #%02d for %d:%02d",TimeOut,R,s,v)
+				If TimeOut<=0
+					Int TimeOut2=1000
+					Repeat
+						lua.assert(TimeOut2>0,sprintf("Free Cell Shuffle Time Out (%d:%02d)",s,v))
+						//CSayF("%03d: Trying mod spot #%02d for %d:%02d",TimeOut2,R,s,v)
+						R = (R+1) % MaxCards
+						TimeOut2--						
+					LoopWhile ret[MaxCards-(R+1)]
+				End
+			LoopWhile ret[MaxCards-(R+1)]
+			mv=mv+mv
+			ret[MaxCards-(R+1)] = New DeckCard(S,V)
+		End
+	End
+	Return Ret
+End

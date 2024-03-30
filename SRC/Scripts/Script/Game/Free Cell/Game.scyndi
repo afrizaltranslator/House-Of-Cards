@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.29
+// Version: 24.03.30
 // End License Information
 
 Script
@@ -96,17 +96,17 @@ Int Hue
 #region "Free Cells and clearing spots"
 Bool Cleared(Crd)
 	//Sys.TraceBack()
-	Printf("\x1b[37mClear Request: (%d:%02d)",Crd.Suit,Crd.Val)
+	//Printf("\x1b[37mClear Request: (%d:%02d)",Crd.Suit,Crd.Val)
 	FRC_Clear[Crd.Suit].Cards = FRC_Clear[Crd.Suit].Cards || {}
 	if Crd.Val==Len(FRC_Clear[Crd.Suit].Cards)+1
 		Frc_Clear[Crd.Suit].Cards[Len(FRC_Clear[Crd.Suit].Cards)]=Crd
 		Frc_Clear[Crd.Suit].Quick=False
 		Crd.IsCleared=True
-		PrintF("\x1b[32m Granted!\x1b[0m\n")
+		//PrintF("\x1b[32m Granted!\x1b[0m\n")
 		FRC_CheckAutoClear=true
 		Return True
 	End
-	PrintF("\x1b[31m Denied!\x1b[0m\n")
+	//PrintF("\x1b[31m Denied!\x1b[0m\n")
 	Return False
 End 
 
@@ -287,7 +287,7 @@ Class CardNode
 								//plua DC;DC=FRC_DragCards[0]
 								if (Len(n.Cards)==0) ||( n.Cards[len(n.Cards)-1].Val-1==DC.Val && n.Cards[len(n.Cards)-1].Suit%2!=DC.Suit%2)
 									n.Cards[len(n.Cards)]=DC							
-									Action.Add("Drag",DC,n,FRC_DragCards.OldNode)
+									Action.Add("Drag",DC,FRC_DragCards.OldNode,n)
 									Self.RemoveFrom(FRC_DragCards.OldNode)
 									//Self.AddTo(DC,n)
 									FRC_DragCards=nil
@@ -306,7 +306,7 @@ Class CardNode
 					case 1
 						If MX<n.W && MY>n.Y && MY<n.y+n.H && (!n.Cards) && Len(FRC_DragCards)==1
 							n.Cards=FRC_DragCards[0]							
-							Action.Add("Drag",FRC_DragCards[0],n,FRC_DragCards.OldNode)
+							Action.Add("Drag",FRC_DragCards[0],FRC_DragCards.OldNode,n)
 							Self.RemoveFrom(FRC_DragCards.OldNode)
 							FRC_DragCards=nil
 							break // This ain't C/C++/Java/C#/php/JavaScript etc. Here "break" only terminates loops. Remember "FallThrough" is a keyword here.
@@ -315,7 +315,7 @@ Class CardNode
 						//plua clr;clr=Cleared(FRC_DragCards[0])
 						//print( MX>Graphics.Width-n.W , MY>n.Y , MY<n.y+n.H , Len(FRC_DragCards)==1 , clr," Clear drag?" ) // DEBUG ONLY!
 						if MX>Graphics.Width-n.W && MY>n.Y && MY<n.y+n.H && Len(FRC_DragCards)==1 && Cleared(FRC_DragCards[0])
-							Action.Add("Drag",FRC_DragCards[0],n,FRC_DragCards.OldNode)
+							Action.Add("Drag",FRC_DragCards[0],FRC_DragCards.OldNode,n)
 							Self.RemoveFrom(FRC_DragCards.OldNode)
 							FRC_DragCards=nil
 							break
@@ -568,6 +568,20 @@ Void UndoAction()
 			ccrd = LAct.NNode.Cards[len(LAct.NNode.Cards)-1]
 			LAct.NNode.Cards[len(LAct.NNode.Cards)-1] = nil
 			LAct.Node.Cards[Len(LAct.Node.Cards)]=ccrd
+		Case "DRAG"
+			plua ccrd
+			switch LAct.NNode.Type
+				case 0 2
+					ccrd = LAct.NNode.Cards[len(LAct.NNode.Cards)-1]
+					LAct.NNode.Cards[len(LAct.NNode.Cards)-1] = nil
+				case 1
+					ccrd = LAct.NNode.Cards
+					LAct.NNode.Cards = nil
+				default
+					Lua.error("Undo drag old node type unknown: "..LAct.NNode.Type)
+			End
+			CSayF("Undo drag one card (%d:%02d)",ccrd.suit,ccrd.val)
+			CardNode.AddTo(ccrd,LAct.Node)			
 		Default; lua.error("I don't know how to undo: "..LAct.Act)
 	End
 End	

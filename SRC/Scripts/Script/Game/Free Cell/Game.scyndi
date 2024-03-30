@@ -295,7 +295,7 @@ Class CardNode
 								End
 							Elif CanMove(Len(FRC_DragCards),n)
 								if (Len(n.Cards)==0) ||( n.Cards[len(n.Cards)-1].Val-1==DC.Val && n.Cards[len(n.Cards)-1].Suit%2!=DC.Suit%2)
-									Action.Add("MultiDrag",FRC_DragCards,n,FRC_DragCards.OldNode)
+									Action.Add("MultiDrag",FRC_DragCards,FRC_DragCards.OldNode,n)
 									For crd in Each(FRC_DragCards)
 										Self.RemoveFrom(FRC_DragCards.OldNode)
 										n.Cards[len(n.Cards)]=crd

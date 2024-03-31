@@ -12,6 +12,7 @@ The current version of House of Cards supports the following games.
 (The links will lead you to a video in which I explain the rules of that game)
 
 - [Free Cell](https://rumble.com/v4mc2k2-how-to-play-free-cell.html)
+- [Golf](https://rumble.com/v4mmqmi-how-to-play-golf-solitaire.html)
 - [King's Cornners](https://rumble.com/v4j9llu-how-to-play-kings-corners.html)
 - [Klondike](https://rumble.com/v4khod6-how-to-play-klondike.html)
 - [Pyramid](https://rumble.com/v4j9mwk-how-to-play-pyramid.html)

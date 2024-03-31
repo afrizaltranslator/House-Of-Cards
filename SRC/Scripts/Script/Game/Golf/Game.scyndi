@@ -151,6 +151,8 @@ Plua GLF_Deck
 Plua GLF_Row
 Plua GLF_Stock
 Plua GLF_Foundation
+Int  GLF_State
+Int  GLF_OldTime = 0
 Number GLF_DRat
 Get Bool GLF_EmptyFoundation
 	Return Upper(GLF_Config.Value("CONFIG","EMPTYFOUNDATION"))=="YES"

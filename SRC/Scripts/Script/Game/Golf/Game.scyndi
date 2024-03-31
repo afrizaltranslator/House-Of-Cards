@@ -266,6 +266,8 @@ End
 
 Void DrawCards()
 	GLF_DRat = math.min(1,GLF_DRat+0.1)
+	Bool Empty=True
+	Bool AnyCardsAllowed=False
 	For ri,ra in ipairs(GLF_Row)
 		For ci,crd in ipairs(ra)
 			Int X = math.floor( ( (ri*((Graphics.Width div 8)*1.1))+10 ) * GLF_DRat)

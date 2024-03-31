@@ -269,11 +269,30 @@ Void DrawCards()
 	Bool Empty=True
 	Bool AnyCardsAllowed=False
 	For ri,ra in ipairs(GLF_Row)
-		For ci,crd in ipairs(ra)
+		If Len(ra)>0
 			Int X = math.floor( ( (ri*((Graphics.Width div 8)*1.1))+10 ) * GLF_DRat)
-			Int Y = math.floor( ( 60 + (ci*35) ) * GLF_DRat)
-			//CSayF("Row #%d, Card #%d -> (%d,%d)  (drat:%f)",ri,ci,x,y,GLF_DRat)
-			GLF_Card.DrawCard(X,Y,crd.CardSuit,crd.CardValue)
+			Empty=False
+			For ci,crd in ipairs(ra)
+				Int Y = math.floor( ( 60 + (ci*35) ) * GLF_DRat)
+				//CSayF("Row #%d, Card #%d -> (%d,%d)  (drat:%f)",ri,ci,x,y,GLF_DRat)
+				GLF_Card.DrawCard(X,Y,crd.CardSuit,crd.CardValue)
+			End
+			plua tc;tc = ra[len(ra)-1]
+			Int Y = math.floor( ( 60 + ((len(ra)-1)*35) ) * GLF_DRat)
+			//Fnt.Dark(sprintf("%d:AlC: %s; CC: (%d,%d); CS: %dx%d",ri,AllowCard(tc),x,y,GLF_Card.W,GLF_Card.H),0,ri*30) // Debug
+			//Fnt.Dark(sprintf("Mouse: %d,%d!",MX,MY),0,270)
+			if AllowCard(tc)
+				AnyCardsAllowed=True				
+				if MX>X && MX<X+GLF_Card.W && MY>Y && MY<Y+GLF_Card.H
+					PPP.Stretch( (X + (GLF_Card.W div 2)) - 96,(Y + (GLF_Card.H div 2)) - 96,96,96)
+					QCardWrite.Show(Graphics.Width div 2,Graphics.Height-96,tc.CardSuit,tc.CardValue)
+					If ML
+						Action.Add("Remove",ra)
+						GLF_Foundation.Push(tc)
+						ra[len(ra)-1]=nil
+					End
+				End
+			End
 		End
 	End
 	If GLF_Stock.Have

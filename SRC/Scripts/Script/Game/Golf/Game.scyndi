@@ -307,7 +307,19 @@ Void DrawCards()
 		GLF_Card.DrawCard(SX,SY,crd.CardSuit,crd.CardValue)
 	End
 End	
+
 	
+Void StateHandling()
+	Switch GLF_State
+		Case 0
+			int NTime = os.time()
+			If Action.Stck.Have && GLF_OldTime!=NTime
+				Hole.Cur.Time++
+				GLF_OldTime=NTime
+				Hole.Recalc()
+			End
+	End
+End
 
 #region "General Callbacks"
 Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
@@ -324,6 +336,7 @@ Global Void MainFlow()
 	DrawCards()
 	Hole.Overview()
 	GameFeatures.Button()
+	StateHandling()
 	ShowMouse()
 End
 #endregion

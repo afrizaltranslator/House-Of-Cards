@@ -239,6 +239,12 @@ Void StartHole(Int H=0)
 	Action.Reset()
 End
 
+Get Var TopFoundation; Return GLF_Foundation.Value; End
+Get Int TopFoundValue
+	If !TopFoundation; Return 0; End
+	return TopFoundation.CardValue
+End
+
 End
 
 Void DrawCards()

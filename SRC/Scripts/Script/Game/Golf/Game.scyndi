@@ -118,7 +118,8 @@ Class Hole
 		Int Par;Par = (CHole-1)*5
 		String Plus=""; if Total.Score-Par>0; Plus="+"; End
 		   //    Hole #x:		   
-		Mni.Dark(sprintf("Total:   %5d %9s    Par: %2d -> %s%d",Total.Score,Total.Time,Par,plus,Total.Score-Par),5,Y)
+		Mni.Dark(sprintf("Total:   %5d %9s",Total.Score,Total.Time),5,Y)
+		Mni.Dark(sprintf("Par: %2d -> %s%d",Par,plus,Total.Score-Par),5,Y+20)
 	End
 	
 	ReadOnly Int Num

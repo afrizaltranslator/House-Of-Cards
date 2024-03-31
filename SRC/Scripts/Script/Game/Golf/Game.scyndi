@@ -39,6 +39,7 @@ Script
 
 #use "Libs/xMath"
 #use "Libs/Stacker"
+#use "Libs/Rosetta"
 
 #use "Script/Use/Lnk/Deck"
 #use "Script/Use/Lnk/Card"

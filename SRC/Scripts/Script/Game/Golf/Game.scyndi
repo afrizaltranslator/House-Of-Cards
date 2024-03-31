@@ -171,6 +171,17 @@ End
 Set Int GLF_Jokers
 	GLF_Config.Value("Config","Jokers",Value)
 End
+Get Bool GLF_Strict
+	Return Upper(GLF_Config.Value("CONFIG","STRICT"))=="YES"
+End
+Set Bool GLF_Strict
+	// For loading savegames!
+	If Value
+		GLF_Config.Value("CONFIG","STRICT","Yes")
+	Else
+		GLF_Config.Value("CONFIG","STRICT","No")
+	End
+End
 
 #endregion
 

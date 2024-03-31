@@ -53,7 +53,7 @@ Script
 #endregion
 
 #region "General Assets"
-//ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")
 ReadOnly Var Fnt = ObtainFont("RYANNA")
 ReadOnly Var ESC = ObtainImage("SUCCESS")
 ReadOnly Var EFL = ObtainImage("FAIL")

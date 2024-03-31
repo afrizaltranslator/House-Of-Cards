@@ -301,6 +301,21 @@ Void DrawCards()
 		int SX = math.floor ( ( (Graphics.Width div 2)-(GLF_Card.W*1.5) ) * GLF_DRat )
 		int SY = math.floor ( ( (Graphics.Height)-(GLF_Card.H*1.5) ) * GLF_DRat )
 		GLF_Card.DrawBack(SX,SY)
+		If MX>SX && MY>SY && MX<SX+GLF_Card.W && MY<SY+GLF_Card.H && GLF_State==0
+			PPP.Stretch( (SX + (GLF_Card.W div 2)) - 96,(SY + (GLF_Card.H div 2)) - 96,96,96)
+			Fnt.Dark(sprintf("AllowWarn: %s; Cards Allowed: %s",Upper(GLF_Config.Value("CONFIG","WarnAllow"))=="YES" , AnyCardsAllowed),0,0) // Debug
+			If ML
+				Bool Ok=True
+				If Upper(GLF_Config.Value("CONFIG","WarnAllow"))=="YES" && AnyCardsAllowed
+					Ok = Sys.Yes(Replace(Rosetta.GetStr("GOLF","ALLOWWARN"),"<br>","\n"))
+				End
+				If Ok
+					Action.Add("Draw")
+					plua crd = GLF_Stock.Pop()
+					GLF_Foundation.Push(crd)
+				End
+			End
+		End		
 	End
 	If GLF_Foundation.Have
 		var crd = GLF_Foundation.Value

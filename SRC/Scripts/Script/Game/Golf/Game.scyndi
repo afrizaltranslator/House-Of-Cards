@@ -245,6 +245,23 @@ Get Int TopFoundValue
 	return TopFoundation.CardValue
 End
 
+Bool AllowCard(crd)
+	// No card on foundation? Allow everything! (requires config setting)
+	If !GLF_Foundation.Have; Return True; End
+	// Joker? Cool! Always allow!
+	if TopFoundValue<0 || crd.CardValue<0; Return True; End
+		
+		
+	Switch TopFoundValue
+		// King
+		Case 13
+			if GLF_Strict; Return False; End
+			Return Crd.CardValue==1 || Crd.CardValue==12
+		Case 1
+			Return Crd.CardValue==1 || ( (!GLF_Strict) && Crd.CardValue==13)
+		Default
+			Return math.abs(TopFoundValue-Crd.CardValue)==1
+	End
 End
 
 Void DrawCards()

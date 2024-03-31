@@ -258,7 +258,7 @@ Bool AllowCard(crd)
 			if GLF_Strict; Return False; End
 			Return Crd.CardValue==1 || Crd.CardValue==12
 		Case 1
-			Return Crd.CardValue==1 || ( (!GLF_Strict) && Crd.CardValue==13)
+			Return Crd.CardValue==2 || ( (!GLF_Strict) && Crd.CardValue==13)
 		Default
 			Return math.abs(TopFoundValue-Crd.CardValue)==1
 	End

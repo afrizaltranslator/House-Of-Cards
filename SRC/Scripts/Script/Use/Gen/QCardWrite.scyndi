@@ -21,8 +21,9 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.27
+// Version: 24.03.31
 // End License Information
+
 Module
 
 #use "Libs/SCI/Graphics"
@@ -35,7 +36,13 @@ plua Fnt = ObtainFont("Ryanna")
 Void Show(Int X,Int Y,Int Suit,Int Val,Int Size=96)
 	Int HS;HS=Size div 2
 	String SuitTag;SuitTag = sprintf("S%d",Suit)
+	String ValTag;ValTag = "CS"..Val
+	if Val<=0
+		SuitTag="Joker"
+		Suit=100
+		ValTag="Joker"
+	End
 	Suits[Suit] = Suits[Suit] || LoadNewImage(sprintf("GFX/FancySuits/%s.png",SuitTag),"FANCYSUIT_"..SuitTag)
 	Suits[Suit].Stretch(X-HS,Y-HS,Size,Size)
-	Fnt.Dark(Rosetta.GetStr("CardSymbols","CS"..Val),X,Y,2,2)
+	Fnt.Dark(Rosetta.GetStr("CardSymbols",ValTag),X,Y,2,2)
 End

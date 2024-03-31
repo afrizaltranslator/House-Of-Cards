@@ -34,6 +34,7 @@ Script
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/SGJCR"
 #use "Libs/SCI/Events"
+#use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
 
 #use "Libs/xMath"

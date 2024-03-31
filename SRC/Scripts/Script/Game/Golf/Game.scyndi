@@ -409,13 +409,97 @@ Void StateHandling()
 End
 
 #region "General Callbacks"
-Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
+Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return GLF_State==0; End
+
+Global Void GAMEFEATURES_SAVEEXIT_ACTION()
+	plua SG = SGJCR.Create("SAVE:Golf")
+	SG.Assign("House Of Cards.SaveGame.Golf.jcr")
+	SG.Clear()	
+	String Head = "# House of Cards\n# Golf\n#(c) Jeroen P. Broks\n\n"
+	Table Out = {}
+	out.Holes = Head .. sprintf("[Gen]\nHole=%d\n\n",Hole.CHole)
+	out.Holes = out.Holes .. sprintf("Strict=%s\nJokers=%d\nEmptyFoundation=%s\n\n",GLF_Strict,GLF_Jokers,GLF_EmptyFoundation)
+	For i,h in pairs(Hole.List)
+		out.Holes = out.Holes .. sprintf("[%d]\nTime=%d\nScore=%d\n\n",i,h.time,h.score)		
+	End
+	
+	out.Tableau = Head .. "\n\n\n"
+	for ri,ra in ipairs(GLF_Row)
+		out.Tableau = out.Tableau .. sprintf("\n[%d]\nSize=%d\n\n",ri,len(ra))
+		for ci,cc in ipairs(ra)
+			out.Tableau = out.Tableau .. sprintf("S%d=%d\nV%d=%d\n\n",ci,cc.CardSuit,ci,cc.CardValue)
+		End
+	end
+	Out.Stacks = Head .. "\n\n\n"
+	for k,d in pairs{["Stock"]=GLF_Stock,["Foundation"]=GLF_Foundation}
+		plua a;a=d.Array
+		out.Stacks = out.Stacks ..sprintf( "\n[%s]\nSize=%d\n\n",k,len(a) )
+		for ci,cc in ipairs(a)
+			out.Stacks = out.Stacks .. (sprintf("S%d=%d\nV%d=%d\n\n",ci,cc.CardSuit,ci,cc.CardValue))
+		end
+	end
+	for k,s in pairs(out)
+		SG.Text[k]=s
+	end
+	SG.Save()
+	GoToFlow("SELECTGAME")
+End
 
 Global Void GameNew(String CShuffle="")
 	Hole.List=nil
 	Hole.Total = New Hole(-1)
 	GLF_Card = GLF_CSize.Bind()
 	StartHole(1)
+End
+
+Global Void GameContinue()
+	plua SG = SGJCR.Create("LOAD:Golf")
+	SG.Assign("House Of Cards.SaveGame.Golf.jcr")
+	SG.Load()
+	GLF_Card = GLF_CSize.Bind()
+	Action.Stck = new Stack()
+	
+	// Holes
+	plua SD;SD = GINIE.Parse(SG.Text.Holes,"SGDATA")
+	Hole.List={}
+	Hole.Total = New Hole(-1)
+	Hole.CHole = sd.IntValue("Gen","Hole")
+	GLF_Strict = Sd.BoolValue("Gen","Strict")
+	GLF_Jokers = sd.IntValue("Gen","Jokers")
+	GLF_EmptyFoundation = sd.BoolValue("Gen","EmptyFoundation")
+	for i=1,Hole.CHole		
+		plua H;H = New Hole(i)
+		Hole.List[i] = H
+		H.Score = sd.IntValue(""..i,"Score")
+		H.Time = sd.IntValue(""..i,"Time")
+	end
+	
+	// Tableau
+	SD = GINIE.Parse(SG.Text.Tableau,"SGDATA")
+	GLF_Row = {}
+	for ri=0,6
+		GLF_Row[ri] = {}
+		plua ra;ra = GLF_Row[ri]
+		for ci=0,SD.IntValue(""..ri,"Size")-1
+			plua CC
+			CC = new DeckCard(SD.IntValue(""..ri,"S"..ci),SD.IntValue(""..ri,"V"..ci))
+			ra[len(ra)]=cc
+		End
+	End
+	
+	// Stacks
+	GLF_Stock = new Stack()
+	GLF_Foundation = new Stack()
+	SD = GINIE.Parse(SG.Text.Stacks,"SGDATA")
+	For k,s in pairs{["Stock"]=GLF_Stock,["Foundation"]=GLF_Foundation}
+		//CSayF("Stack: %s",k)
+		s.Clear()
+		For ci=SD.IntValue(k,"Size")-1,0,-1
+			plua CC
+			CC = new DeckCard(SD.IntValue(k,"S"..ci),SD.IntValue(k,"V"..ci))
+			s.Push(CC)
+		End
+	End
 End
 
 Global Void MainFlow()

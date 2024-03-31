@@ -96,6 +96,8 @@ Init
 	Img("MOUSE_FALSE","GFX/MOUSE/FALSE.PNG")
 	Img("SUCCESS","GFX/End Game/Success.PNG","CENTER")
 	Img("FAIL","GFX/End Game/Fail.png","CENTER")
+	Img("CLEARED","GFX/End Game/Cleared.png","CENTER")
+	Img("NOMOREMOVES","GFX/End Game/NoMoreMoves.png","CENTER")
 	Img("FUNCTIONS","GFX/Buttons/Functions.png")
 	Img("UNDO","GFX/Buttons/Undo.png")
 	Img("OK","GFX/Buttons/OK.png")
@@ -143,7 +145,7 @@ Global Void MainFlow()
 			End
 		Case "FONT"
 			plua f;f = LinkFont(ITM.FILE,ITM.TAG)
-			If ITM.Specifications.RYANNA
+			If ITM.Specifications.RYANNA || ITM.Tag=="RYANNA"
 				RYA = f
 			End
 		Case "AUDIO"
@@ -153,6 +155,10 @@ Global Void MainFlow()
 		Default; Lua.error("I really don't know how to load a "..ITM.Type)
 	End
 	If RYA
-		RYA.Text(sprintf("Loading %d%%",math.floor( (Idx/Len(ToLoad.Lijst)) * 100 )),Graphics.Width div 2,Graphics.Height div 2,2,2)
+		Strint Ltext
+		SetColorHSV(math.random(0,360),1,1)
+		Ltext = sprintf("Loading %d%%",math.floor( (Idx/Len(ToLoad.Lijst)) * 100 ))
+		CSay(Ltext)
+		RYA.Text(Ltext,Graphics.Width div 2,Graphics.Height div 2,2,2)
 	End
 End

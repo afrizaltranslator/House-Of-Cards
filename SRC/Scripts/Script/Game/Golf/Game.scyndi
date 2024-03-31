@@ -1,0 +1,250 @@
+// License Information:
+// House Of Cards
+// Golf
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.03.31
+// End License Information
+
+Script
+
+
+#region Use
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/JCR6"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/SGJCR"
+#use "Libs/SCI/Events"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/xMath"
+#use "Libs/Stacker"
+
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+#use "Script/use/Gen/SeedLog"
+
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Sound"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/QCardWrite"
+#use "Script/Use/Gen/GameFeatures"
+
+#endregion
+
+#region "General Assets"
+//ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")
+ReadOnly Var Fnt = ObtainFont("RYANNA")
+ReadOnly Var ESC = ObtainImage("SUCCESS")
+ReadOnly Var EFL = ObtainImage("FAIL")
+ReadOnly Var UND = ObtainImage("UNDO")
+ReadOnly Var ICO = LoadNewImage("Script/Game/Golf/Icon.png","Golf_ICON")
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Var MNI = ObtainFont("MINI")
+#endregion
+
+#region "Game Vars"
+Class Hole
+	Static Var List
+	Static Var Total
+	Static Int CHole
+	Static Get Var Cur
+		List = List || {}
+		List[CHole]=List[CHole] || new Hole(CHole)
+		return List[CHole]
+	End
+	
+	Static Void Recalc()
+		Total.Score = 0
+		Total.Time  = 0
+		For i,h in pairs(List)
+			Total.Score = Total.Score + h.Score
+			Total.Time  = Total.Time  + h.Time
+		End
+	End
+	
+	Static Void Overview()
+		Int Y
+		// Should start at 1 this time (by high exception).
+		// Dirty code, but it works
+		For i,h in Lua.ipairs(List)
+			Y = (Graphics.Height div 2)+(i*20)
+			If i==CHole
+				SetColor(255,180,0)
+				MNI.Dark(sprintf("Hole #%d: ----- %9s",i,h.TimeString),5,Y)
+			Else
+				SetColor(255,255,255)
+				MNI.Dark(sprintf("Hole #%d: %5d %9s",i,h.Score,h.TimeString),5,Y)
+			End
+		end
+		Y = Y + 30
+		SetColor(0,180,255)
+		Int Par;Par = (CHole-1)*5
+		String Plus=""; if Total.Score-Par>0; Plus="+"; End
+		   //    Hole #x:		   
+		Mni.Dark(sprintf("Total:   %5d %9s    Par: %2d -> %s%d",Total.Score,Total.Time,Par,plus,Total.Score-Par),5,Y)
+	End
+	
+	ReadOnly Int Num
+	Int Score
+	Int Time
+	Get String TimeString
+		int Seconds;Seconds= Time % 60
+		int FMinutes;FMinutes = Time div 60
+		int Minutes; Minutes = FMinutes % 60
+		int Hours; Hours = FMinutes div 60
+		if Minutes <=0			
+			return sprintf("%7d",Seconds);
+		ElIf Hours <=0
+			return sprintf("%4d:%02d",Minutes,Seconds)
+		Else
+			return sprintf("%d:%02d:%02d",Hours,Minutes,Seconds)
+		End
+	End
+	Constructor(Int ID)
+		Num=ID
+		CSayF("Created Hole #%d",ID)
+	End
+End
+
+ReadOnly Var GLF_Config = GINIE.Obtain("CONFIG::GOLF")
+ReadOnly Var GLF_CSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 8)
+Plua GLF_Card
+Plua GLF_Deck
+Plua GLF_Row
+Plua GLF_Stock
+Plua GLF_Foundation
+Number GLF_DRat
+Get Bool GLF_EmptyFoundation
+	Return Upper(GLF_Config.Value("CONFIG","EMPTYFOUNDATION"))=="YES"
+End
+Set Bool GLF_EmptyFoundation
+	// For loading savegames!
+	If Value
+		GLF_Config.Value("CONFIG","EMPTYFOUNDATION","Yes")
+	Else
+		GLF_Config.Value("CONFIG","EMPTYFOUNDATION","No")
+	End
+End
+Get Int GLF_Jokers 
+	Return GLF_Config.IntValue("Config","Jokers")
+End
+Set Int GLF_Jokers
+	GLF_Config.Value("Config","Jokers",Value)
+End
+
+#endregion
+
+
+#region "Own Background or not"
+plua ___OwnBack
+Init
+	If JCR6.EntryExists("GFX/backgrounds/Stretch/Golf Course.jpg")
+		___OwnBack = LoadNewImage("GFX/backgrounds/Stretch/Golf Course.jpg","GOLF_BACKGROUND")
+	End
+End
+Void Background()
+	// In order not to violate copyrights, the background screen file is not 
+	// included in the repository. If you build the game yourself from the 
+	// repository, at least the game should not crash and use the default 
+	// background in stead.
+	If ___OwnBack
+		___OwnBack.Stretch(0,0,Graphics.Width,Graphics.Height)
+	Else
+		DrawBackGround()
+	End
+	SetColor(255,255,255)
+	Ico.Stretch(Graphics.Width-96,Graphics.Height-96,96,96)
+End
+#endregion
+
+
+
+Void StartHole(Int H=0)
+	If H>0 && H<10; Hole.CHole=H; Else; Hole.CHole++; End
+	Hole.Cur.Time=0
+	Hole.Cur.Score=0
+	GLF_Deck = Deck.Shuffle("DECK_GOLF_HOLE_"..Hole.CHole,GLF_Config.Value("Shuffle","Shuffle"),1,13,1,4,GLF_Jokers)
+	GLF_Row = {}
+	int MxR = (5*7)
+	For i=0,MxR-1
+		Int R;R = i % 7
+		Int C;C = i div 7
+		GLF_Row[R] = GLF_Row[R] || {}
+		GLF_Row[R][C] = GLF_Deck[i]
+	End
+	GLF_Stock = New Stack()
+	GLF_Foundation = New Stack()
+	For s=((13*4)-1)+GLF_Jokers,MxR,-1
+		GLF_Stock.Push(GLF_Deck[s])
+	End
+	GLF_DRat = -1
+	If (!GLF_EmptyFoundation)
+		plua c=GLF_Stock.Pop()
+		GLF_Foundation.Push(c)
+	End
+	Hole.ReCalc()
+End
+
+Void DrawCards()
+	GLF_DRat = math.min(1,GLF_DRat+0.1)
+	For ri,ra in ipairs(GLF_Row)
+		For ci,crd in ipairs(ra)
+			Int X = math.floor( ( (ri*((Graphics.Width div 8)*1.1))+10 ) * GLF_DRat)
+			Int Y = math.floor( ( 60 + (ci*35) ) * GLF_DRat)
+			//CSayF("Row #%d, Card #%d -> (%d,%d)  (drat:%f)",ri,ci,x,y,GLF_DRat)
+			GLF_Card.DrawCard(X,Y,crd.CardSuit,crd.CardValue)
+		End
+	End
+	If GLF_Stock.Have
+		int SX = math.floor ( ( (Graphics.Width div 2)-(GLF_Card.W*1.5) ) * GLF_DRat )
+		int SY = math.floor ( ( (Graphics.Height)-(GLF_Card.H*1.5) ) * GLF_DRat )
+		GLF_Card.DrawBack(SX,SY)
+	End
+	If GLF_Foundation.Have
+		var crd = GLF_Foundation.Value
+		int SX = math.floor ( ( (Graphics.Width div 2)+(GLF_Card.W*0.5) ) * GLF_DRat )
+		int SY = math.floor ( ( (Graphics.Height)-(GLF_Card.H*1.5) ) * GLF_DRat )
+		GLF_Card.DrawCard(SX,SY,crd.CardSuit,crd.CardValue)
+	End
+End	
+	
+
+#region "General Callbacks"
+Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
+
+Global Void GameNew(String CShuffle="")
+	Hole.List=nil
+	Hole.Total = New Hole(-1)
+	GLF_Card = GLF_CSize.Bind()
+	StartHole(1)
+End
+
+Global Void MainFlow()
+	Background()
+	DrawCards()
+	Hole.Overview()
+	GameFeatures.Button()
+	ShowMouse()
+End
+#endregion

@@ -64,6 +64,22 @@ ReadOnly Var MNI = ObtainFont("MINI")
 #endregion
 
 #region "Game Vars"
+Class Action
+	Static Var Stck
+	ReadOnly String Act
+	ReadOnly Var Row
+	Constructor (string A,R)
+		Act=A
+		Row=R
+	End
+	Static Void Add(String A,R)
+		Stck = Stck || New Stack()
+		Stck.Push(New Action(A,R))
+	End
+	Static Void Reset(); Stck=New Stack(); End
+End
+	
+
 Class Hole
 	Static Var List
 	Static Var Total

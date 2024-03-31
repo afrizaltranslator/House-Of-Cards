@@ -98,6 +98,7 @@ Init
 	Img("FAIL","GFX/End Game/Fail.png","CENTER")
 	Img("CLEARED","GFX/End Game/Cleared.png","CENTER")
 	Img("NOMOREMOVES","GFX/End Game/NoMoreMoves.png","CENTER")
+	Img("GAMEOVER","GFX/End Game/GameOver.png","CENTER")
 	Img("FUNCTIONS","GFX/Buttons/Functions.png")
 	Img("UNDO","GFX/Buttons/Undo.png")
 	Img("OK","GFX/Buttons/OK.png")

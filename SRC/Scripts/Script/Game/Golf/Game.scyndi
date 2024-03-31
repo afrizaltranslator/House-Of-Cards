@@ -234,6 +234,11 @@ Void StartHole(Int H=0)
 		GLF_Foundation.Push(c)
 	End
 	Hole.ReCalc()
+	GLF_OldTime = os.time()
+	GLF_State = 0
+	Action.Reset()
+End
+
 End
 
 Void DrawCards()

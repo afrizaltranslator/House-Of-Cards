@@ -68,6 +68,8 @@ plua KLO_DragCards = nil
 plua KLO_SeedLog
 bool KLO_TimeRunning
 int  KLO_Time
+int  KLO_Moves
+int  KLO_Undone
  
 
 Int KLO_State = 0

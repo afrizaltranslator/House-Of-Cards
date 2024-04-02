@@ -62,6 +62,11 @@ plua MAS // Mascot
 ReadOnly Var FNT = ObtainFont("RYANNA")
 ReadOnly Var MNI = ObtainFont("MINI")
 ReadOnly Var PPP = LoadNewImage("Script/Game/Tonkar ba sol/Arrow.png","Fantasy_Arrow")
+ReadOnly Var ESC  = ObtainImage("SUCCESS")
+//ReadOnly Var EFL  = ObtainImage("FAIL")
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Var UND = ObtainImage("UNDO")
+
 Int  MSW
 Int  MSH
 Int  Hue
@@ -217,11 +222,18 @@ End
 
 Void DrawCards()
 	Bool _Dragging = Dragging
+	Bool Victory;Victory=TBS_State==0 && Len(TBS_Stack)==0 && !_Dragging
 	TBS_StackX=20
 	For ri,ra in ipairs(TBS_ROW)
 		Int CY = 60
 		Int Hover=-1
 		For ci,cc in ipairs(ra)
+			Victory = Victory && cc.Visible
+			if ci==0
+				Victory = Victory && cc.Val==15
+			Else
+				Victory = Victory && cc.Val==ra[ci-1].Val-1 && cc.Elem==ra[ci-1].Elem
+			End
 			If !_Dragging
 				cc.GX = math.floor(ri*(cc.W*1.123))+25
 				cc.GY = CY
@@ -233,7 +245,7 @@ Void DrawCards()
 			End
 			cc.Visible = cc.Visible || ci==len(ra)-1			
 			cc.Draw()
-			If cc.Visible && (!Dragging) && MX>cc.x && MY>cc.y && MX<cc.x+cc.w && MY<cc.y+cc.h
+			If cc.Visible && (!Dragging) && MX>cc.x && MY>cc.y && MX<cc.x+cc.w && MY<cc.y+cc.h && TBS_State==0
 				Hover=ci
 			End
 			if CY+cc.H+10>TBS_StackY && ((cc.GX>=5+TBS_StackX && cc.GX<=5+TBS_StackX+cc.W) || (cc.GX+cc.W>=5+TBS_StackX && cc.GX+cc.W<=5+TBS_StackX+cc.W))
@@ -254,7 +266,7 @@ Void DrawCards()
 		End
 	End
 	SetColor(255,180,0)
-	Fnt.Dark(sprintf("%d",Len(TBS_Stack)),TBS_StackX+TBS_StackW+5,TBS_StackY+(TBS_StackH div 2),0,2)
+	Fnt.Dark(sprintf("%d",Len(TBS_Stack)),TBS_StackX+TBS_StackW+5+(len(TBS_Stack)*2),TBS_StackY+(TBS_StackH div 2),0,2)
 	SetColorHSV(Hue,1,0.25)	 
 	Rect(TBS_StackX,TBS_StackY,TBS_StackW,TBS_StackH)
 	For ci,cc in ipairs(TBS_Stack)
@@ -266,7 +278,7 @@ Void DrawCards()
 		cc.Draw()
 	End	
 	If MX>TBS_StackX && MY>TBS_StackY && MX<TBS_StackX+TBS_StackW && MY<TBS_StackY+TBS_StackH && !_Dragging
-		plua cc;cc=TBS_Stack[0]
+		plua cc;cc=TBS_Stack[len(TBS_Stack)-1]
 		if cc
 			Pymtheg.QWCard(cc.elem,cc.val,Graphics.Width div 2,Graphics.Height-96)
 			PPP.Stretch((cc.x+(cc.w div 2))-96,(cc.y+(cc.h div 2))-96,96,96)
@@ -275,6 +287,10 @@ Void DrawCards()
 			end
 		End
 	end
+	If Victory
+		SFX("Complete")
+		TBS_State=1
+	End
 End
 
 Int __OldTime
@@ -285,6 +301,28 @@ Void HandleTime()
 		TBS_Time++
 		__OldTime = __NewTime
 	End
+End
+
+Void VictoryState()
+	If TBS_State!=1; Return; End
+	ESC.Draw(Graphics.W div 2,Graphics.H div 2)
+	Int DX=(Graphics.W div 2) - 96
+	Int DY=Graphics.H-96	
+	If MX>DX && MY>DY && MX<DX+96
+		SetColorHSV(Hue,1,1)
+		If ML
+			GoToFlow("SELECTGAME")
+		End
+	End
+	OKE.Stretch(DX,DY,96,96)
+End
+
+Void UndoButton()
+	If (!Action.List.Have) || TBS_State!=0; Return; End
+	if MX<64 && MY<Graphics.H-64
+		SetColorHSV(Hue,1,1)
+	End
+	UND.Stretch(0,Graphics.H-64,64,64)
 End
 
 #Region Callbacks
@@ -312,6 +350,8 @@ Global Void MainFlow()
 	ShowMoves(TBS_Moves,TBS_Undone,(Graphics.Width div 4)*3,Graphics.Height-30,2)
 	DrawCards()
 	GameFeatures.Button()
+	UndoButton()
+	VictoryState()
 	ShowMouse()
 End
 #endregion

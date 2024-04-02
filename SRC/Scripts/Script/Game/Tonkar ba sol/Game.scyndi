@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.01
+// Version: 24.04.02
 // End License Information
 Script
 
@@ -51,27 +51,266 @@ Script
 #use "Script/Use/Gen/QCardWrite"
 #use "Script/Use/Gen/GameFeatures"
 
+#use "Script/Game/Tonkar ba Sol/Pymtheg"
+
 #endregion
+
+#Region "Core Assets"
+ReadOnly String ICN = "SCRIPT/GAME/TONKAR BA SOL/ICON.PNG"
+plua ICO // Icon
+plua MAS // Mascot
+ReadOnly Var FNT = ObtainFont("RYANNA")
+ReadOnly Var MNI = ObtainFont("MINI")
+ReadOnly Var PPP = LoadNewImage("Script/Game/Tonkar ba sol/Arrow.png","Fantasy_Arrow")
+Int  MSW
+Int  MSH
+Int  Hue
+
+Init
+	if JCR6.EntryExists(ICN)
+		string m = os.date("%m")
+		if M=="12"
+			CSay("Let's load the Chrstmas stuff")
+			ICO = LoadNewImage("SCRIPT/GAME/TONKAR BA SOL/ICON_XMas.PNG","TBS_ICON")
+			MAS = LoadNewImage("SCRIPT/GAME/TONKAR BA SOL/Marrilona_Xmas.PNG","TBS_MASCOT")
+		Else
+			CSay("Let's load the mascot and the icon")
+			ICO = LoadNewImage("SCRIPT/GAME/TONKAR BA SOL/ICON.PNG","TBS_ICON")
+			MAS = LoadNewImage("SCRIPT/GAME/TONKAR BA SOL/Marrilona.PNG","TBS_MASCOT")
+			CSayF("Success? Icon:%s; Mascotte:%s",ICO,MAS)
+		End
+		MSH = Graphics.Height
+		MSW = math.floor( (Graphics.Height/Mas.Height)*Mas.Width)
+		CSayF("Mascot show size: %dx%d",MSW,MSH)
+	Else
+		CSayF("Apparently there's no entry named '%s' in the JC6 resource, so let's not load that!")
+	End		
+End
+#EndRegion
 
 #Region Vars
 
 ReadOnly Var TBS_BackGround = LoadNewImage("GFX/Backgrounds/Stretch/Forest Path.jpg","Dorst_Forest_Path")
 ReadOnly Var TBS_Config = GINIE.Obtain("CONFIG::TONKAR BA SOL")
+
+//plua TBS_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
 plua TBS_Deck
 plua TBS_Row
 plua TBS_Stack
-Int TBS_StackCount
+plua TBS_DragCards
+Int TBS_State
+Int TBS_Moves
+Int TBS_Undone
+Int TBS_Time
+//Int TBS_StackCount
+Int TBS_StackX
+Get Int TBS_StackY;return (Graphics.H - 70) - Lua.Scyndi.Class.TBS_Card.Pym.H; End
+Get Int TBS_StackW;return Lua.Scyndi.Class.TBS_Card.Pym.W; End
+Get Int TBS_StackH;return Lua.Scyndi.Class.TBS_Card.Pym.H; End
+Get Int TBS_StackLimit;Return TBS_Config.IntValue("Config","StackLimit"); End
+Set Int TBS_StackLimit;Return TBS_Config.Value("Config","StackLimit",Value); End
 #EndRegion
+
+Class Action
+	ReadOnly Static Table List = new Stack()
+	ReadOnly String Act
+	ReadOnly Var Cards
+	ReadOnly Var FromR
+	ReadOnly Var ToR
+	Constructor (string A,C,F,T)
+		Act = Upper(A)
+		Cards = C
+		FromR = F
+		ToR   = T
+	End
+	Static Var Add(string A,C,F,T)
+		plua ret;ret = new Action(A,C,F,T)
+		List.Push(ret)
+		TBS_Moves++
+		SFX("SLIDE")
+	End
+End
+
+Class TBS_Card
+	Static Var Pym = Lua.Scyndi.Class.PymDeck.FromW(Graphics.Width div 12)
+	Int GX
+	Int GY
+	Int X
+	Int Y
+	Bool Visible = False
+	ReadOnly Var Card
+	Get Int Elem; Return Card.CardSuit; End
+	Get Int Val; Return Card.CardValue; End
+	Get Int W; Return Pym.W; End
+	Get Int H; Return Pym.H; End
+	
+	Static Int WaitInc
+	Int Wait
+	Constructor(_Card)
+		Card = _Card
+		WaitInc++
+		Wait=WaitInc*3
+		Y = math.ceil(Graphics.Height*1.25)
+		X = math.random(-200,Graphics.Width+200)
+	End
+	
+	Void Draw()
+		if Wait>0;Wait--; Return; End
+		if GX<X; X=X-math.max(1,math.abs(X-GX) div 10); ElIf GX>X; X=X+math.max(1,math.abs(X-GX) div 10); End 
+		if GY<Y; Y=Y-math.max(1,math.abs(Y-GY) div 10); ElIf GY>Y; Y=Y+math.max(1,math.abs(Y-GY) div 10); End 
+		If Visible
+			Pym.DrawCard(X,Y,Elem,Val)
+		Else
+			Pym.DrawBack(X,Y)
+		End
+	End
+End	
+
+Get Bool Dragging
+	If !TBS_DragCards; Return False; End
+	If MDL
+		For ci,cc in ipairs(TBS_DragCards)
+			cc.GX = MX - (cc.W div 2)
+			cc.GY = MY + (ci * 40)
+			cc.X  = cc.GX
+			cc.Y  = cc.GY
+		End
+		Return True
+	End
+	For ri,ra in ipairs(TBS_Row)
+		int ChkX;ChkX=math.floor(ri*(TBS_Card.Pym.W*1.123))+25
+		If MX>TBS_StackX && MY>TBS_StackY && MX<TBS_StackX+TBS_StackW && MY<TBS_StackY+TBS_StackW 
+			// This prevents this statement to affect the "Elif" line.
+			If Len(TBS_DragCards)==1 && (TBS_StackLimit<=0 || Len(TBS_Stack)<TBS_StackLimit) && TBS_DragCards.From!=TBS_Stack
+				AppendArray(TBS_Stack,TBS_DragCards)
+				TBS_DragCards.From[len(TBS_DragCards.From)-1]=nil
+				Action.Add("Move",TBS_DragCards,TBS_DragCards.From,TBS_Stack)
+				Break
+			End
+		ElIf MX>ChkX && MX<ChkX+TBS_Card.Pym.W && ri!=TBS_DragCards.FromNum
+			if len(ra)==0 || ra[len(ra)-1].Val==TBS_DragCards[0].Val+1
+			//if True
+				int l = len(TBS_DragCards.From) 
+				For i=1,len(TBS_DragCards)
+					CSayF("Removing card #%d from row %d",l-i,TBS_DragCards.FromNum)
+					TBS_DragCards.From[l-i]=nil
+				End
+				CSayF("Appending cards to row #%d",ri)
+				AppendArray(ra,TBS_DragCards)
+				Action.Add("Move",TBS_DragCards,TBS_DragCards.From,ra)
+			End
+		End
+	End
+	TBS_DragCards = nil
+	Return False
+End
+
+Void Deal()
+	TBS_Card.WaitInc=0
+	TBS_Row = {}
+	for i=0,9; TBS_Row[i] = {}; End
+	for i=0,59
+		 plua cr;cr = TBS_Row[i%10]
+		 cr[len(cr)] = New TBS_Card(TBS_Deck[i])
+	End
+End
+
+Void DrawCards()
+	Bool _Dragging = Dragging
+	TBS_StackX=20
+	For ri,ra in ipairs(TBS_ROW)
+		Int CY = 60
+		Int Hover=-1
+		For ci,cc in ipairs(ra)
+			If !_Dragging
+				cc.GX = math.floor(ri*(cc.W*1.123))+25
+				cc.GY = CY
+			End
+			If cc.Visible
+				CY = CY + 36
+			Else
+				CY = CY + 5
+			End
+			cc.Visible = cc.Visible || ci==len(ra)-1			
+			cc.Draw()
+			If cc.Visible && (!Dragging) && MX>cc.x && MY>cc.y && MX<cc.x+cc.w && MY<cc.y+cc.h
+				Hover=ci
+			End
+			if CY+cc.H+10>TBS_StackY && ((cc.GX>=5+TBS_StackX && cc.GX<=5+TBS_StackX+cc.W) || (cc.GX+cc.W>=5+TBS_StackX && cc.GX+cc.W<=5+TBS_StackX+cc.W))
+				TBS_StackX=cc.GX+cc.W+10
+			End
+		End
+		If Hover>=0
+			plua cc;cc=ra[Hover]
+			SetColor(255,255,255)
+			PPP.Stretch(cc.x-96,cc.y-96,96,96)
+			Pymtheg.QWCard(cc.elem,cc.val,Graphics.Width div 2,Graphics.Height-96)
+			If MDL
+				TBS_DragCards = { ["From"]=ra,["FromNum"]=ri }
+				For ci,cc in ipairs(ra)				
+					if ci>=Hover; TBS_DragCards[Len(TBS_DragCards)]=cc; End
+				End
+			End
+		End
+	End
+	SetColor(255,180,0)
+	Fnt.Dark(sprintf("%d",Len(TBS_Stack)),TBS_StackX+TBS_StackW+5,TBS_StackY+(TBS_StackH div 2),0,2)
+	SetColorHSV(Hue,1,0.25)	 
+	Rect(TBS_StackX,TBS_StackY,TBS_StackW,TBS_StackH)
+	For ci,cc in ipairs(TBS_Stack)
+		cc.Visible=true
+		if !_Dragging
+			cc.GX = TBS_StackX+(ci*2)
+			cc.GY = TBS_StackY+(ci*2)
+		End
+		cc.Draw()
+	End	
+	If MX>TBS_StackX && MY>TBS_StackY && MX<TBS_StackX+TBS_StackW && MY<TBS_StackY+TBS_StackH && !_Dragging
+		plua cc;cc=TBS_Stack[0]
+		if cc
+			Pymtheg.QWCard(cc.elem,cc.val,Graphics.Width div 2,Graphics.Height-96)
+			PPP.Stretch((cc.x+(cc.w div 2))-96,(cc.y+(cc.h div 2))-96,96,96)
+			if ML
+				TBS_DragCards = {[0]=cc,["From"]=TBS_Stack,["FromNum"]=65535}
+			end
+		End
+	end
+End
+
+Int __OldTime
+Void HandleTime()
+	ShowTime(TBS_Time,Graphics.Width div 4,Graphics.Height-30,2)
+	Int __NewTime = os.time()
+	if TBS_State==0 && Action.List.Have && __OldTime!=__NewTime
+		TBS_Time++
+		__OldTime = __NewTime
+	End
+End
 
 #Region Callbacks
 Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
 
 Global Void GameNew()
 	TBS_Deck = Deck.Shuffle("DECK_TonkarBaSol",TBS_Config.Value("Shuffle","Shuffle"),1,15,1,4)
+	Deal()
+	TBS_Moves = 0
+	TBS_Time = 0
+	TBS_Undone = 0
+	TBS_State = 0
+	TBS_Stack = {}
 End
 
-Global Void MainFlow()
-	SetColor(0,255,0); TBS_BackGround.Stretch(0,0,Graphics.Width,Graphics.Height)
+Global Void MainFlow()	
+	Hue = (Hue+1)%360	
+	SetColor(0,255,0); TBS_BackGround.Stretch(0,0,Graphics.Width,Graphics.Height)	
+	SetColor(255,255,255) 
+	If MAS; MAS.Stretch(Graphics.Width-MSW,0,MSW,MSH); End
+	If ICO; ICO.Stretch(Graphics.Width-96,Graphics.Height-96,96,96); End
+	SetColorHSV(120,0.75+(xmath.sin(hue)*0.25),1)
+	FNT.Dark("D|^a T|^onk|^ars b|^a sol",Graphics.width div 2,4,2)
+	HandleTime()
+	ShowMoves(TBS_Moves,TBS_Undone,(Graphics.Width div 4)*3,Graphics.Height-30,2)
+	DrawCards()
 	GameFeatures.Button()
 	ShowMouse()
 End

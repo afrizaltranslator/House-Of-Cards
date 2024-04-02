@@ -18,4 +18,4 @@ The current version of House of Cards supports the following games.
 - [Pyramid](https://rumble.com/v4j9mwk-how-to-play-pyramid.html)
 - [Soloslag](https://rumble.com/v4licyo-how-to-play-soloslag.html)
 - [Spider](https://rumble.com/v4j9qj0-how-to-play-spider.html)
-- [Dâ Tônkar b6a sol](https://rumble.com/v4n1jj3-how-to-play-d-tnkrs-b-sol.html)
+- [Dâ Tônkar bâ sol](https://rumble.com/v4n1jj3-how-to-play-d-tnkrs-b-sol.html)

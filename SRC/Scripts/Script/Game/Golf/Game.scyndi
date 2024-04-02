@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.31
+// Version: 24.04.02
 // End License Information
 
 Script
@@ -83,6 +83,7 @@ Class Action
 	Static Void Add(String A,R)
 		Stck = Stck || New Stack()
 		Stck.Push(New Action(A,R))
+		SFX("SLIDE")
 	End
 	Static Void Reset(); Stck=New Stack(); End
 End

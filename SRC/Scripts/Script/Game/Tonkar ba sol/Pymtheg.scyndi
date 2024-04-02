@@ -21,9 +21,83 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.01
+// Version: 24.04.02
 // End License Information
+
 Module
 
+#use "Libs/SCI/Graphics"
 
-plua _backside = LoadImage("GFX/Backsides/Pymtheg.png")
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+
+plua _backside = LoadNewImage("GFX/Backsides/Pymtheg.png","PYMTHEG_BACK")
+plua _elem = {}
+plua _fnt = ObtainFont("RYANNA")
+
+Var ElemPic(int i)
+	_elem[i] = _elem[i] || LoadNewImage(sprintf("Script/Game/Tonkar Ba Sol/E%d.png",i),"PYMTEG_ELEMENT_"..i) 
+	Return _elem[i]
+End
+
+Class PymColor
+	ReadOnly Number Hue
+	ReadOnly Number Saturation
+	ReadOnly Number Value
+	Void Want()
+		SetColorHSV(Hue,Saturation,Value)
+	End
+	Void Bright()
+		SetColorHSV(Hue,Saturation / 4, Value)
+	End
+	Constructor (Number H,Number S, Number V)
+		Hue        = H
+		Saturation = S
+		Value      = V
+	End
+	ReadOnly Static Var ECol = {} 
+End
+
+Init
+	PymColor.ECol[0] = New PymColor(231,0,0.64)
+	PymColor.ECol[1] = New PymColor(33,1,1)
+	PymColor.ECol[2] = New PymColor(146,1,0.49)
+	PymColor.ECol[3] = New PymColor(231,1,1)
+End
+
+Class PymDeck
+	Static Var FromW(Int _W); Return New PymDeck(Lua.Scyndi.Class.CardSize.FromW(_W)); End
+	Static Var FromH(Int _H); Return New PymDeck(Lua.Scyndi.Class.CardSize.FromW(_H)); End
+	Static Var Blanco
+	Var CSz
+	Get Int W; Return CSz.W; End
+	Get Int H; Return CSz.H; End
+	
+	
+	Void DrawBack(Int X,Int Y); SetColor(255,255,255) _BackSide.Stretch(X,Y,W,H); End
+		
+	Void DrawCard(Int X, Int Y,Int E, Int V)
+		PymColor.ECol[E].Bright()
+		Blanco.Stretch(X,Y,W,H)
+		SetColor(255,255,255)
+		plua SV;SV = sprintf("%2d",V)
+		plua HV;HV = _fnt.Height(SV)
+		ElemPic(E).Stretch(X,Y+(H div 2)-(W div 2),W,W)
+		ElemPic(E).Stretch(X+7+_Fnt.Width(SV),Y+5,HV,HV)
+		PymColor.ECol[E].Want()
+		_fnt.Dark(SV,X+5,Y+5)
+	End
+		
+	Constructor(_CardSize)
+		CSz = _CardSize
+		Blanco = Blanco || LoadNewImage("GFX/Cards/Scripted/Base/Blanco.png","BLANCO")		
+	End
+End		
+
+plua QWCReg = {}
+Void QWCard(Int E,Int V,Int X,Int Y)
+	String Tag;Tag = sprintf("%d.%02d",E,V)
+	QWCReg[Tag] = QWCReg[Tag] || LoadNewImage(sprintf("Script/Game/Tonkar ba sol/%s.png",Tag),"Pymteg_QWC_"..Tag)
+	QWCReg[Tag].HotCenter()
+	QWCReg[Tag].Draw(X,Y)
+End

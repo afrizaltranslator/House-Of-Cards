@@ -72,6 +72,7 @@ Int  MSH
 Int  Hue
 
 Init
+	CSay("Checking Phantasar Only Stuff")
 	if JCR6.EntryExists(ICN)
 		string m = os.date("%m")
 		if M=="12"
@@ -113,7 +114,13 @@ Get Int TBS_StackY;return (Graphics.H - 70) - Lua.Scyndi.Class.TBS_Card.Pym.H; E
 Get Int TBS_StackW;return Lua.Scyndi.Class.TBS_Card.Pym.W; End
 Get Int TBS_StackH;return Lua.Scyndi.Class.TBS_Card.Pym.H; End
 Get Int TBS_StackLimit;Return TBS_Config.IntValue("Config","StackLimit"); End
-Set Int TBS_StackLimit;Return TBS_Config.Value("Config","StackLimit",Value); End
+Set Int TBS_StackLimit;
+	If Value<=0
+		TBS_Config.Value("Config","StackLimit","|in")
+	Else
+		TBS_Config.Value("Config","StackLimit",Value)
+	End
+End
 #EndRegion
 
 Class Action
@@ -122,11 +129,18 @@ Class Action
 	ReadOnly Var Cards
 	ReadOnly Var FromR
 	ReadOnly Var ToR
+	ReadOnly Var Hidden
 	Constructor (string A,C,F,T)
-		Act = Upper(A)
-		Cards = C
-		FromR = F
-		ToR   = T
+		Act    = Upper(A)
+		Cards  = C
+		FromR  = F
+		ToR    = T
+		Hidden = 0
+		If Act=="MOVE"
+			For i,v in pairs(FromR || {})
+				if !v.visible; Hidden++; End
+			End
+		End
 	End
 	Static Var Add(string A,C,F,T)
 		plua ret;ret = new Action(A,C,F,T)
@@ -319,14 +333,87 @@ End
 
 Void UndoButton()
 	If (!Action.List.Have) || TBS_State!=0; Return; End
-	if MX<64 && MY<Graphics.H-64
+	if MX<64 && MY>Graphics.H-64
 		SetColorHSV(Hue,1,1)
+		If ML
+			plua Act = Action.List.Pop()
+			Switch Act.Act
+				Case "MOVE"
+					for i,v in ipairs(Act.Cards)
+						Act.ToR[Len(Act.ToR)-1]=nil
+						Append(Act.FromR,v)
+					End
+					for i,v in ipairs(Act.FromR)
+						v.Visible = i>=Act.Hidden
+					End
+					TBS_UnDone++
+				Default; Lua.error("Unknown action!")
+			End
+		End
 	End
 	UND.Stretch(0,Graphics.H-64,64,64)
 End
 
 #Region Callbacks
-Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
+Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return TBS_State==0; End
+
+Global Void GAMEFEATURES_SAVEEXIT_ACTION()
+	string TBS = "# Save game data for - Da Tonkars ba sol\n# (c) Jeroen P. Broks\n\n"
+	TBS = TBS .. sprintf("[General]\nGame=TBS\nMoves=%d\nTime=%d\nUndone=%d\nStackLimit=%d\n\n",TBS_Moves,TBS_Time,TBS_Undone,TBS_StackLimit)
+	TBS = TBS .. "[Tableau]\n\n*list:Stack\n"
+	for ci,cc in ipairs(TBS_Stack); TBS = TBS .. sprintf("\t%x%xt\n",cc.Elem,cc.Val); End
+	TBS = TBS .. "*end\n\n"
+	for ri,ra in ipairs(TBS_Row)
+		TBS = TBS .. sprintf("*list:R%d\n",ri)
+		for ci,cc in ipairs(ra)
+			TBS = TBS .. sprintf("\t%x%x%s\n",cc.Elem,cc.Val,cc.Visible)
+		end
+		TBS = TBS .. "*end\n\n"
+	end
+	plua SG = SGJCR.Create("SAVE:TBS")
+	SG.Assign("House Of Cards.SaveGame.Tonkar ba sol.jcr")
+	SG.Clear()
+	SG.Text.TBS = TBS
+	SG.Save()
+	GotoFlow("SELECTGAME")
+End
+
+Global Void GameContinue()
+	plua SG = SGJCR.Create("LOAD:TBS")
+	plua SD
+	CSay("Loading savegame")
+	SG.Assign("House Of Cards.SaveGame.Tonkar ba sol.jcr")
+	SG.Load()
+	CSay("= Parsing")
+	SD = GINIE.Parse(SG.Text.TBS,"TBS_Parseout")
+	CSay("= Checking")
+	Lua.assert(SD.Value("General","Game")=="TBS","Is this savegame file for: Tonkars ba sol?")
+	CSay("= General")
+	TBS_Moves      = SD.IntValue("General","Moves")
+	TBS_Undone     = SD.IntValue("General","Undone")
+	TBS_Time       = SD.IntValue("General","Time")
+	TBS_StackLimit = SD.IntValue("General","StackLimit")
+	plua CL
+	CSay("= Stack")
+	CL = SD.List("Tableau","Stack")
+	TBS_Stack = {}
+	For v in Each(CL)
+		Append(TBS_Stack,new TBS_Card(new DeckCard(Lua.tonumber(Mid(V,1,1)),Lua.tonumber("0x"..Mid(V,2,1)))))
+	End
+	TBS_Row = {}
+	For ri=0,9
+		CSayF("= Row: %d",ri)
+		plua ra = {}
+		TBS_Row[ri] = ra
+		CL = SD.List("Tableau","R"..ri)
+		For v in each(CL)
+			plua crd
+			crd = new TBS_Card(new DeckCard(Lua.tonumber(Mid(V,1,1)),Lua.tonumber("0x"..Mid(V,2,1))))
+			crd.Visible = lower(Mid(v,3,1))=="t"
+			Append(ra,crd)
+		End
+	End
+End
 
 Global Void GameNew()
 	TBS_Deck = Deck.Shuffle("DECK_TonkarBaSol",TBS_Config.Value("Shuffle","Shuffle"),1,15,1,4)

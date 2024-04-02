@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.27
+// Version: 24.04.02
 // End License Information
 Script
 
@@ -182,6 +182,7 @@ Class KlondikeAction
 			end
 			HiddenCards=cnt
 		End
+		KLO_Moves++
 	End
 	
 	Static Void Add(String _Cmd,Int _FR=0,Int _TR=0,Int _NC=1,Int _HC=0)
@@ -195,6 +196,7 @@ Class KlondikeAction
 		//CSay("Undo not yet implemented")
 		if (!Stacked.Have); Return; End
 		plua Act;Act = Stacked.Pop()
+		KLO_Undone++
 		Switch Act.Cmd
 			Case "DRAW"
 				for i=1,Act.NumCards
@@ -297,7 +299,7 @@ Global Void GameFeatures_SaveExit_Action()
 	plua SG = SGJCR.Create("SAVE:KLONDIKE")
 	SG.Assign("House Of Cards.SaveGame.KLONDIKE.jcr")
 	SG.Clear()	
-	CSay("= General"); SG.Text["General.ini"] = sprintf("[Check]\nEngine=Scyndi's Creative Interpreter\nProject=House Of Cards\nGame=Klondike\n\n[Data]\nScore=%d\nTime=%d\nFromPile=%d\n\n\n",0,KLO_Time,KLO_CONFIG.INTVALUE("CONFIG","FROMPILE"))
+	CSay("= General"); SG.Text["General.ini"] = sprintf("[Check]\nEngine=Scyndi's Creative Interpreter\nProject=House Of Cards\nGame=Klondike\n\n[Data]\nScore=%d\nTime=%d\nFromPile=%d\nMoves=%d\nUndone=%d\n\n\n",0,KLO_Time,KLO_CONFIG.INTVALUE("CONFIG","FROMPILE"),KLO_Moves,KLO_Undone)
 	
 	CSay("= Table")
 	plua oput = "# Rows: Klondike\n\n"
@@ -608,12 +610,14 @@ Void StateControl()
 					KLO_DiscPile.Pop()
 					KLO_DiscShow=KLO_DiscPile.Array
 					AutosolveFrames=5
+					KLO_Moves++
 				//ElIf (!KLO_DiscPile.Have) && (KLO_DrawPile.Have)
 				ElIf (KLO_DrawPile.Have)
 					plua c=KLO_DrawPile.Pop()
 					KLO_DiscPile.Push(c)
 					KLO_DiscShow=KLO_DiscPile.Array
 					AutosolveFrames=5
+					KLO_Moves++
 				ElIf (KLO_DiscPile.Have) && (!KLO_DrawPile.Have)
 					While KLO_DiscPile.Have
 						plua c = KLO_DiscPile.Pop()
@@ -621,6 +625,7 @@ Void StateControl()
 						KLO_DiscShow=KLO_DiscPile.Array
 					End
 					AutosolveFrames=5
+					KLO_Moves++
 				End
 				For ri,ra in ipairs(KLO_Row)
 					plua ci;ci=len(ra)-1
@@ -628,6 +633,7 @@ Void StateControl()
 					If ca && ClearCard(ca)
 						ra[ci]=nil
 						AutosolveFrames=5
+						KLO_Moves++
 					End
 				End
 			End
@@ -677,6 +683,8 @@ Global Void GameNew(String CShuffle="")
 	Deal()
 	KLO_Time=0
 	KLO_TimeRunning=False
+	KLO_Moves = 0
+	KLO_Undone = 0
 End
 
 Global Void GameContinue()
@@ -690,6 +698,8 @@ Global Void GameContinue()
 	d = GINIE.Parse(SG.Text["General.ini"],"KLONDIKE:LOAD")
 	KLO_Time = d.IntValue("Data","Time")
 	KLO_CONFIG.VALUE("CONFIG","FROMPILE",d.IntValue("Data","FromPile"))
+	KLO_Moves = d.IntValue("Data","Moves")
+	KLO_Undone = d.IntValue("Data","Moves")
 	
 	// Cleared
 	d = GINIE.Parse(SG.Text["Cleared.ini"],"KLONDIKE:LOAD")
@@ -753,6 +763,7 @@ Void CheckTime()
 	End
 	SetColor(255,255,255,255)
 	ShowTime(KLO_Time,5,KLO_Draw.Y+KLO_Draw.H+10)
+	ShowMoves(KLO_Moves,KLO_Undone,5,KLO_Draw.Y+KLO_Draw.H+40)
 End
 
 Global Void MainFlow()

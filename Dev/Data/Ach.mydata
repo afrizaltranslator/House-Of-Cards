@@ -1,0 +1,114 @@
+[System]
+OutPutGINIEBase  = Scyndi:Projects/Applications/Scyndi/House Of Cards/src/Assets/Tricky/Data/Achievements.ini
+AutoOutput       = YES
+
+
+[Page:Achievements]
+string Name
+string Description
+bool Hidden
+
+
+
+[Records]
+# This part was generated on 4/3/2024 7:25:15 PM by MyData II
+
+REC: FREECELL_COMPLETE
+	Name = I want to break free
+	Description = Complete a game of Free Cell
+	Hidden = 
+
+REC: GOLF_COMPLETE
+	Name = There's a tiger in the woods
+	Description = Complete a game of golf
+	Hidden = 
+
+REC: GOLF_HOLEINONE
+	Name = Hole-in-one
+	Description = Complete a game of golf which all holes cleared
+	Hidden = 
+
+REC: KLONDIKE_COMPLETE
+	Name = Goldrush
+	Description = Complete a game of Klondike
+	Hidden = 
+
+REC: KLONDIKE_D3
+	Name = Three of a kind
+	Description = Win a game of Klondike with 3 cards drawn
+	Hidden = 
+
+REC: PYRAMID_COMPLETE
+	Name = Walk like an Egyptian
+	Description = Win a game of pyramid
+	Hidden = 
+
+REC: PYRAMID_PERFECT
+	Name = The jewel of the Nile
+	Description = Win a game of Pyramid with a perfect score of 1290 points
+	Hidden = 
+
+REC: SOLOSLAG_COMPLETE
+	Name = You never walk alone
+	Description = Win a game of soloslag
+	Hidden = 
+
+REC: SOLOSLAG_JOKERS
+	Name = The fool on the hill
+	Description = Will a game of soloslag with jokers enabled
+	Hidden = 
+
+REC: SOLOSLAG_SIX
+	Name = I wanna have six on the beach
+	Description = Win a game of soloslag with only 6 cards from stock
+	Hidden = 
+
+REC: SOLOSLAG_SIX_JOKERS
+	Name = I'm going slightly mad
+	Description = Win a game of soloslag with a stock of 6 with jokers enabled.
+	Hidden = 
+
+REC: SPIDER_COMPLETE
+	Name = Arachnophobia
+	Description = Win a game of spider
+	Hidden = 
+
+REC: SPIDER_SPIDER2
+	Name = Double double toil and trouble
+	Description = Win a game of spider with 2 suits
+	Hidden = 
+
+REC: SPIDER_SPIDER4
+	Name = Spider Quartet
+	Description = Win a game of spider with four suits
+	Hidden = 
+
+REC: TONKAR_COMPLETE
+	Name = The Start To Fantasy
+	Description = Win a game of Tonkars ba sol
+	Hidden = 
+
+REC: TONKAR_FRIENDLY
+	Name = CHICKEN!
+	Description = Win a game of Tonkar ba sol with the FriendlyStack mode turned on
+	Hidden = 
+
+REC: TONKAR_FRIENDLYNO
+	Name = You don't have any friends!
+	Description = Win a game of Tonkar bar sol with FreindlyStack mode turned off
+	Hidden = 
+
+REC: TONKAR_NOSTACK
+	Name = You will stack nothing and be happy
+	Description = Complete a game of Tonkar ba sol without stacking cards
+	Hidden = 
+
+REC: TONKAR_STACK4
+	Name = Four-loop
+	Description = Win a game of Tonkar ba sol with the stack limit set to 4
+	Hidden = 
+
+REC: TONKAR_STACK8
+	Name = Eight days a week
+	Description = Win a game of Tonkar ba sol with a stack limit set to 8 cards
+	Hidden = 

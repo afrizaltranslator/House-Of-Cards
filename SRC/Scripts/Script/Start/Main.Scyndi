@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.31
+// Version: 24.04.03
 // End License Information
 
 // Main
@@ -31,6 +31,7 @@ Script
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/Audio"
 #use "Libs/SCI/GINIE"
+#use "Libs/SCI/Medals"
 #use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
 #use "Libs/SCI/InterVar"
@@ -81,6 +82,9 @@ Init
 	// Global Config
 	CSay("Loading Global Config")
 	CFG = GINIE.LoadHome("House Of Cards.GlobalConfig.ini","GLOBALCONFIG","House Of Cards.GlobalConfig.ini","House Of Cards - (c) Jeroen P. Broks")
+	
+	CSay("Setting up Medals")
+	Medals.Game = "House Of Cards"
 	
 	// Rosetta
 	CFG.NewValue("Rosetta","Language","English")

@@ -44,6 +44,7 @@ Script
 #use "Script/Use/Lnk/Card"
 #use "Script/use/Gen/SeedLog"
 
+#use "Script/Use/Gen/Ach"
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
@@ -104,6 +105,7 @@ plua TBS_Deck
 plua TBS_Row
 plua TBS_Stack
 plua TBS_DragCards
+bool TBS_DidStack
 Int TBS_State
 Int TBS_Moves
 Int TBS_Undone
@@ -299,6 +301,7 @@ Void DrawCards()
 	SetColorHSV(Hue,1,0.25)	 
 	Rect(TBS_StackX,TBS_StackY,TBS_StackW,TBS_StackH)
 	For ci,cc in ipairs(TBS_Stack)
+		TBS_DidStack=True
 		cc.Visible=true
 		if !_Dragging
 			cc.GX = TBS_StackX+(ci*2)
@@ -309,6 +312,7 @@ Void DrawCards()
 	If MX>TBS_StackX && MY>TBS_StackY && MX<TBS_StackX+TBS_StackW && MY<TBS_StackY+TBS_StackH && !_Dragging
 		plua cc;cc=TBS_Stack[len(TBS_Stack)-1]
 		if cc
+			SetColor(255,255,255)
 			Pymtheg.QWCard(cc.elem,cc.val,Graphics.Width div 2,Graphics.Height-96)
 			PPP.Stretch((cc.x+(cc.w div 2))-96,(cc.y+(cc.h div 2))-96,96,96)
 			if ML
@@ -319,6 +323,10 @@ Void DrawCards()
 	If Victory
 		SFX("Complete")
 		TBS_State=1
+		Ach.Award("TONKAR_COMPLETE")
+		if TBS_FriendlyStack;Ach.Award("TONKAR_FRIENDLY"); Else; Ach.Award("TONKAR_FRIENDLYNO"); End
+		if !TBS_DidStack;Ach.Award("TONKAR_DIDSTACK"); End
+		if TBS_StackLimit!=0;Ach.Award("TONKAR_STACK"..TBS_StackLimit); End
 	End
 End
 
@@ -383,7 +391,7 @@ Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return TBS_State==0; End
 
 Global Void GAMEFEATURES_SAVEEXIT_ACTION()
 	string TBS = "# Save game data for - Da Tonkars ba sol\n# (c) Jeroen P. Broks\n\n"
-	TBS = TBS .. sprintf("[General]\nGame=TBS\nMoves=%d\nTime=%d\nUndone=%d\nStackLimit=%d\nFriendlyStack=%s\n\n",TBS_Moves,TBS_Time,TBS_Undone,TBS_StackLimit,TBS_FriendlyStack)
+	TBS = TBS .. sprintf("[General]\nGame=TBS\nMoves=%d\nTime=%d\nUndone=%d\nStackLimit=%d\nFriendlyStack=%s\nDidStack=%s\n\n",TBS_Moves,TBS_Time,TBS_Undone,TBS_StackLimit,TBS_FriendlyStack,TBS_DidStack)
 	TBS = TBS .. "[Tableau]\n\n*list:Stack\n"
 	for ci,cc in ipairs(TBS_Stack); TBS = TBS .. sprintf("\t%x%xt\n",cc.Elem,cc.Val); End
 	TBS = TBS .. "*end\n\n"
@@ -419,6 +427,7 @@ Global Void GameContinue()
 	TBS_Time          = SD.IntValue("General","Time")
 	TBS_StackLimit    = SD.IntValue("General","StackLimit")
 	TBS_FriendlyStack = SD.BoolValue("General","FriendlyStack")
+	TBS_DidStack      = SD.BOOLValue("GENERAL","DidStack")
 	plua CL
 	CSay("= Stack")
 	CL = SD.List("Tableau","Stack")
@@ -449,6 +458,7 @@ Global Void GameNew()
 	TBS_Undone = 0
 	TBS_State = 0
 	TBS_Stack = {}
+	TBS_DidStack = False
 End
 
 Global Void MainFlow()	

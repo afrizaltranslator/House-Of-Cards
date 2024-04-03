@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.27
+// Version: 24.04.03
 // End License Information
 
 Script
@@ -39,6 +39,7 @@ Script
 #use "Script/Use/Lnk/Card"
 #use "Script/use/Gen/SeedLog"
 
+#use "Script/Use/Gen/Ach"
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
@@ -176,6 +177,8 @@ Void CheckStackClear(int Row)
 	SPI_Score = SPI_Score + 100 
 	If StacksCleared==8
 		SPI_State=1
+		Ach.Award("SPIDER_COMPLETE")
+		If Suits==2 || Suits==4; Ach.Award("SPIDER_SPIDER"..Suits); End
 		SFX("COMPLETE")		
 		SPI_Config.Value("RESULT","WON",SPI_Config.IntValue("Result","Won")+1)
 		SPI_Config.Value("RESULT","BESTSCORE",math.max(SPI_Config.IntValue("Result","BestScore"),SPI_Score))

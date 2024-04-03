@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.02
+// Version: 24.04.03
 // End License Information
 
 Script
@@ -45,6 +45,7 @@ Script
 #use "Script/Use/Lnk/Card"
 #use "Script/use/Gen/SeedLog"
 
+#use "Script/use/Gen/Ach"
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
@@ -342,7 +343,7 @@ Void DrawCards()
 	if Empty && GLF_State==0
 		SFX("BONUS")
 		GLF_State=1
-		plua a = GLF_Stock.Array
+		plua a = GLF_Stock.Array		
 		Hole.Cur.Score = -len(a)
 		Hole.Recalc()
 	ElIf (!GLF_Stock.Have) && GLF_State==0 && (!AnyCardsAllowed)
@@ -397,7 +398,17 @@ Void StateHandling()
 			End
 			if Hole.CHole==9
 				OKE.Stretch(BX,BY,96,96)
-				If H; GoToFlow("SELECTGAME"); End
+				If H
+					Ach.Award("GOLF_Complete")
+					plua HIO = True
+					for _,Hl in pairs(Hole.List)
+						HIO = HIO && Hl.Score<=0
+					End
+					If HIO
+						Ach.Award("GOLF_HOLEINONE")
+					End
+					GoToFlow("SELECTGAME")
+				End
 				SetColor(255,255,255)
 				GOV.Draw(Graphics.Width div 2,math.ceil(Graphics.Height * 0.75))
 			Else

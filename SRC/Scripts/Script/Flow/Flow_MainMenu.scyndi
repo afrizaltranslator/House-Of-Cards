@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.02.22
+// Version: 24.04.03
 // End License Information
 Script
 
@@ -88,11 +88,16 @@ Void Bugs()
 	Sys.OpenURL("https://github.com/PhantasarProductions/House-Of-Cards/issues")
 End
 
+Void Achievements()
+	Sys.LoadNewState("FLOW_ACH","Script/Flow/FLOW_Ach.Lbc")
+	Sys.CurrentFlow="ACH"
+End
 
 Init
 	plua i
 	i = New MenuItem("PLAY",Play)
 	i = New MenuItem("CONFIG",Config)
+	i = New MenuItem("ACHIEVEMENTS",Achievements)
 	i = New MenuItem("BUGS",Bugs)
 	i = New MenuItem("EXIT",Sys.Exit)
 	// Prevent trouble with memory trashing

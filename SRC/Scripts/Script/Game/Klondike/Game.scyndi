@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.02
+// Version: 24.04.03
 // End License Information
 Script
 
@@ -33,6 +33,7 @@ Script
 #use "Libs/XMath"
 #use "Libs/Stacker"
 
+#use "Script/Use/Gen/Ach"
 #use "Script/Use/Lnk/Deck"
 #use "Script/Use/Lnk/Card"
 #use "Script/Use/Gen/Muis"
@@ -360,6 +361,10 @@ Global Bool ClearCard(c)
 			SFX("COMPLETE")
 			KLO_Config.Value("RESULT","WON",KLO_Config.IntValue("Result","Won")+1)
 			KLO_SeedLog.Won++
+			Ach.Award("KLONDIKE_COMPLETE")
+			if KLO_CONFIG.INTVALUE("CONFIG","FROMPILE")==3
+				Ach.Award("KLONDIKE_D3")
+			End
 		End
 		return true
 	end

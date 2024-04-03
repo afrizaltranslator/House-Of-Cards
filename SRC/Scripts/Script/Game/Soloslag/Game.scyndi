@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.26
+// Version: 24.04.03
 // End License Information
 Script
 
@@ -38,6 +38,7 @@ Script
 #use "Script/Use/Lnk/Card"
 #use "Script/use/Gen/SeedLog"
 
+#use "Script/Use/Gen/Ach"
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
@@ -366,6 +367,10 @@ Void StateView()
 						SLS_State=1
 						SFX("COMPLETE")
 						SLS_Config.Value("RESULT","WON",SLS_Config.IntValue("Result","Won")+1)
+						Ach.Award("SOLOSLAG_COMPLETE")
+						if SLS_AllowJokers; Ach.Award("SOLOSLAG_JOKERS"); End
+						if SLS_MaxStock==6; Ach.Award("SOLOSLAG_SIX"); End
+						If SLS_MaxStock==6 && SLS_AllowJokers; Ach.Award("SOLOSLAG_SIX_JOKERS"); End
 					Else
 						SFX("BONUS")
 						SLS_State=0

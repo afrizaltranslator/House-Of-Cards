@@ -1,0 +1,131 @@
+// License Information:
+// House Of Cards
+// Achievements overview
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.04.03
+// End License Information
+Script
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/Events"
+#use "Libs/SCI/Graphics"
+
+#use "Script/Use/Gen/Ach"
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Config"
+
+ReadOnly Var Fnt = ObtainFont("Ryanna")
+ReadOnly Var Mni = ObtainFont("Mini")
+
+Int ScrollY = 0
+
+Class TAch
+	Static ReadOnly Var List = {}
+	Static ReadOnly Var Raw = GINIE.LoadNew("Data/Achievements.ini","ACHIEVEMENTS") 
+	ReadOnly String GTag
+	ReadOnly String Tag
+	Get String Name; Return Raw.Value(GTag,"Name"); End
+	Get String Desc; Return Raw.Value(GTag,"Description"); End
+	Get Bool Hidden; Return Raw.BoolValue(GTag,"Hidden") && Config.CFG.Value("Ach",Tag)==""; End
+	Get Bool Awarded; Return Config.CFG.Value("Ach",Tag)!=""; End
+	Get String ADate; Return Config.CFG.Value("Ach",Tag); End
+	
+	Constructor(T)
+		GTag = T
+		Tag = Right(T,Len(T)-4)
+		CSayF("Got: %s",Tag)
+	End
+End
+
+Init
+	For c in Each(TAch.Raw.Categories)
+		if C!="CLASS"
+			Append(TAch.List,New TAch(c))
+		End
+	End
+End
+
+Class TArrow
+	ReadOnly Static Var List = {}
+	ReadOnly Var Pic
+	ReadOnly Delegate Act
+	ReadOnly Delegate Appear
+	ReadOnly Int X
+	ReadOnly Int Y
+	constructor(string p,_X,_Y,Ac,Ap)
+		Pic = ObtainImage(p)
+		Act = Ac
+		X = _X
+		Y = _Y
+		Appear = Ap
+	End
+End
+
+Void Back(); Gotoflow("MAINMENU"); End
+
+Init
+	Append(TArrow.List,New TArrow("ARROW_LEFT",Graphics.Width-32,0,Back))
+End
+
+
+int Hue
+Global Void MainFlow()
+	Hue = (Hue+1) % 360
+	If Events.AppTerminate(); Sys.Exit(0); End
+	SetColor(255,255,255)
+	DrawBackground()
+	For Ar in each(TArrow.List)
+		if (!Ar.Appear) || Ar.Appear
+			SetColor(255,255,255)
+			if MX>Ar.X && MY>Ar.Y && MX<AR.X+32 && MY<Ar.Y+32
+				SetColorHSV(Hue,1,1)
+				If ML;Ar.Act();End
+			End
+			Ar.Pic.Stretch(Ar.X,Ar.Y,32,32)
+		end
+	End
+	
+	For i,d in ipairs(TAch.List)
+		Int Y=(i-ScrollY)*50
+		if (d.Hidden)
+			SetColor(100,100,100)
+			Fnt.Dark("?????",10,Y)
+		Else
+			If d.Awarded
+				SetColor(180,255,0)
+				MNI.Dark(d.ADate,Graphics.Width-40,Y,1)
+				SetColor(255,180,0)
+				Fnt.Dark(d.Name,5,Y)
+				SetColor(255,255,255)
+				Mni.Dark(d.Desc,10,Y+30)
+			Else
+				SetColor(127,90,0)
+				Fnt.Dark(d.Name,5,Y)
+				SetColor(127,127,127)
+				Mni.Dark(d.Desc,10,Y+30)
+			End
+		End
+	End
+	SetColor(255,255,255)
+	ShowMouse()
+End

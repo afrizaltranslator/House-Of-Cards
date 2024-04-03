@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.02
+// Version: 24.04.03
 // End License Information
 
 Script
@@ -41,6 +41,7 @@ Script
 #use "Script/Use/Lnk/Card"
 #use "Script/use/Gen/SeedLog"
 
+#use "Script/Use/Gen/Ach"
 #use "Script/Use/Gen/Muis"
 #use "Script/Use/Gen/Sound"
 #use "Script/Use/Gen/RText"
@@ -628,6 +629,7 @@ Void CheckVictory()
 			If Win
 				FRC_State=1
 				SFX("COMPLETE")
+				Ach.Award("FREECELL_COMPLETE")
 				// TODO: Count win
 			End
 			Return

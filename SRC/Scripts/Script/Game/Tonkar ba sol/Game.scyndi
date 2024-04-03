@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.02
+// Version: 24.04.03
 // End License Information
 Script
 
@@ -121,6 +121,15 @@ Set Int TBS_StackLimit;
 		TBS_Config.Value("Config","StackLimit",Value)
 	End
 End
+Get Bool TBS_FriendlyStack;Return Upper(TBS_Config.Value("Config","FriendlyStack"))!="NO"; End
+Set Bool TBS_FriendlyStack
+	If Value
+		TBS_Config.Value("Config","FriendlyStack","Yes")
+	Else
+		TBS_Config.Value("Config","FriendlyStack","No")
+	End
+End
+	
 #EndRegion
 
 Class Action
@@ -145,7 +154,7 @@ Class Action
 	Static Var Add(string A,C,F,T)
 		plua ret;ret = new Action(A,C,F,T)
 		List.Push(ret)
-		TBS_Moves++
+		if ret.Act!="AUTOUNSTACK"; TBS_Moves++; End
 		SFX("SLIDE")
 	End
 End
@@ -241,6 +250,12 @@ Void DrawCards()
 	For ri,ra in ipairs(TBS_ROW)
 		Int CY = 60
 		Int Hover=-1
+		If len(ra)==0 && (!TBS_FriendlyStack) && Len(TBS_Stack)!=0
+			plua cc = TBS_Stack[len(TBS_Stack)-1]
+			TBS_Stack[len(TBS_Stack)-1] = nil
+			ra[0]=cc
+			Action.Add("AutoUnstack",TBS_Stack,ra)
+		End
 		For ci,cc in ipairs(ra)
 			Victory = Victory && cc.Visible
 			if ci==0
@@ -338,6 +353,15 @@ Void UndoButton()
 		If ML
 			plua Act = Action.List.Pop()
 			Switch Act.Act
+				Case "AUTOUNSTACK"
+					plua cc
+					cc = Act.ToR[len(Act.ToR)-1]
+					Act.ToR[len(Act.ToR)-1] = nil
+					TBS_Stack[len(TBS_Stack)]=cc
+					// This is very extremely dirty, but the easiest 
+					// way to get things done
+					Act = Action.List.Pop()
+					FallThrough
 				Case "MOVE"
 					for i,v in ipairs(Act.Cards)
 						Act.ToR[Len(Act.ToR)-1]=nil
@@ -359,7 +383,7 @@ Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); Return TBS_State==0; End
 
 Global Void GAMEFEATURES_SAVEEXIT_ACTION()
 	string TBS = "# Save game data for - Da Tonkars ba sol\n# (c) Jeroen P. Broks\n\n"
-	TBS = TBS .. sprintf("[General]\nGame=TBS\nMoves=%d\nTime=%d\nUndone=%d\nStackLimit=%d\n\n",TBS_Moves,TBS_Time,TBS_Undone,TBS_StackLimit)
+	TBS = TBS .. sprintf("[General]\nGame=TBS\nMoves=%d\nTime=%d\nUndone=%d\nStackLimit=%d\nFriendlyStack=%s\n\n",TBS_Moves,TBS_Time,TBS_Undone,TBS_StackLimit,TBS_FriendlyStack)
 	TBS = TBS .. "[Tableau]\n\n*list:Stack\n"
 	for ci,cc in ipairs(TBS_Stack); TBS = TBS .. sprintf("\t%x%xt\n",cc.Elem,cc.Val); End
 	TBS = TBS .. "*end\n\n"
@@ -389,10 +413,12 @@ Global Void GameContinue()
 	CSay("= Checking")
 	Lua.assert(SD.Value("General","Game")=="TBS","Is this savegame file for: Tonkars ba sol?")
 	CSay("= General")
-	TBS_Moves      = SD.IntValue("General","Moves")
-	TBS_Undone     = SD.IntValue("General","Undone")
-	TBS_Time       = SD.IntValue("General","Time")
-	TBS_StackLimit = SD.IntValue("General","StackLimit")
+	SD.NewValue("General","FriendlyStack","true") // Fix older savegames
+	TBS_Moves         = SD.IntValue("General","Moves")
+	TBS_Undone        = SD.IntValue("General","Undone")
+	TBS_Time          = SD.IntValue("General","Time")
+	TBS_StackLimit    = SD.IntValue("General","StackLimit")
+	TBS_FriendlyStack = SD.BoolValue("General","FriendlyStack")
 	plua CL
 	CSay("= Stack")
 	CL = SD.List("Tableau","Stack")

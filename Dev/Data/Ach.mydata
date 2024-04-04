@@ -11,7 +11,7 @@ bool Hidden
 
 
 [Records]
-# This part was generated on 4/3/2024 7:25:15 PM by MyData II
+# This part was generated on 4/4/2024 11:31:18 AM by MyData II
 
 REC: FREECELL_COMPLETE
 	Name = I want to break free
@@ -103,6 +103,11 @@ REC: TONKAR_NOSTACK
 	Description = Complete a game of Tonkar ba sol without stacking cards
 	Hidden = 
 
+REC: TONKAR_OFCENTURY
+	Name = The game of the century
+	Description = Finish a game of Tonkars ba sol in EXACTLY 100 moves.
+	Hidden = 
+
 REC: TONKAR_STACK4
 	Name = Four-loop
 	Description = Win a game of Tonkar ba sol with the stack limit set to 4
@@ -111,4 +116,9 @@ REC: TONKAR_STACK4
 REC: TONKAR_STACK8
 	Name = Eight days a week
 	Description = Win a game of Tonkar ba sol with a stack limit set to 8 cards
+	Hidden = 
+
+REC: TONKAR_STACKOVERFLOW
+	Name = Stack Overflow
+	Description = Stack more than 15 cards at once in a game of Tonkars ba sol
 	Hidden = 

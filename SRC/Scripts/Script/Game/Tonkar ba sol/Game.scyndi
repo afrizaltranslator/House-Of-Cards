@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.03
+// Version: 24.04.05
 // End License Information
 Script
 
@@ -298,6 +298,7 @@ Void DrawCards()
 	End
 	SetColor(255,180,0)
 	Fnt.Dark(sprintf("%d",Len(TBS_Stack)),TBS_StackX+TBS_StackW+5+(len(TBS_Stack)*2),TBS_StackY+(TBS_StackH div 2),0,2)
+	If Len(TBS_Stack)>15; Ach.Award("TONKAR_STACKOVERFLOW"); End
 	SetColorHSV(Hue,1,0.25)	 
 	Rect(TBS_StackX,TBS_StackY,TBS_StackW,TBS_StackH)
 	For ci,cc in ipairs(TBS_Stack)
@@ -327,6 +328,7 @@ Void DrawCards()
 		if TBS_FriendlyStack;Ach.Award("TONKAR_FRIENDLY"); Else; Ach.Award("TONKAR_FRIENDLYNO"); End
 		if !TBS_DidStack;Ach.Award("TONKAR_DIDSTACK"); End
 		if TBS_StackLimit!=0;Ach.Award("TONKAR_STACK"..TBS_StackLimit); End
+		If TBS_Moves==100;Ach.Award("TONKAR_OFCENTURY"); End
 	End
 End
 

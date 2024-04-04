@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.03
+// Version: 24.04.04
 // End License Information
 Script
 
@@ -82,9 +82,17 @@ Class TArrow
 End
 
 Void Back(); Gotoflow("MAINMENU"); End
+	
+Bool CanScrollDown
+Void ScrollUp(); ScrollY--; End
+Void ScrollDn(); ScrollY++; End
+Bool ScrollUpAllow(); Return ScrollY>0; End
+Bool ScrollDnAllow(); Return CanScrollDown; End
 
 Init
-	Append(TArrow.List,New TArrow("ARROW_LEFT",Graphics.Width-32,0,Back))
+	Append(TArrow.List,New TArrow("ARROW_LEFT",Graphics.Width-32,                 0,Back))
+	Append(TArrow.List,New TArrow("ARROW_UP"  ,Graphics.Width-32,                40,ScrollUp,ScrollUpAllow))
+	Append(TArrow.List,New TArrow("ARROW_DOWN",Graphics.Width-32,Graphics.Height-32,ScrollDn,ScrollDnAllow))
 End
 
 
@@ -95,7 +103,7 @@ Global Void MainFlow()
 	SetColor(255,255,255)
 	DrawBackground()
 	For Ar in each(TArrow.List)
-		if (!Ar.Appear) || Ar.Appear
+		if (!Ar.Appear) || Ar.Appear()
 			SetColor(255,255,255)
 			if MX>Ar.X && MY>Ar.Y && MX<AR.X+32 && MY<Ar.Y+32
 				SetColorHSV(Hue,1,1)
@@ -105,25 +113,30 @@ Global Void MainFlow()
 		end
 	End
 	
+	CanScrollDown = False
 	For i,d in ipairs(TAch.List)
 		Int Y=(i-ScrollY)*50
-		if (d.Hidden)
-			SetColor(100,100,100)
-			Fnt.Dark("?????",10,Y)
-		Else
-			If d.Awarded
-				SetColor(180,255,0)
-				MNI.Dark(d.ADate,Graphics.Width-40,Y,1)
-				SetColor(255,180,0)
-				Fnt.Dark(d.Name,5,Y)
-				SetColor(255,255,255)
-				Mni.Dark(d.Desc,10,Y+30)
+		if Y>=0 && Y<=Graphics.Height-40
+			if (d.Hidden)
+				SetColor(100,100,100)
+				Fnt.Dark("?????",10,Y)
 			Else
-				SetColor(127,90,0)
-				Fnt.Dark(d.Name,5,Y)
-				SetColor(127,127,127)
-				Mni.Dark(d.Desc,10,Y+30)
+				If d.Awarded
+					SetColor(180,255,0)
+					MNI.Dark(d.ADate,Graphics.Width-40,Y,1)
+					SetColor(255,180,0)
+					Fnt.Dark(d.Name,5,Y)
+					SetColor(255,255,255)
+					Mni.Dark(d.Desc,10,Y+30)
+				Else
+					SetColor(127,90,0)
+					Fnt.Dark(d.Name,5,Y)
+					SetColor(127,127,127)
+					Mni.Dark(d.Desc,10,Y+30)
+				End
 			End
+		ElIf Y>Graphics.Height-40
+			CanScrollDown=True
 		End
 	End
 	SetColor(255,255,255)

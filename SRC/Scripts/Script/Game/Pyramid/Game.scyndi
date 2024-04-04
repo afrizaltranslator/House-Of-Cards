@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.03
+// Version: 24.04.05
 // End License Information
 
 Script
@@ -226,6 +226,7 @@ Class SelectedCard
 		End
 		If Leeg
 			Bonus.Go(PyrRow.Row[Row].BonusImg)
+			Pyr_Score = Pyr_Score + PyrRow.Row[Row].Bonus
 			If Row==0
 				Bonus.Go(ESC)
 				SFX("COMPLETE")
@@ -235,8 +236,7 @@ Class SelectedCard
 				If Pyr_Score==1290; Ach.Award("PYRAMID_PERFECT"); End 
 			Else 
 				SFX("BONUS")
-			End
-			Pyr_Score = Pyr_Score + PyrRow.Row[Row].Bonus			
+			End						
 		End
 	End
 	

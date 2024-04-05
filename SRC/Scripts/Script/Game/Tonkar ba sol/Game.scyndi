@@ -327,7 +327,7 @@ Void DrawCards()
 		Ach.Award("TONKAR_COMPLETE")
 		if TBS_FriendlyStack;Ach.Award("TONKAR_FRIENDLY"); Else; Ach.Award("TONKAR_FRIENDLYNO"); End
 		if !TBS_DidStack;Ach.Award("TONKAR_DIDSTACK"); End
-		if TBS_StackLimit!=0;Ach.Award("TONKAR_STACK"..TBS_StackLimit); End
+		if TBS_StackLimit!=0;Ach.Award("TONKAR_NOSTACK"..TBS_StackLimit); End
 		If TBS_Moves==100;Ach.Award("TONKAR_OFCENTURY"); End
 	End
 End

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.03
+// Version: 24.04.06
 // End License Information
 Script
 
@@ -291,7 +291,7 @@ Init
 	For i=0,6
 		int x
 		x = Graphics.Width- ((KLO_CardSize.W*1.25)*(7-i))
-		KLO_RowNodes[i] = New CardNode(x,10)
+		KLO_RowNodes[i] = New CardNode(x,40)
 	End
 End
 

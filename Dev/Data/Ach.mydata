@@ -11,7 +11,7 @@ bool Hidden
 
 
 [Records]
-# This part was generated on 4/4/2024 11:31:18 AM by MyData II
+# This part was generated on 4/6/2024 5:33:45 PM by MyData II
 
 REC: FREECELL_COMPLETE
 	Name = I want to break free
@@ -88,6 +88,11 @@ REC: TONKAR_COMPLETE
 	Description = Win a game of Tonkars ba sol
 	Hidden = 
 
+REC: TONKAR_DIDSTACK
+	Name = You will stack nothing and be happy
+	Description = Complete a game of Tonkar ba sol without stacking cards
+	Hidden = 
+
 REC: TONKAR_FRIENDLY
 	Name = CHICKEN!
 	Description = Win a game of Tonkar ba sol with the FriendlyStack mode turned on
@@ -96,11 +101,6 @@ REC: TONKAR_FRIENDLY
 REC: TONKAR_FRIENDLYNO
 	Name = You don't have any friends!
 	Description = Win a game of Tonkar bar sol with FreindlyStack mode turned off
-	Hidden = 
-
-REC: TONKAR_NOSTACK
-	Name = You will stack nothing and be happy
-	Description = Complete a game of Tonkar ba sol without stacking cards
 	Hidden = 
 
 REC: TONKAR_OFCENTURY
@@ -121,4 +121,9 @@ REC: TONKAR_STACK8
 REC: TONKAR_STACKOVERFLOW
 	Name = Stack Overflow
 	Description = Stack more than 15 cards at once in a game of Tonkars ba sol
+	Hidden = 
+
+REC: YUKON_COMPLETE
+	Name = Down the Yukon river
+	Description = Win a game of Yukon
 	Hidden = 

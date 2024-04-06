@@ -1,0 +1,346 @@
+// License Information:
+// House of Cards
+// Yukon
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.04.06
+// End License Information
+Script
+
+#region use
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/SGJCR"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/XMath"
+#use "Libs/Stacker"
+
+#use "Script/Use/Gen/Ach"
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Sound"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/SeedLog"
+#use "Script/Use/Gen/QCardWrite"
+#use "Script/Use/Gen/GameFeatures"
+#endregion
+
+#region Base
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP") // Why not re-use stuff, eh?
+ReadOnly Var MNI = ObtainFont("MINI")
+ReadOnly Var RYA = ObtainFont("RYANNA")
+ReadOnly Var ESC = ObtainImage("SUCCESS")
+ReadOnly Var OKE  = ObtainImage("OK")
+Int Hue = os.time()
+#endregion
+
+#region "Vars"
+Var YUK_Seedlog
+ReadOnly Var YUK_Icon = LoadNewImage("Script/Game/Yukon/Icon.png","Yukon_Icon")
+ReadOnly Var YUK_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
+ReadOnly Var YUK_Config = GINIE.Obtain("CONFIG::YUKON")
+plua YUK_Card
+plua YUK_Clear
+plua YUK_Cleared
+plua YUK_Nodes
+plua YUK_RowNodes
+plua YUK_Deck
+plua YUK_Row
+plua YUK_DragCards
+Int Yuk_Time
+int YUK_Moves
+Int YUK_Undone
+Int YUK_State
+Bool YUK_AutoClear
+#endregion
+
+#region "Classes"
+Class CardNode
+	Static Int Num
+	Static Number Deg = os.time() % 360
+	Static Var First
+	Static Var Last
+	Var Next
+	ReadOnly Int ID
+	ReadOnly Int X
+	ReadOnly Int Y
+	Static Get Int W;Return YUK_CardSize.W; End
+	Static Get Int H;Return YUK_CardSize.H; End
+
+		
+	Void Draw()
+		Deg = Deg + 0.01
+		SetColor(100,100,100)
+		SetAlpha(math.floor(math.abs(XMath.Sin(Deg+(ID*10))*255)))
+		Rect(X,Y,YUK_CardSize.W,YUK_CardSize.H)
+	End
+	
+	Static Void DrawAll()
+		For c in Each_Chain(First)
+			c.Draw()
+		End
+		SetAlpha(255)
+	End
+		
+	Constructor(Int _X,Int _Y)
+		ID = Num;Num++
+		First = First || Self
+		if (Last); Last.Next = Self; End
+		Last = Self
+		X = _X
+		Y = _Y
+		CSayF("Card Node created at (%04d, %04d)",X,Y)
+	End
+End
+
+
+Class YukonCard
+	Int GoToX
+	Int GoToY
+	Int X
+	Int Y
+	Get Int W;Return YUK_CardSize.W; End
+	Get Int H;Return YUK_CardSize.H; End
+	Bool Visible = False
+	Var Card
+	
+	Void Go(V1,V2,V3)
+		switch(lua.type(V1))
+			case "table";  GotoX = V1.X + (V2 || 0); GotoY = V1.Y + (V3 || 0);
+			case "number"; GotoX = V1; GotoY=V2
+			case "nil";
+			default; Lua.error("Illegal card constructor") 
+		end
+	End
+	
+	Void Draw()
+		if X>GoToX; X = x - math.max(1,math.abs(X-GotoX) div 10); End
+		if Y>GoToY; Y = Y - math.max(1,math.abs(Y-GotoY) div 10); End
+		if X<GoToX; X = x + math.max(1,math.abs(GotoX-X) div 10); End
+		if Y<GoToY; Y = Y + math.max(1,math.abs(GotoY-Y) div 10); End
+		If Visible
+			YUK_Card.DrawCard(X,Y,Card.CardSuit,Card.CardValue)
+		Else
+			YUK_Card.DrawBack(X,Y)
+		End	
+	End
+	
+	Constructor(crd,V1,V2,V3)
+		Card = crd
+		switch math.random(1,4)
+			case 1; X = graphics.width +math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
+			case 2; X =                -math.random(1,1000); Y = math.random(-1000,Graphics.Height+1000)
+			case 3; Y = graphics.height+math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
+			case 4; Y =                -math.random(1,1000); X = math.random(-1000,Graphics.Width +1000)
+			default; X = -1000; Y=-1000 // Cash prevention. This is only cosmetic after all!
+		end
+		Self.Go(V1,V2,V3)
+	End
+End
+
+Class YukonAction
+	Static Void Add(String _Act,_RFrom,_FTo,_Cards)
+	End
+End
+#endregion
+
+#region "Base Nodes"
+Init	
+	
+	// Cleared
+	YUK_Clear = {}
+	YUK_Clear[0] = New CardNode( 5               ,Graphics.Height-math.floor(YUK_CardSize.H * 2.6))
+	YUK_Clear[1] = New CardNode(10+YUK_CardSize.W,Graphics.Height-math.floor(YUK_CardSize.H * 2.6))
+	YUK_Clear[2] = New CardNode( 5               ,Graphics.Height-math.floor(YUK_CardSize.H * 1.50))
+	YUK_Clear[3] = New CardNode(10+YUK_CardSize.W,Graphics.Height-math.floor(YUK_CardSize.H * 1.50))
+	
+	// Nodes
+	YUK_RowNodes = {}
+	For i=0,6
+		int x
+		x = Graphics.Width- ((YUK_CardSize.W*1.25)*(7-i))
+		YUK_RowNodes[i] = New CardNode(x,40)
+	End
+End
+
+#endregion
+
+Get BOOL Dragging
+	Return False
+End
+
+Bool ClearCard(Crd)
+	YUK_Cleared[Crd.Card.CardSuit] = YUK_Cleared[Crd.Card.CardSuit] || {}
+	if Len(YUK_Cleared[Crd.Card.CardSuit])!=Crd.Card.CardValue-1; Return False; End
+	Append(YUK_Cleared[Crd.Card.CardSuit],Crd)
+	Return True
+End
+
+Void DrawCards()
+	SetColor(255,255,255,255)
+	// Rows on the table
+	plua _DoubleML = DoubleML
+	plua _Dragging;_Dragging=(!_DoubleML) && Dragging
+	plua _DidAutoClear = False
+	For ri,ra in ipairs(YUK_Row)
+		int Hovering=-1
+		int mody=0
+		int cinvisible=0
+		For ci,ca in ipairs(ra)
+			If (!_Dragging)
+				ca.Go(YUK_RowNodes[ri],0,mody)
+			End
+			ca.Visible = ca.Visible || ci==len(ra)-1
+			ca.Draw()
+			if YUK_AutoClear && (ci==len(ra)-1) && (!_DidAutoClear) && ca.X==ca.GotoX && ca.Y==ca.GotoY
+				bool mayclear=true
+				For cks=0,3					
+					YUK_Cleared[cks] = YUK_Cleared[cks] || {} 
+					mayclear = mayclear && (ca.Card.CardValue<=2 || ( cks%2!=ca.Card.CardSuit%2 && (Len(YUK_Cleared[cks])>=ca.Card.CardValue-1 ))) 
+				End
+				If mayclear
+					_DidAutoClear = True
+					If ClearCard(ca)
+						ra[len(ra)-1]=nil
+						YukonAction.Add("AutoClear",ra,YUK_Cleared[ca.Card.CardSuit],ca)
+					End
+				End
+			End
+			If ca.Visible
+				Mody=Mody+31
+				If (!_Dragging) && MX>ca.X && MY>ca.Y && MX<ca.X+ca.W && MY<ca.Y+ca.H
+					Hovering=ci
+				End
+			Else
+				cinvisible++
+				Mody=Mody+5
+			End
+		End
+		if (cinvisible>0); MNI.Dark(Lua.tostring(cinvisible),YUK_RowNodes[ri].X,YUK_RowNodes[ri].Y); End
+		if Hovering>=0
+			plua ci;ci=Hovering
+			plua ca;ca=ra[ci]
+			if ca
+				PPP.Stretch(ca.X-64,ca.Y-64,64,64)
+				QCardWrite.Show(Graphics.Width div 2,Graphics.Height-96,ca.Card.CardSuit,ca.Card.CardValue)
+				If _DoubleML && Hovering+1==len(ra)
+					If ClearCard(ca)
+						SFX("SLIDE")
+						YukonAction.Add("Clear",ra,YUK_Cleared[ca.Card.CardSuit],ca)
+						ra[Hovering]=nil
+					End
+				ElIf MDL
+					YUK_DragCards = { ["Row"]=ri, ["Card"]=ci }
+					Int di=0
+					Repeat
+						YUK_DragCards[len(YUK_DragCards)]=ra[di+ci]
+						di++
+					LoopWhile ra[di+ci]
+				End
+			End
+		End
+	End
+
+	// Clear Piles
+	for i,cp in pairs(YUK_Cleared)
+		//CSayF("Drawing cleared pile #%d (L:%02d)",i,len(cp)) // DEBUG ONLY!
+		If len(cp)!=0			
+			If cp.Quick
+				YUK_Cleared[i][len(YUK_Cleared[i])-1].Draw()
+			Else				
+				cp.Quick = true
+				For cpi,cpc in ipairs(cp)
+					cpc.Visible=true
+					cpc.Go(YUK_Clear[i])
+					cp.Quick = cp.Quick && cpc.X==cpc.GoToX && cpc.Y==cpc.GoToY
+					cpc.Draw()
+				End // For loop
+				if cp.Quick; CSayF("Clear pile #%d set to quick!",i); End
+			End // sp.quick if ith else
+		End // if length of cp
+	End	// for loop i,cp
+End // End function
+
+
+
+void Deal()
+	int di=0
+	YUK_Row = {}
+	For r=0,6
+		Int rm=r+4
+		if r==0;rm=0;end
+		YUK_Row[r]={}
+		For c=0,rm
+			plua crd;crd = YUK_Deck[di]
+			plua ycd;ycd = New YukonCard(crd)
+			ycd.Visible=c>=r
+			CSayF("Card %d:%02d to row %d pos %d",crd.CardSuit,Crd.CardValue,r,c)
+			di++
+			Yuk_Row[r][c]=ycd
+		End
+	End
+End
+
+#region "General Callbacks" 
+
+Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); return False; End
+
+Global Void GameNew(string Shuf="")
+	YUK_Card = YUK_CardSize.Bind()
+	YUK_State=0
+	YUK_Config.Value("Result","Played",YUK_Config.IntValue("Result","Played")+1)
+	GameFeatures.ShuffleTag="DECK_Yukon"
+	//plua slxn = sprintf("Draw%d",YUK_CONFIG.INTVALUE("CONFIG","FROMPILE"))
+	//YUK_SeedLog = SeedLog.StartLog("KLONDIKE",slxn)
+	//YUK_SeedLog.Played++
+	If Shuf!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else
+		YUK_Deck = Deck.Shuffle("DECK_YUKON",YUK_Config.Value("Shuffle","Shuffle"))
+	End
+	YUK_Cleared = {}
+	Deal()
+	YUK_Time=0
+	//YUK_TimeRunning=False
+	YUK_Moves = 0
+	YUK_Undone = 0
+	YUK_AutoClear = Upper(YUK_Config.Value("Config","AutoClear"))=="YES"
+End
+
+Global Void MainFlow()
+	hue = (hue+1)%360
+	SetColor(255,255,255,255)
+	DrawBackground()
+	CardNode.DrawAll()
+	DrawCards()
+	//CheckTime()
+	YUK_Icon.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
+	GameFeatures.Button()
+	//StateControl()
+	//CheckAutoSolve()
+	//KlondikeAction.CheckUndoButton()
+	ShowMouse()
+	If YUK_SeedLog; YUK_SeedLog.ShowSeed(5,Graphics.Height-20); End
+End
+#endregion

@@ -73,6 +73,7 @@ int YUK_Moves
 Int YUK_Undone
 Int YUK_State
 Bool YUK_AutoClear
+Bool YUK_ALLOWANYFREE
 #endregion
 
 #region "Classes"
@@ -161,6 +162,8 @@ End
 
 Class YukonAction
 	Static Void Add(String _Act,_RFrom,_FTo,_Cards)
+		SFX("SLIDE")
+		YUK_Moves++
 	End
 End
 #endregion
@@ -187,13 +190,56 @@ End
 #endregion
 
 Get BOOL Dragging
-	Return False
+	if (!YUK_DragCards); Return False; End
+	for i,c in ipairs(YUK_DragCards)
+		c.x=MX-(YUK_CardSize.W div 2)
+		c.y=MY+(i*40)
+		c.gotox = c.x
+		c.gotoy = c.y
+	end
+	if (!MDL)
+		For ri,ra in ipairs(YUK_ROW)
+			plua N;N = YUK_RowNodes[ri]
+			CSayF("Row Num Check: %d!=%d -> %s",YUK_DragCards.RowNum,ri,YUK_DragCards.RowNum!=ri)
+			plua LegalMove = True
+			If len(ra)==0
+				LegalMove=YUK_ALLOWANYFREE || YUK_DragCards[0].Card.CardValue==13
+			Else
+				LegalMove=YUK_DragCards[0].Card.CardValue==ra[Len(ra)-1].Card.CardValue-1 && YUK_DragCards[0].Card.CardSuit%2!=ra[Len(ra)-1].Card.CardSuit%2
+			End
+			If MX>N.X && MX<N.X+N.W && YUK_DragCards.RowNum!=ri && LegalMove
+				YukonAction.Add("Move",YUK_DragCards.Row,ra,YUK_DragCards)
+				int ol=Len(YUK_DragCards.Row)
+				for i=1,len(YUK_DragCards);YUK_DragCards.Row[ol-i]=nil; End
+				AppendArray(ra,YUK_DragCards)				
+				Break
+			End
+		End
+		YUK_DragCards = nil
+		Return False
+	End
+	Return True
 End
 
 Bool ClearCard(Crd)
 	YUK_Cleared[Crd.Card.CardSuit] = YUK_Cleared[Crd.Card.CardSuit] || {}
+	YUK_Cleared[Crd.Card.CardSuit].Quick = False
 	if Len(YUK_Cleared[Crd.Card.CardSuit])!=Crd.Card.CardValue-1; Return False; End
 	Append(YUK_Cleared[Crd.Card.CardSuit],Crd)
+	
+	bool win=true
+	int cnt=0
+	for _,cp in pairs(YUK_Cleared)
+		cnt++
+		win = win && (len(cp)==13)
+	end
+	if Win && cnt==4
+		YUK_State=1
+		SFX("COMPLETE")
+		YUK_Config.Value("RESULT","WON",YUK_Config.IntValue("Result","Won")+1)
+		if YUK_Seedlog; YUK_SeedLog.Won++; End
+		Ach.Award("YUKON_COMPLETE")
+	End	
 	Return True
 End
 
@@ -215,12 +261,16 @@ Void DrawCards()
 			ca.Draw()
 			if YUK_AutoClear && (ci==len(ra)-1) && (!_DidAutoClear) && ca.X==ca.GotoX && ca.Y==ca.GotoY
 				bool mayclear=true
-				For cks=0,3					
-					YUK_Cleared[cks] = YUK_Cleared[cks] || {} 
-					mayclear = mayclear && (ca.Card.CardValue<=2 || ( cks%2!=ca.Card.CardSuit%2 && (Len(YUK_Cleared[cks])>=ca.Card.CardValue-1 ))) 
+				if ca.Card.CardValue>2
+					For cks=0,3					
+						YUK_Cleared[cks] = YUK_Cleared[cks] || {} 
+						//mayclear = mayclear && ca.Card.CardValue<=2
+						//if (ca.Card.CardValue<=2); mayclear=true; break; end
+						if( cks%2!=ca.Card.CardSuit%2) ; mayclear = mayclear && Len(YUK_Cleared[cks])>=ca.Card.CardValue-2; End
+					End
 				End
 				If mayclear
-					_DidAutoClear = True
+					//_DidAutoClear = True
 					If ClearCard(ca)
 						ra[len(ra)-1]=nil
 						YukonAction.Add("AutoClear",ra,YUK_Cleared[ca.Card.CardSuit],ca)
@@ -251,7 +301,7 @@ Void DrawCards()
 						ra[Hovering]=nil
 					End
 				ElIf MDL
-					YUK_DragCards = { ["Row"]=ri, ["Card"]=ci }
+					YUK_DragCards = { ["RowNum"]=ri, ["Card"]=ci, ["Row"]=ra }
 					Int di=0
 					Repeat
 						YUK_DragCards[len(YUK_DragCards)]=ra[di+ci]
@@ -276,7 +326,7 @@ Void DrawCards()
 					cp.Quick = cp.Quick && cpc.X==cpc.GoToX && cpc.Y==cpc.GoToY
 					cpc.Draw()
 				End // For loop
-				if cp.Quick; CSayF("Clear pile #%d set to quick!",i); End
+				//if cp.Quick; CSayF("Clear pile #%d set to quick!",i); End
 			End // sp.quick if ith else
 		End // if length of cp
 	End	// for loop i,cp
@@ -299,6 +349,38 @@ void Deal()
 			di++
 			Yuk_Row[r][c]=ycd
 		End
+	End
+End
+
+Int OldTime
+Void CheckTime()
+	Int NewTime = os.time()
+	ShowMoves(YUK_Moves,YUK_Undone,5,5)
+	ShowTime(YUK_Time,5,35)
+	if YUK_Moves>0 && YUK_State==0 && NewTime!=OldTime
+		YUK_Time++
+		OldTime=NewTime
+	End
+End
+
+Void StateControl()
+	Switch YUK_State
+		Case 0
+			Return
+		Case 1
+			int okx = (Graphics.Width div 2)-32
+			int oky = (Graphics.Height)-64
+			ESC.Draw(Graphics.Width div 2,Graphics.Height div 2)
+			If MX>okx && MY>oky && MX<okx+64
+				SetColorHSV(hue,1,1)
+				If ML
+					GotoFlow("SELECTGAME")
+				End
+			End
+			OKE.Stretch(okx,oky,64,64)
+			SetColor(255,255,255,255)
+		Default
+			Lua.error("Unknown Yukon State")
 	End
 End
 
@@ -326,6 +408,7 @@ Global Void GameNew(string Shuf="")
 	YUK_Moves = 0
 	YUK_Undone = 0
 	YUK_AutoClear = Upper(YUK_Config.Value("Config","AutoClear"))=="YES"
+	YUK_ALLOWANYFREE = Upper(YUK_Config.Value("Config","ALLOWANYFREE"))=="YES"
 End
 
 Global Void MainFlow()
@@ -334,10 +417,10 @@ Global Void MainFlow()
 	DrawBackground()
 	CardNode.DrawAll()
 	DrawCards()
-	//CheckTime()
+	CheckTime()
 	YUK_Icon.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
 	GameFeatures.Button()
-	//StateControl()
+	StateControl()
 	//CheckAutoSolve()
 	//KlondikeAction.CheckUndoButton()
 	ShowMouse()

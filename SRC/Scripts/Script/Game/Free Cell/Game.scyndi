@@ -64,7 +64,8 @@ ReadOnly Var MNI = ObtainFont("MINI")
 
 #Region Cards
 Plua CardSize = Lua.Scyndi.Class.CardSize
-ReadOnly Var FRC_CardSize = CardSize.FromW(Graphics.Width div 11)
+//ReadOnly Var FRC_CardSize = CardSize.FromW(Graphics.Width div 11)
+ReadOnly Var FRC_CardSize = CardSize.FromH(Graphics.Height div 5)
 ReadOnly Var FRC_FreeCell = {}
 ReadOnly Var FRC_Clear    = {}
 ReadOnly Var FRC_Row      = {}
@@ -480,7 +481,7 @@ End
 Init
 	Int BaseY = math.floor((Graphics.Height div 2)-(FRC_CardSize.Height*2.5))
 	For i=0,3
-		Int Y; Y = BaseY + math.floor((i*1.25)*FRC_CardSize.Height)
+		Int Y; Y = BaseY + math.floor((i*1.0625)*FRC_CardSize.Height)
 		FRC_FreeCell[i] = New CardNode("FreeCell",0,Y)
 		FRC_Clear[i]    = New CardNode("Clear",Graphics.Width-FRC_CardSize.Width,Y,i)
 	End

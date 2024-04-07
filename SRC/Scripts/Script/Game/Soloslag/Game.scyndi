@@ -64,7 +64,8 @@ int Hue = os.time()
 
 #region "Game Vars"
 Plua CardSize = Lua.Scyndi.Class.CardSize
-ReadOnly Var SLS_CardSize = CardSize.FromW((Graphics.Width div 2) div 3)
+//ReadOnly Var SLS_CardSize = CardSize.FromW((Graphics.Width div 2) div 3)
+ReadOnly Var SLS_CardSize = CardSize.FromH((Graphics.Height-128) div 3)
 ReadOnly Var SLS_Card = SLS_CardSize.Bind()
 //ReadOnly Var SLS_PlayedSize = CardSize.FromW(
 ReadOnly Var SLS_Config = GINIE.Obtain("CONFIG::SOLOSLAG")

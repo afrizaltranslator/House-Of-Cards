@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.17
+// Version: 24.04.07
 // End License Information
 
 
@@ -89,7 +89,7 @@ End
 #EndRegion
 
 
-ReadOnly Table Items = NewArray("CONTINUE","FORFEIT","SAVEEXIT","SAVESHUFFLE")
+ReadOnly Table Items = NewArray("CONTINUE","FORFEIT","SAVEEXIT") //,"SAVESHUFFLE")
 ReadOnly Int X = Graphics.Width div 2
 	
 Void RunMenu()
@@ -117,13 +117,17 @@ Void RunMenu()
 	LoopWhile Stay
 End
 
-Void Button()
+Void Button(_X,Int _Y=0)
+	_X = _X || Graphics.Width-Icon.Width
+	if _X<0; _X=(Graphics.Width+_X)-Icon.Width; End
+	if _Y<0; _Y=(Graphics.Height+_Y)-Icon.Height; End
 	If Events.AppTerminate() && Sys.Yes(Rosetta.GetStr("GAMEBOTTOM","CONFIRM_FORFEIT"))
 		Sys.Exit()
 		Return
 	End
 	SetColor(255,255,255,255)
-	If MY<Icon.Height && MX>Graphics.Width-Icon.Width
+	//If MY<Icon.Height && MX>Graphics.Width-Icon.Width
+	if MY>_Y && MY<_Y+Icon.Height && MX>_X && MX<_X+Icon.Width
 		Hue = (Hue+1)%360
 		SetColor(360-Hue,1,1)
 		SetColorHSV(Hue,1,1)
@@ -131,6 +135,7 @@ Void Button()
 			RunMenu()
 		End		
 	End
-	Icon.Draw(Graphics.Width-Icon.Width,0)
+	//Icon.Draw(Graphics.Width-Icon.Width,0)
+	Icon.Draw(_X,_Y)
 	SetColor(255,255,255,255)
 End

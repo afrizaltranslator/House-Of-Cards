@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.03
+// Version: 24.04.07
 // End License Information
 
 Script
@@ -764,7 +764,7 @@ Global Void MainFlow()
 	CellSpace()
 	CardNode.DrawAll()
 	UndoButton()
-	GameFeatures.Button()
+	GameFeatures.Button(-FRC_CardSize.W,0)
 	ICO.Stretch(Graphics.Width-96,Graphics.Height-96,96,96)
 	CheckAutoClear()
 	CheckVictory()

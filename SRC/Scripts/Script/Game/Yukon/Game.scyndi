@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.06
+// Version: 24.04.07
 // End License Information
 Script
 
@@ -191,12 +191,22 @@ Class YukonAction
 		CSayF("Undo: %s",A.Act)
 		Switch A.Act
 			Case "AUTOCLEAR"
-				If CanUndo
-					YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue]= nil
-					Append(A.FrowRow,A.Card)
+				If A.CanUndo
+					YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue] = nil
+					Append(A.FromRow,A.Cards)
 					YukonAction.Undo()
+				Else
+					FirstAct=False
 				End
-				
+			Case "MOVE"
+				For _,c in ipairs(A.Cards)
+					Append(A.FromRow,c)
+					A.ToRow[Len(A.ToRow)-1]=nil
+				End
+			Case "CLEAR"
+				YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue] = nil
+				Append(A.FromRow,A.Card)
+				YukonAction.Undo()
 			Default; Lua.error("I don't know how to undo: "..A.Act)
 		End
 	End
@@ -224,7 +234,8 @@ Class YukonAction
 		FromRow = _RFrom
 		ToRow   = _RTo
 		Cards   = _Cards
-		CanUnDo = FirstAct || _Act!="AUTOCLEAR"
+		CanUnDo = FirstAct || Act!="AUTOCLEAR"
+		//if Act=="MOVE";	CSayF("Action %s -> %d card(s)",_Act,len(_Cards)); End 
 	End
 	
 End

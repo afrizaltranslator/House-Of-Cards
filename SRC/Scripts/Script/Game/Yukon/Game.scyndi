@@ -51,7 +51,8 @@ ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_P
 ReadOnly Var MNI = ObtainFont("MINI")
 ReadOnly Var RYA = ObtainFont("RYANNA")
 ReadOnly Var ESC = ObtainImage("SUCCESS")
-ReadOnly Var OKE  = ObtainImage("OK")
+ReadOnly Var UND = ObtainImage("UNDO")
+ReadOnly Var OKE = ObtainImage("OK")
 Int Hue = os.time()
 #endregion
 
@@ -161,10 +162,71 @@ Class YukonCard
 End
 
 Class YukonAction
-	Static Void Add(String _Act,_RFrom,_FTo,_Cards)
+	Static Var Stck
+	Static Bool FirstAct
+	
+	
+	Static ReadOnly Int UndoX = 0
+	Static ReadOnly Int UndoY = Graphics.Height-64
+	
+	Static Void Reset()
+		Stck = new Stack()
+		FirstAct = False
+		CSay("YukonAction.Reset(): Done")
+	End
+	
+	Static Get Bool MayUndo
+		Return Stck.Have && FirstAct
+	End
+	
+	Static Void Add(String _Act,_RFrom,_RTo,_Cards)
 		SFX("SLIDE")
 		YUK_Moves++
+		FirstAct = FirstAct || Upper(_Act)!="AUTOCLEAR"
+		Stck.Push( New YukonAction(_Act,_RFrom,_RTo,_Cards) )
 	End
+	
+	Static Void Undo()
+		Plua A;A = Stck.Pop()
+		CSayF("Undo: %s",A.Act)
+		Switch A.Act
+			Case "AUTOCLEAR"
+				If CanUndo
+					YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue]= nil
+					Append(A.FrowRow,A.Card)
+					YukonAction.Undo()
+				End
+				
+			Default; Lua.error("I don't know how to undo: "..A.Act)
+		End
+	End
+	
+	Static Void UndoButton()
+		If YUK_State==0 && FirstAct
+			If MX>UndoX && MY>UndoY && MX<UndoX+64
+				SetColorHSV(Hue,(os.time()%5)/4,1)
+				If ML 
+					YukonAction.Undo()
+				End
+			End
+			UND.Stretch(UndoX,UndoY,64,64)
+		End
+	End
+	
+	ReadOnly String Act
+	ReadOnly Var FromRow
+	ReadOnly Var ToRow
+	ReadOnly Var Cards
+	ReadOnly Bool CanUndo
+		
+	Constructor(String _Act,_RFrom,_RTo,_Cards)
+		Act     = Upper(_Act)
+		FromRow = _RFrom
+		ToRow   = _RTo
+		Cards   = _Cards
+		CanUnDo = FirstAct || _Act!="AUTOCLEAR"
+	End
+	
 End
 #endregion
 
@@ -261,12 +323,12 @@ Void DrawCards()
 			ca.Draw()
 			if YUK_AutoClear && (ci==len(ra)-1) && (!_DidAutoClear) && ca.X==ca.GotoX && ca.Y==ca.GotoY
 				bool mayclear=true
-				if ca.Card.CardValue>2
+				if ca.Card.CardValue>1
 					For cks=0,3					
 						YUK_Cleared[cks] = YUK_Cleared[cks] || {} 
 						//mayclear = mayclear && ca.Card.CardValue<=2
 						//if (ca.Card.CardValue<=2); mayclear=true; break; end
-						if( cks%2!=ca.Card.CardSuit%2) ; mayclear = mayclear && Len(YUK_Cleared[cks])>=ca.Card.CardValue-2; End
+						if( cks%2!=ca.Card.CardSuit%2) ; mayclear = mayclear && Len(YUK_Cleared[cks])>=ca.Card.CardValue-1; End
 					End
 				End
 				If mayclear
@@ -409,6 +471,7 @@ Global Void GameNew(string Shuf="")
 	YUK_Undone = 0
 	YUK_AutoClear = Upper(YUK_Config.Value("Config","AutoClear"))=="YES"
 	YUK_ALLOWANYFREE = Upper(YUK_Config.Value("Config","ALLOWANYFREE"))=="YES"
+	YukonAction.Reset()
 End
 
 Global Void MainFlow()
@@ -421,8 +484,8 @@ Global Void MainFlow()
 	YUK_Icon.Stretch(Graphics.Width-64,Graphics.Height-64,64,64)
 	GameFeatures.Button()
 	StateControl()
-	//CheckAutoSolve()
-	//KlondikeAction.CheckUndoButton()
+	YukonAction.UndoButton()
+	//CheckAutoSolve()	
 	ShowMouse()
 	If YUK_SeedLog; YUK_SeedLog.ShowSeed(5,Graphics.Height-20); End
 End

@@ -195,7 +195,7 @@ Class YukonAction
 		Switch A.Act
 			Case "AUTOCLEAR"
 				If A.CanUndo
-					YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue] = nil
+					YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue-1] = nil
 					Append(A.FromRow,A.Cards)
 					YukonAction.Undo()
 				Else
@@ -207,7 +207,7 @@ Class YukonAction
 					A.ToRow[Len(A.ToRow)-1]=nil
 				End
 			Case "CLEAR"
-				YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue] = nil
+				YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue-1] = nil
 				Append(A.FromRow,A.Card)
 				YukonAction.Undo()
 			Default; Lua.error("I don't know how to undo: "..A.Act)

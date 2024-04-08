@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.07
+// Version: 24.04.08
 // End License Information
 Script
 
@@ -189,6 +189,9 @@ Class YukonAction
 	Static Void Undo()
 		Plua A;A = Stck.Pop()
 		CSayF("Undo: %s",A.Act)
+		For i,c in ipairs(A.FromRow)
+			c.Visible = i>A.hide
+		End
 		Switch A.Act
 			Case "AUTOCLEAR"
 				If A.CanUndo
@@ -228,6 +231,7 @@ Class YukonAction
 	ReadOnly Var ToRow
 	ReadOnly Var Cards
 	ReadOnly Bool CanUndo
+	ReadOnly Int Hide
 		
 	Constructor(String _Act,_RFrom,_RTo,_Cards)
 		Act     = Upper(_Act)
@@ -235,7 +239,11 @@ Class YukonAction
 		ToRow   = _RTo
 		Cards   = _Cards
 		CanUnDo = FirstAct || Act!="AUTOCLEAR"
-		//if Act=="MOVE";	CSayF("Action %s -> %d card(s)",_Act,len(_Cards)); End 
+		//if Act=="MOVE";	CSayF("Action %s -> %d card(s)",_Act,len(_Cards)); End
+		Hide    = -1
+		for i,c in ipairs(_RFrom)
+			if !c.Visible; Hide=math.max(Hide,i); End
+		End
 	End
 	
 End

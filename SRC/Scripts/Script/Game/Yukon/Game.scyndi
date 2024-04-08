@@ -127,6 +127,10 @@ Class YukonCard
 	Bool Visible = False
 	Var Card
 	
+	Get String CST
+		return sprintf("%d%x%s",Card.CardSuit,Card.Cardvalue,({[true]="t",[false]="f"})[Visible])
+	End
+	
 	Void Go(V1,V2,V3)
 		switch(lua.type(V1))
 			case "table";  GotoX = V1.X + (V2 || 0); GotoY = V1.Y + (V3 || 0);

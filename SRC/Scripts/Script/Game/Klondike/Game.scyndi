@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.06
+// Version: 24.04.08
 // End License Information
 Script
 
@@ -759,6 +759,7 @@ Global Void GameContinue()
 End
 
 Int OldTime
+ReadOnly int Forth = Graphics.Width div 4 
 Void CheckTime()
 	if KLO_TimeRunning && KLO_State==0
 		If OldTime!=0 && OldTime!=os.time()
@@ -767,8 +768,10 @@ Void CheckTime()
 		OldTime=os.time()
 	End
 	SetColor(255,255,255,255)
-	ShowTime(KLO_Time,5,KLO_Draw.Y+KLO_Draw.H+10)
-	ShowMoves(KLO_Moves,KLO_Undone,5,KLO_Draw.Y+KLO_Draw.H+40)
+	//ShowTime(KLO_Time,5,KLO_Draw.Y+KLO_Draw.H+10)
+	//ShowMoves(KLO_Moves,KLO_Undone,5,KLO_Draw.Y+KLO_Draw.H+40)
+	ShowTime(KLO_Time,Forth,Graphics.Height-30,2)
+	ShowMoves(KLO_Moves,KLO_Undone,Forth*3,Graphics.Height-30,2)
 End
 
 Global Void MainFlow()

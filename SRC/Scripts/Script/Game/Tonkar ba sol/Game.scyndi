@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.05
+// Version: 24.04.08
 // End License Information
 Script
 
@@ -162,7 +162,7 @@ Class Action
 End
 
 Class TBS_Card
-	Static Var Pym = Lua.Scyndi.Class.PymDeck.FromW(Graphics.Width div 12)
+	Static Var Pym = Lua.Scyndi.Class.PymDeck.FromW(Graphics.Width div 14)
 	Int GX
 	Int GY
 	Int X
@@ -208,7 +208,8 @@ Get Bool Dragging
 		Return True
 	End
 	For ri,ra in ipairs(TBS_Row)
-		int ChkX;ChkX=math.floor(ri*(TBS_Card.Pym.W*1.123))+25
+		//int ChkX;ChkX=math.floor(ri*(TBS_Card.Pym.W*1.123))+25
+		int ChkX;ChkX=math.floor((ri+1)*(TBS_Card.Pym.W*1.123))+30
 		If MX>TBS_StackX && MY>TBS_StackY && MX<TBS_StackX+TBS_StackW && MY<TBS_StackY+TBS_StackW 
 			// This prevents this statement to affect the "Elif" line.
 			If Len(TBS_DragCards)==1 && (TBS_StackLimit<=0 || Len(TBS_Stack)<TBS_StackLimit) && TBS_DragCards.From!=TBS_Stack
@@ -266,7 +267,8 @@ Void DrawCards()
 				Victory = Victory && cc.Val==ra[ci-1].Val-1 && cc.Elem==ra[ci-1].Elem
 			End
 			If !_Dragging
-				cc.GX = math.floor(ri*(cc.W*1.123))+25
+				//cc.GX = math.floor(ri*(cc.W*1.123))+25
+				cc.GX = math.floor((ri+1)*(cc.W*1.123))+30
 				cc.GY = CY
 			End
 			If cc.Visible

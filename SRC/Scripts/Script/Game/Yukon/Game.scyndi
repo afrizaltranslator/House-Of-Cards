@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.08
+// Version: 24.04.09
 // End License Information
 Script
 
@@ -212,8 +212,7 @@ Class YukonAction
 				End
 			Case "CLEAR"
 				YUK_Cleared[A.Cards.Card.CardSuit][A.Cards.Card.CardValue-1] = nil
-				Append(A.FromRow,A.Card)
-				YukonAction.Undo()
+				Append(A.FromRow,A.Cards)				
 			Default; Lua.error("I don't know how to undo: "..A.Act)
 		End
 	End
@@ -471,16 +470,75 @@ End
 
 #region "General Callbacks" 
 
-Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); return False; End
+Global Bool GAMEFEATURES_SAVEEXIT_ALLOW(); return YUK_State==0; End
+
+Global Void GAMEFEATURES_SAVEEXIT_ACTION()
+	String o = "# House of Cards\n# Yukon\n# (c) Jeroen P. Broks\n\n"
+	o = o .. sprintf("[Gen]\nTime=%d\nMoves=%d\nUndone=%d\nAutoClear=%s\nAllowAnyFree=%s\n\n[Tableau]\n",YUK_Time,YUK_Moves,YUK_Undone,YUK_AutoClear,YUK_AllowAnyFree)
+	for ri,ra in ipairs(YUK_Row)
+		o = o .. sprintf("*list:R%d\n",ri)
+		for c in each(ra)
+			o = o .. sprintf("\t%s\n",c.cst)
+		End
+		o = o .. "*end\n\n"
+	end
+	o = o .. "\n\n[Cleared]\n"
+	for cli,cla in pairs(YUK_Cleared)
+		o = o .. sprintf("C%d=%d\n",cli,len(cla))
+	end	
+	plua SG = SGJCR.Create("SAVE:YUKON")
+	SG.Assign("House Of Cards.SaveGame.Yukon.jcr")
+	SG.Clear()
+	SG.Text.Yukon = o
+	SG.Save()
+	GotoFlow("SELECTGAME")
+End
+
+Global Void GameContinue()
+	plua SG = SGJCR.Create("LOAD:YUKON")
+	plua SD
+	SG.Assign("House Of Cards.SaveGame.Yukon.jcr")
+	SG.Load()
+	SD = GINIE.Parse(SG.Text.Yukon,"Yukon_Save_Parsed")
+	YukonAction.Reset()
+	YUK_SeedLog      = nil
+	YUK_Card         = YUK_CardSize.Bind()
+	YUK_Moves        = SD.IntValue( "Gen","Moves")
+	YUK_Undone       = SD.IntValue( "Gen","Moves")
+	YUK_Time         = SD.IntValue( "Gen","Time")
+	YUK_AllowAnyFree = SD.BoolValue("Gen","AllowAnyFree")
+	YUK_AutoClear    = SD.BoolValue("Gen","AutoClear")
+	YUK_Row          = {}
+	YUK_Cleared      = {}
+	For ri=0,6
+		plua ra = {}
+		YUK_Row[ri] = ra
+		For ci,rcst in ipairs(SD.List("Tableau",sprintf("R%d",ri)))
+			plua crd
+			crd = new YukonCard(new DeckCard(Lua.tonumber(Mid(rcst,1,1))||0,Lua.tonumber("0x"..Mid(rcst,2,1))||1))
+			crd.Visible = lower(Mid(rcst,3,1))=="t"
+			CSayF("Row #%d; Card: #%02d;     Tag: %s; Suit: %d; Value: %02d; Visible: %s",ri,ci,rcst,crd.Card.CardSuit,crd.Card.CardValue,crd.Visible)
+			Append(ra,crd)
+		End
+	End
+	For cli=0,3
+		For clci=1,SD.IntValue("Cleared",sprintf("S%d",cli))
+			plua crd
+			crd = new YukonCard(New DeckCard(cli,clci))
+			crd.Visible = true
+			Append(YUK_Clear[cli],crd)
+		End
+	End
+End	
 
 Global Void GameNew(string Shuf="")
 	YUK_Card = YUK_CardSize.Bind()
 	YUK_State=0
 	YUK_Config.Value("Result","Played",YUK_Config.IntValue("Result","Played")+1)
 	GameFeatures.ShuffleTag="DECK_Yukon"
-	//plua slxn = sprintf("Draw%d",YUK_CONFIG.INTVALUE("CONFIG","FROMPILE"))
-	//YUK_SeedLog = SeedLog.StartLog("KLONDIKE",slxn)
-	//YUK_SeedLog.Played++
+	plua slxn = sprintf("AllowAny_%s",YUK_CONFIG.VALUE("CONFIG","AllowAnyFree"))
+	YUK_SeedLog = SeedLog.StartLog("YUKON",slxn)
+	YUK_SeedLog.Played++	
 	If Shuf!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else

@@ -11,7 +11,7 @@ bool Hidden
 
 
 [Records]
-# This part was generated on 4/6/2024 5:33:45 PM by MyData II
+# This part was generated on 4/9/2024 5:15:20 PM by MyData II
 
 REC: FREECELL_COMPLETE
 	Name = I want to break free
@@ -127,3 +127,8 @@ REC: YUKON_COMPLETE
 	Name = Down the Yukon river
 	Description = Win a game of Yukon
 	Hidden = 
+
+REC: ZZZ_QUEENHEARTS
+	Name = OFF WITH HER HEAD!
+	Description = It's the queen of hearts after all!
+	Hidden = True

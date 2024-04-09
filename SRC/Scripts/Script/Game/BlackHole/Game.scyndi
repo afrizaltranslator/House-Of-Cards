@@ -45,12 +45,16 @@ Script
 ReadOnly Var ICO = LoadNewImage("Script/Game/Black Hole/Icon.png","ICON_BLACKHOLE")
 ReadOnly Var BCK = LoadNewImage("GFX/Backgrounds/Stretch/Black Hole.jpg","BACKGROUND_BLACKHOLE")
 ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP") // I really should not have put this to Spider alone... Oh well.
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Int DL4 = Graphics.Width div 4
 Int HUE
 #endregion
 
 #region "Cards & Nodes"
+ReadOnly Var BHL_StatePics = { [1] = ObtainImage("SUCCESS"), [2] = ObtainImage("FAIL") }
 ReadOnly Var BHL_Config = GINIE.Obtain("CONFIG::BLACKHOLE")
 Var BHL_Deck
+Int BHL_State
 
 Class CardNode
 	Static ReadOnly Var SZ = Lua.Scyndi.Class.CardSize.FromH(Graphics.Height div 5)
@@ -91,7 +95,7 @@ End
 
 Class BHCard
 	ReadOnly Int DegSpeed = 5
-	ReadOnly Number RadSpeed = 2
+	ReadOnly Number RadSpeed = 4.25
 	Int GX
 	Int GY
 	Int X
@@ -119,8 +123,8 @@ Class BHCard
 			plua _x
 			plua _y
 			plua _d
-			_x = xmath.sin(i)*Radius
-			_y = xmath.cos(i)*Radius
+			_x = CardNode.Center.CX+(xmath.sin(i)*Radius)
+			_y = CardNode.Center.CX+(xmath.cos(i)*Radius)
 			_d = math.sqrt( (math.abs(_x-CX)^2) + (math.abs(_y-CY)^2) )
 			if (_d<md)
 				Degrees=i
@@ -160,6 +164,18 @@ Class BHCard
 		CardNode.CD.DrawCard(X,Y,Suit,Val)
 	End
 	
+	Get Var CenterCard
+		Return CardNode.Center.Cards[Len(CardNode.Center.Cards)-1]
+	End
+	
+	Get bool Allow		
+		switch Val
+			case  1; return CenterCard.Val==2 || CenterCard.Val==13
+			case 13; return CenterCard.Val==1 || CenterCard.Val==12
+			default; return math.abs(CenterCard.Val-Val)==1
+		end
+	End
+	
 	Constructor(C)
 		Crd = C
 		Y = Graphics.H + 100
@@ -187,12 +203,27 @@ Init
 End
 
 Void DrawCards()
+	Int Count = 0
+	Int Allowed = 0
 	SetColor(255,255,255)
 	For n in Each(CardNode.Setje)
 		For i,c in iPairs(n.Cards)
 			c.GX=n.X+(i*40)
 			c.GY=n.Y+i
 			c.Draw()
+			Count++
+			If c.Allow && i==len(n.Cards)-1
+				Allowed++
+				If MX>c.x && MY>c.y && MX<c.x+c.w && MY<c.y+c.h
+					PPP.Stretch(c.CX-96,c.CY-96,96,96)
+					QCardWrite.Show(CardNode.Center.CX,CardNode.Center.CY+c.h,c.suit,c.val)
+					If ML
+						Append(CardNode.Center.Cards,c)
+						c.Suck()
+						n.Cards[i]=nil
+					End
+				end
+			End
 		End
 	End
 	if CardNode.QuickCenter
@@ -204,27 +235,51 @@ Void DrawCards()
 			CardNode.QuickCenter = CardNode.QuickCenter && c.radius==0
 		End
 	End
+	ShowLeft(Count,DL4,2,2)
+	ShowAllowed(Allowed,DL4*3,2,2)
+	If BHL_State==0
+		If Count==0
+			SFX("COMPLETE")
+			BHL_State=1
+		ElIf Allowed==0
+			SFX("BUZZ")
+			BHL_State=2
+		End
+	End
 End
 
+Void StateFlow()
+	If BHL_State==0; Return; End
+	BHL_StatePics[BHL_State].Draw(Graphics.Width div 2, Graphics.Height div 2)
+	if MY>Graphics.Height-48 && MX>(DL4*2)-96 && MX<(DL4*2)+48
+		SetColorHSV(Hue,1,1)
+		if ML
+			GotoFlow("SELECTGAME")
+		End
+	End
+	OKE.Stretch((DL4*2)-48,Graphics.Height-96,96,96)
+End
 
 #region "CallBacks"
 Global Bool GameFeatures_SaveExit_Allow(); Return False; End
 
 Global Void GameNew()
+	BHL_State = 0
 	Bool AceC = Upper(BHL_Config.Value("Config","AceSpades"))=="YES"
 	CSayF("Ace of Spades: %s -> %s",BHL_Config.Value("Config","AceSpades"),AceC)
 	CardNode.CD = CardNode.SZ.Bind()
 	BHL_Deck = Deck.Shuffle("DECK_YUKON",BHL_Config.Value("Shuffle","Shuffle"))
 	Int p=0
+	for i=0,len(CardNode.Setje)-1;CardNode.Setje[i].Cards = {}; End
 	For i=0,50
 		if AceC && BHL_Deck[p].CardValue==1 && BHL_Deck[p].CardSuit==3; p++; End 
 		Append(CardNode.Setje[i % len(CardNode.Setje)].Cards,new BHCard(BHL_Deck[p]))
 		p++
 	End
 	If AceC
-		Append(CardNode.Center.Cards,new BHCard(new DeckCard(3,1)))
+		CardNode.Center.Cards= NewArray(new BHCard(new DeckCard(3,1)))
 	Else
-		Append(CardNode.Center.Cards,new BHCard(BHL_Deck[51]))		
+		CardNode.Center.Cards= NewArray(New BHCard(BHL_Deck[51]))		
 	End
 	CardNode.Center.Cards[0].Suck()
 End
@@ -237,5 +292,6 @@ Global Void MainFlow()
 	CardNode.DrawNodes()
 	DrawCards()
 	GameFeatures.Button()
-	ShowMouse()
+	StateFlow()
+	ShowMouse()	
 End

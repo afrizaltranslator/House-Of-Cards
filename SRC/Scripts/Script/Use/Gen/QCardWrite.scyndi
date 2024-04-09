@@ -30,8 +30,13 @@ Module
 
 #use "Libs/Rosetta"
 
+#use "Script/Use/Gen/Ach"
+
 plua suits = {}
 plua Fnt = ObtainFont("Ryanna")
+
+Int QOH  = 0
+Int QOHT = 0
 
 Void Show(Int X,Int Y,Int Suit,Int Val,Int Size=96)
 	Int HS;HS=Size div 2
@@ -42,6 +47,23 @@ Void Show(Int X,Int Y,Int Suit,Int Val,Int Size=96)
 		Suit=100
 		ValTag="Joker"
 	End
+	
+	// "OFF WITH HER HEAD" easter egg
+	plua QOHNT = os.time()
+	If Suit==0 && Val==12
+		If QOHNT-QOHT>10
+			QOH=0
+		ElIf QOHNT!=QOHT
+			QOH++
+			If QOH>10
+				Ach.Award("ZZZ_QUEENHEARTS")
+			End
+		End
+		QOHT=QOHNT
+	Else
+		QOH=0
+	End
+		
 	Suits[Suit] = Suits[Suit] || LoadNewImage(sprintf("GFX/FancySuits/%s.png",SuitTag),"FANCYSUIT_"..SuitTag)
 	Suits[Suit].Stretch(X-HS,Y-HS,Size,Size)
 	Fnt.Dark(Rosetta.GetStr("CardSymbols",ValTag),X,Y,2,2)

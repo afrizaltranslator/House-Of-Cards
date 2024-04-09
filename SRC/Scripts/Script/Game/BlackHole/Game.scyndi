@@ -1,0 +1,241 @@
+// License Information:
+// House of Cards
+// Black Hole
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.04.09
+// End License Information
+Script
+
+#region "Use"
+#use "Libs/XMath"
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
+#use "Libs/SCI/Graphics"
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+#use "Script/Use/Gen/Ach"
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Sound"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/QCardWrite"
+#use "Script/Use/Gen/GameFeatures"
+#endregion
+
+#region "Base Vars"
+ReadOnly Var ICO = LoadNewImage("Script/Game/Black Hole/Icon.png","ICON_BLACKHOLE")
+ReadOnly Var BCK = LoadNewImage("GFX/Backgrounds/Stretch/Black Hole.jpg","BACKGROUND_BLACKHOLE")
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP") // I really should not have put this to Spider alone... Oh well.
+Int HUE
+#endregion
+
+#region "Cards & Nodes"
+ReadOnly Var BHL_Config = GINIE.Obtain("CONFIG::BLACKHOLE")
+Var BHL_Deck
+
+Class CardNode
+	Static ReadOnly Var SZ = Lua.Scyndi.Class.CardSize.FromH(Graphics.Height div 5)
+	Static Var CD	
+	Static ReadOnly Var Setje = {}
+	Static Var Center
+	Static Get Int W; Return SZ.W; End
+	Static Get Int H; Return SZ.H; End
+	Static Bool QuickCenter = False
+	ReadOnly Int X
+	ReadOnly Int Y
+	ReadOnly Int CX
+	ReadOnly Int CY
+	ReadOnly Table Cards
+
+		
+	Constructor(Int _X, Int _Y)
+		X = _X
+		Y = _Y
+		CX = _X + (W div 2)
+		CY = _Y + (H div 2)
+		Cards = {}
+	End
+	
+	Static Void Add(Int _X,Int _Y)
+		Append(Setje,New CardNode(_X,_Y))
+	End
+	
+	Static Void DrawNodes()
+		For n in Each(Setje)
+			SetColorHSV(260,1,os.time() % 2)
+			Rect(n.X,n.Y,n.W,n.H,1)
+		End
+		SetColorHSV(Hue,1,1)
+		Rect(Center.X,Center.Y,Center.W,Center.H,1)
+	End
+End
+
+Class BHCard
+	ReadOnly Int DegSpeed = 5
+	ReadOnly Number RadSpeed = 2
+	Int GX
+	Int GY
+	Int X
+	Int Y
+	Number Radius
+	Int Degrees
+	Bool SuckingIn = False
+	ReadOnly Var Crd
+	Get Int Suit; Return Crd.CardSuit; End
+	Get Int Val; Return Crd.CardValue; End
+	Static Get Int W; Return CardNode.SZ.W; End
+	Static Get Int H; Return CardNode.SZ.H; End	
+	Get Int CX; Return X+(W div 2); End
+	Get Int CY; Return Y+(H div 2); End
+
+	
+	Void Suck()
+		// Thank you Pythagoras, for solving the easy part.
+		Radius = math.sqrt( (math.abs(CX-CardNode.Center.CX)^2) + ( math.abs(CY-CardNode.Center.CY)^2 ) )
+		
+		// Dirty and slow, but it works (I hope)
+		plua md; md = Radius
+		Degrees = 0
+		For i=0,360
+			plua _x
+			plua _y
+			plua _d
+			_x = xmath.sin(i)*Radius
+			_y = xmath.cos(i)*Radius
+			_d = math.sqrt( (math.abs(_x-CX)^2) + (math.abs(_y-CY)^2) )
+			if (_d<md)
+				Degrees=i
+				md=_d
+			End
+		End
+		
+		
+		CSayF("Sucking %d:%02d - Radius: %05.1f - Angle: %03d",Suit,Val,Radius,Degrees) 
+		
+		GX = CardNode.Center.CX
+		GY = CardNode.Center.CY
+		SuckingIn = True
+		CardNode.QuickCenter = False
+	End
+	
+	Void Draw()
+		If SuckingIn			
+			Degrees = (Degrees + DegSpeed) % 360
+			Radius  = math.max(0,Radius-RadSpeed)
+			X = (CardNode.Center.CX + math.floor( Radius*xmath.sin(Degrees) )) - (W div 2) 
+			Y = (CardNode.Center.CY + math.floor( Radius*xmath.cos(Degrees) )) - (H div 2) 
+			if Radius==0
+				SuckingIn = False
+				GX = CardNode.Center.X
+				GY = CardNode.Center.Y				 
+				X = GX
+				Y = GY
+			End
+			//CSayF("Sucking in - Radius: %5.1f; Angle: %d -> (%d,%d)",Radius,Degrees,X,Y)
+		Else
+			if X>GX; X = x - math.max(1,math.abs(X-GX) div 10); End
+			if Y>GY; Y = Y - math.max(1,math.abs(Y-GY) div 10); End
+			if X<GX; X = x + math.max(1,math.abs(GX-X) div 10); End
+			if Y<GY; Y = Y + math.max(1,math.abs(GY-Y) div 10); End
+		End
+		CardNode.CD.DrawCard(X,Y,Suit,Val)
+	End
+	
+	Constructor(C)
+		Crd = C
+		Y = Graphics.H + 100
+		X = math.random(-100,Graphics.Width+100)
+	End
+End	
+	
+
+Init
+	For r=0,3
+		Int Y=math.floor( (Graphics.Height * 0.10) + (r*(CardNode.H*1.125) ) )
+		For c=0,4
+			Int X = math.floor( (Graphics.Width * 0.10) + (c * (Graphics.Width/6) ) )
+			Bool Allow
+			Switch r
+				case 0;   Allow=true
+				case 1 2; Allow=c!=2
+				case 3;   Allow=c<4
+				default;  Lua.error(sprintf("Invalid node row: %d",r))
+			End
+			If Allow; CardNode.Add(X,Y); End
+		End			
+	End
+	CardNode.Center = New CardNode( (Graphics.Width div 2) - (CardNode.SZ.W div 2),(Graphics.Height div 2) - (CardNode.SZ.H div 2) )
+End
+
+Void DrawCards()
+	SetColor(255,255,255)
+	For n in Each(CardNode.Setje)
+		For i,c in iPairs(n.Cards)
+			c.GX=n.X+(i*40)
+			c.GY=n.Y+i
+			c.Draw()
+		End
+	End
+	if CardNode.QuickCenter
+		CardNode.Center.Cards[len(CardNode.Center.Cards)-1].Draw()
+	Else
+		CardNode.QuickCenter = True
+		For c in each(CardNode.Center.Cards)
+			c.Draw()
+			CardNode.QuickCenter = CardNode.QuickCenter && c.radius==0
+		End
+	End
+End
+
+
+#region "CallBacks"
+Global Bool GameFeatures_SaveExit_Allow(); Return False; End
+
+Global Void GameNew()
+	Bool AceC = Upper(BHL_Config.Value("Config","AceSpades"))=="YES"
+	CSayF("Ace of Spades: %s -> %s",BHL_Config.Value("Config","AceSpades"),AceC)
+	CardNode.CD = CardNode.SZ.Bind()
+	BHL_Deck = Deck.Shuffle("DECK_YUKON",BHL_Config.Value("Shuffle","Shuffle"))
+	Int p=0
+	For i=0,50
+		if AceC && BHL_Deck[p].CardValue==1 && BHL_Deck[p].CardSuit==3; p++; End 
+		Append(CardNode.Setje[i % len(CardNode.Setje)].Cards,new BHCard(BHL_Deck[p]))
+		p++
+	End
+	If AceC
+		Append(CardNode.Center.Cards,new BHCard(new DeckCard(3,1)))
+	Else
+		Append(CardNode.Center.Cards,new BHCard(BHL_Deck[51]))		
+	End
+	CardNode.Center.Cards[0].Suck()
+End
+
+Global Void MainFlow()
+	Hue = (Hue+1)%360
+	SetColor(255,255,255)
+	BCK.Stretch(0,0,Graphics.Width,Graphics.Height)
+	ICO.Stretch(Graphics.Width-96,Graphics.Height-96,96,96)
+	CardNode.DrawNodes()
+	DrawCards()
+	GameFeatures.Button()
+	ShowMouse()
+End

@@ -15,6 +15,7 @@ The current version of House of Cards supports the following games.
 - [Golf](https://rumble.com/v4mmqmi-how-to-play-golf-solitaire.html)
 - [King's Cornners](https://rumble.com/v4j9llu-how-to-play-kings-corners.html)
 - [Klondike](https://rumble.com/v4khod6-how-to-play-klondike.html)
+- [Mrs. Mop](https://rumble.com/v4ow1x0-how-to-play-mrs.-mop.html)
 - [Pyramid](https://rumble.com/v4j9mwk-how-to-play-pyramid.html)
 - [Soloslag](https://rumble.com/v4licyo-how-to-play-soloslag.html)
 - [Spider](https://rumble.com/v4j9qj0-how-to-play-spider.html)

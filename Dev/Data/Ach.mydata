@@ -11,7 +11,12 @@ bool Hidden
 
 
 [Records]
-# This part was generated on 4/9/2024 5:15:20 PM by MyData II
+# This part was generated on 4/11/2024 4:25:11 PM by MyData II
+
+REC: BLACKHOLE_COMPLETE
+	Name = There is no life in the void
+	Description = Win a game of Black Hole
+	Hidden = 
 
 REC: FREECELL_COMPLETE
 	Name = I want to break free
@@ -36,6 +41,21 @@ REC: KLONDIKE_COMPLETE
 REC: KLONDIKE_D3
 	Name = Three of a kind
 	Description = Win a game of Klondike with 3 cards drawn
+	Hidden = 
+
+REC: MRSMOP_COMPLETE
+	Name = She's lean, she's mean and she's out to clean
+	Description = Win a game of Mrs. Mop
+	Hidden = 
+
+REC: MRSMOP_MRSMOP2
+	Name = You only clean twice
+	Description = Complete a game of Mrs. Mob with 2 suits
+	Hidden = 
+
+REC: MRSMOP_MRSMOP4
+	Name = Cinderella's twin
+	Description = Win a game of Mrs. Mop with 4 suits
 	Hidden = 
 
 REC: PYRAMID_COMPLETE

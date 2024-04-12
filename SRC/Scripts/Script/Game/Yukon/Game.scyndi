@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.09
+// Version: 24.04.12
 // End License Information
 Script
 
@@ -309,8 +309,7 @@ Bool ClearCard(Crd)
 	YUK_Cleared[Crd.Card.CardSuit] = YUK_Cleared[Crd.Card.CardSuit] || {}
 	YUK_Cleared[Crd.Card.CardSuit].Quick = False
 	if Len(YUK_Cleared[Crd.Card.CardSuit])!=Crd.Card.CardValue-1; Return False; End
-	Append(YUK_Cleared[Crd.Card.CardSuit],Crd)
-	
+	Append(YUK_Cleared[Crd.Card.CardSuit],Crd)	
 	bool win=true
 	int cnt=0
 	for _,cp in pairs(YUK_Cleared)
@@ -324,6 +323,7 @@ Bool ClearCard(Crd)
 		if YUK_Seedlog; YUK_SeedLog.Won++; End
 		Ach.Award("YUKON_COMPLETE")
 	End	
+	YUK_DragCards = nil
 	Return True
 End
 

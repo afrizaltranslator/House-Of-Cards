@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.12
+// Version: 24.04.13
 // End License Information
 
 Script
@@ -551,7 +551,7 @@ Global Void GameNew(String CShuffle="")
 	GameFeatures.ShuffleTag="DECK_MRSMOP"
 	//slxn = sprintf("%d_Suits::allowempty.%s",Suits,AllowEmpty)
 	slxn=sprintf("%d_Suits",Suits)
-	SPI_SeedLog = SeedLog.StartLog("SPIDER",slxn)
+	SPI_SeedLog = SeedLog.StartLog("MRSMOP",slxn)
 	SPI_SeedLog.Played++
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")

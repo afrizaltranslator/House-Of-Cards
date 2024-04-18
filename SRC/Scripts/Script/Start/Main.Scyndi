@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.03
+// Version: 24.04.18
 // End License Information
 
 // Main
@@ -127,7 +127,7 @@ Global Void MainFlow()
 		CFG.NewValue("SeedLog","Log","No")
 		CSayF("Seedlog: %s",Upper(CFG.Value("SeedLog","Log")))
 		If Upper(CFG.Value("SeedLog","Log"))=="YES"			
-			CFG.NewValue("Seedlog","Signature",MD5("House of Cards %d %s",os.time(),os.date()))
+			CFG.NewValue("Seedlog","Signature",MD5(sprintf("House of Cards %d %s",os.time(),os.date())))
 			CSayF("Seedlog on signature %s has been enabled",CFG.Value("SeedLog","Signature"))
 		End
 		Return

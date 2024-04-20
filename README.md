@@ -21,4 +21,4 @@ The current version of House of Cards supports the following games.
 - [Soloslag](https://rumble.com/v4licyo-how-to-play-soloslag.html)
 - [Spider](https://rumble.com/v4j9qj0-how-to-play-spider.html)
 - [Dâ Tônkar bâ sol](https://rumble.com/v4n1jj3-how-to-play-d-tnkrs-b-sol.html)
-- Yukon
+- [Yukon](https://rumble.com/v4qjusk-how-to-play-yukon.html)

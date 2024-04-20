@@ -1,0 +1,7 @@
+Module
+
+Const Int Debug  = 4
+Const Int Easy   = 20
+Const Int Medium = 40
+Const Int Hard   = 80
+Const Int Insane = 160

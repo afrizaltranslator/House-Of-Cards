@@ -29,6 +29,7 @@ Script
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/JCR6"
 #use "Libs/SCI/GINIE"
+#use "Libs/SCI/SString"
 #use "Libs/SCI/Graphics"
 
 #use "Libs/Rosetta"
@@ -92,10 +93,10 @@ Class QuickDeck
 		
 	Get Var Fnt
 		FntReg[FntDir] = FntReg[FntDir] || {}
-		Return FntReg
+		Return FntReg[FntDir]
 	End
 	
-	String ValueName(Int V)
+	Static String ValueName(Int V)
 		Return Upper(Rosetta.GetStr("CardSymbols",sprintf("CS%d",V)))
 	End
 	
@@ -251,6 +252,175 @@ Class QuickDeck
 	End
 End
 
+Class QuickSuit
+	Static ReadOnly Table SuitNames = NewArray("Hearts","Clubs","Diamonds","Spades")
+	Static ReadOnly Table SuitLetter = NewArray("H","C","D","S")
+	Static ReadOnly Table SuitPic = {}
+	ReadOnly Table SuitIcon = {}
+	Static ReadOnly Table ColTags = {}
+	Static Int Count=0
+	Static Var Blanco
+	ReadOnly Int ID
+	ReadOnly Var Data
+	ReadOnly Var Pics
+	
+	Get String PicDir; Return Data.Value("Dirs","Pic"); End
+	Get String FntDir; Return Data.value("Dirs","Fnt"); End
+		
+	Get Var Fnt		
+		QuickDeck.FntReg[FntDir] = QuickDeck.FntReg[FntDir] || {}
+		Return QuickDeck.FntReg[FntDir]
+	End
+	
+	String ValueName(Int V)
+		Return Upper(Rosetta.GetStr("CardSymbols",sprintf("CS%d",V)))
+	End
+	
+	Void WCStretch(IMG,Int X, Int Y, Int W, Int H)
+		Int SX; SX = X
+		Int SY; SY = Y
+		Int SW; SW = Img.Width
+		Int SH; SH = Img.Height
+		Int CX; CX = X + ( W Div 2)
+		Int CY; CY = Y + ( H Div 2)
+		If SH!=H
+			Number R
+			R = H/SH
+			SH = H
+			SW = math.floor(SW*R)
+			SX = CX - (SW div 2)
+			SY = CY - (SH Div 2)
+		End
+		If SW>W
+			Number R
+			R = W/SW
+			SW = W
+			SH = math.floor(SH*R)
+			SX = CX - (SW div 2)
+			SY = CY - (SH Div 2)
+		End
+		IMG.Stretch(SX,SY,SW,SH)
+	End
+	
+	Void DColor(Cat,ColTag)
+		String CHSV
+		String CRGB
+		switch Lua.type(ColTag)
+			case "string"
+				CHSV="HSV"..ColTag
+				CRGB="RGB"..ColTag
+			case "number"
+				CHSV=sprintf("HSV%d",ColTag)
+				CRGB=sprintf("RGB%d",ColTag)
+			default
+				Lua.error("Coltag error!")
+		End
+		ColTags[Cat]=ColTags[Cat]||{}
+		ColTags[Cat][ColTag] = ColTags[Cat][ColTag] || {}
+		if !ColTags[Cat][ColTag].HSV
+			if Data.Value("Colors."..Cat,CHSV)!=""
+				plua s;s = XSplit(Data.Value("Colors."..Cat,CHSV),",")
+				plua d;d = Data.IntValue("Colors."..Cat,"HSVD"); If d==0; d=100; End
+				ColTags[Cat]=ColTags[Cat]||{}
+				ColTags[Cat][ColTag].HSV = {}
+				ColTags[Cat][ColTag].HSV.Hue = (Lua.tonumber(s[0]) || 0)
+				ColTags[Cat][ColTag].HSV.Sat = (Lua.tonumber(s[1]) || 0) / d
+				ColTags[Cat][ColTag].HSV.Val = (Lua.tonumber(s[2]) || 0) / d
+				CSayF("HSV for %s:%s  -> (d:%s) -> %s,%s,%s",Cat,CHSV,d,ColTags[Cat][ColTag].HSV.Hue,ColTags[Cat][ColTag].HSV.Sat,ColTags[Cat][ColTag].HSV.Val)
+			Else
+				CSayF("No HSV for %s:%s",Cat,CHSV)
+				ColTags[Cat]=ColTags[Cat]||{}
+				ColTags[Cat][ColTag].HSV = "No"
+			End
+		End
+		If !ColTags[Cat][ColTag].RGB
+			if Data.Value("Colors."..Cat,CRGB)!=""
+				plua s;s = XSplit(Data.Value("Colors."..Cat,CRGB),",")
+				//plua d;d = Raw.IntValue("Colors.ColTag","RGBD"); If d==0; d=100; End
+				ColTags[Cat]=ColTags[Cat]||{}
+				ColTags[Cat][ColTag].RGB = {}
+				ColTags[Cat][ColTag].RGB.Red   = (Lua.tonumber(s[0]) || 0)
+				ColTags[Cat][ColTag].RGB.Green = (Lua.tonumber(s[1]) || 0)
+				ColTags[Cat][ColTag].RGB.Blue  = (Lua.tonumber(s[2]) || 0)
+			Else
+				ColTags[Cat]=ColTags[Cat]||{}
+				ColTags[Cat][ColTag].RGB = "No"
+			End
+		End
+		If ColTags[Cat][ColTag].RGB!="No"
+			SetColor(ColTags[Cat][ColTag].RGB.Red,ColTags[Cat][ColTag].RGB.Green,ColTags[Cat][ColTag].RGB.Blue)
+		ElIf ColTags[Cat][ColTag].HSV != "No"
+			SetColorHSV(ColTags[Cat][ColTag].HSV.Hue,ColTags[Cat][ColTag].HSV.Sat,ColTags[Cat][ColTag].HSV.Val)
+		End
+	End
+		
+	Void DrawBlanco(Int X, Int Y, int W, Int H,String Cat, ColTag)
+		self.DColor(Cat,ColTag)	
+		Blanco.Stretch(X,Y,W,H)
+		SetColor(255,255,255,255)
+	End
+	
+	Void Draw(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
+		//Stack++;CSayF("Beg Stack: %d",Stack)
+		If Value<=0
+			self.DrawJoker(X,Y,W,H,Suit,Value)			
+			Return
+		End
+		SuitPic[Suit] = SuitPic[Suit] || LoadNewImage(sprintf("GFX/Cards/Scripted/Base/%s.png",SuitNames[Suit]),sprintf("SCRIPTED_CARD_SUIT_%d",Suit))
+		self.DrawBlanco(X,Y,W,H,"Blanco",Suit)
+		SuitIcon[Suit] = SuitIcon[Suit] || LoadNewImage(sprintf("%s/Suit%d.png",PicDir,Suit),sprintf("QuickSuit_%d_%d",ID,Suit))
+		self.WCStretch(SuitIcon[Suit], X,  Y,  W,  H)
+				// Value + Suit
+		Int SW=0
+		Int VH=0
+		String V;V=QuickDeck.ValueName(Value)
+		Int VX;VX = X+5
+		Int VY;VY = Y+5
+		switch Suit%2
+			case 0; SetColor(255,0,0)
+			case 1; SetColor(0,0,0)
+			default
+				SetColor(255,180,0)
+		End
+		For i=1,Len(V)
+			Int C;C=Lua.string.byte(Mid(V,i,1))
+			Fnt[C] = Fnt[C] || LoadNewImage(sprintf("%s/%d.png",FntDir,C),sprintf("DECKFONT:%s:%d",FntDir,C))
+			Fnt[C].Draw(VX,VY)
+			VX = VX + Fnt[C].Width
+			SW=SW + Fnt[C].Width
+			VH=math.max(VH,Fnt[C].Height)
+		End
+		SetColor(255,255,255)
+		SuitPic[Suit].Stretch(5+X,VY+VH,SW,SW)
+		//Stack--;CSayF("End Stack: %d",Stack)
+	End
+		
+
+	Void DrawJoker(Int X, Int Y, Int W, Int H,Int Suit, Int Value)
+		string Clown; Clown = PicDir .. "/Joker.png"
+		int JN;JN = (Suit % Data.IntValue("Joker","Num")) + 1
+		Self.DrawBlanco(X,Y,W,H,"Blanco",Sprintf("J%d",JN))
+		If Clown!=""
+			Pics.Clown = Pics.Clown || LoadNewImage(Clown,"JOKER_CLOWN_"..Clown)
+			self.WCStretch(Pics.Clown,X,Y,W,H)
+		End	
+		//If Data.IntValue("Joker","Num")>0
+		//	string AfFile;AfFile = sprintf("%s/Joker%d.png",PicDir,JN)
+		//	String Tag; Tag=sprintf("QUICKDECK_Joker_%08x_%2d",ID,JN)
+		//	Pics[AfFile] = Pics[AfFile] || LoadNewImage(AfFile,Tag)
+		//	self.WCStretch(Pics[AfFile],X,Y,W,H)
+		//End
+	End
+	
+	Constructor(_Data)
+		QuickDeck.Blanco = QuickDeck.Blanco || LoadNewImage("GFX/Cards/Scripted/Base/Blanco.png","BLANCO")
+		Blanco = QuickDeck.Blanco
+		Data=_Data
+		Pics = {}
+		Blanco = Blanco || LoadNewImage("GFX/Cards/Scripted/Base/Blanco.png","BLANCO")
+		SuitIcon = {}
+	End	
+End
 
 Global Var LoadDeckPics(string DeckFile)
 	string DF;DF = Upper(DeckFile)
@@ -261,6 +431,8 @@ Global Var LoadDeckPics(string DeckFile)
 				_deckReg[DF] = New PicDeck(d)
 			case "QUICK" "QUICKDECK"
 				_deckReg[DF] = New QuickDeck(D)
+			case "QUICKSUIT"
+				_deckReg[DF] = New QuickSuit(D)
 			Case "SCRIPT"
 				Lua.error("Script based decks not yet implented!")
 			Default

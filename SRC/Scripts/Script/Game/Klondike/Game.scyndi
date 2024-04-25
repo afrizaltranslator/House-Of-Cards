@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.08
+// Version: 24.04.25
 // End License Information
 Script
 
@@ -676,9 +676,13 @@ Global Void GameNew(String CShuffle="")
 	KLO_State=0
 	KLO_Config.Value("Result","Played",KLO_Config.IntValue("Result","Played")+1)
 	GameFeatures.ShuffleTag="DECK_Klondike"
-	plua slxn = sprintf("Draw%d",KLO_CONFIG.INTVALUE("CONFIG","FROMPILE"))
-	KLO_SeedLog = SeedLog.StartLog("KLONDIKE",slxn)
-	KLO_SeedLog.Played++
+	if (upper(KLO_Config.Value("Shuffle","Shuffle"))=="RANDOM")
+		plua slxn = sprintf("Draw%d",KLO_CONFIG.INTVALUE("CONFIG","FROMPILE"))
+		KLO_SeedLog = SeedLog.StartLog("KLONDIKE",slxn)
+		KLO_SeedLog.Played++
+	Else
+		KLO_SeedLog = SeedLog.StartLog("FAKE")
+	End
 	If CShuffle!=""
 		Lua.error("Loading shuffles not yet supported")
 	Else

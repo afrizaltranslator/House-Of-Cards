@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.03.22
+// Version: 24.04.25
 // End License Information
 Module
 
@@ -93,6 +93,7 @@ Void SetSeed(int s=0)
 End
 
 Class TSeedLog
+	ReadOnly Bool IsReal 
 	ReadOnly Var Data
 	ReadOnly Int Seed
 	ReadOnly String File
@@ -110,7 +111,7 @@ Class TSeedLog
 	Set Int Won; Data.Value(Tag,"Won",Value); End
 	
 	Void ShowSeed(int X=5,int Y=5)
-		If Allow
+		If Allow && IsReal
 			SetColor(100,100,100)
 			MiniFont.Dark(sprintf("Seed: %08x",Seed),X,Y)
 		End
@@ -120,12 +121,13 @@ Class TSeedLog
 		File = sprintf("SeedLog/%s_%s.ini",GINIETag,Signature)
 		Seed = NewSeed
 		XName = _XName
-		SetSeed(Seed)
-		if Allow
+		IsReal = Allow && Upper(GINIETAG)!="FAKE"
+		if IsReal
+			SetSeed(Seed)
 			CSayF("Loading Seedlog: %s",File)
 			Data = GINIE.LoadHomeNew(File,sprintf("SEEDLOG::%s::%s",GINIETAG,Signature),File,"House Of Cards - (c) Jeroen P. Broks\nSeedlog file!")
-			Data.NewValue(Tag,"Seed%",sprintf("$%08x",Seed))
-			Data.NewValue(Tag,"Seedx",sprintf("0x%08x",Seed))
+			//Data.NewValue(Tag,"Seed%",sprintf("$%08x",Seed))
+			//Data.NewValue(Tag,"Seedx",sprintf("0x%08x",Seed))
 		Else
 			CSayF("Not allowed, just creating a distraction GINIE")
 			Data = GINIE.CreateNew("Het zal wel!") // Not important, you know, but it prevents crashes!

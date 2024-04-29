@@ -29,6 +29,7 @@ Script
 #use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
+#use "Libs/Stack"
 #use "Libs/XMath"
 
 #use "Script/Use/Gen/Ach"

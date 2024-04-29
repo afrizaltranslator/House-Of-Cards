@@ -1,0 +1,36 @@
+// License Information:
+// House of Cards
+// Pyramid - Winning seeds
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.04.29
+// End License Information
+// Code Generated on: 4/29/2024 12:29:37 PM
+
+Module
+
+#use "Script/Use/Shf/Class_Seed"
+
+Var Seeds = New SeedReg()
+
+Init
+	Append(Seeds.Seeds,914, 923, 945, 955, 984, 1108, 1177, 1187, 1212, 1233, 1258, 1265, 1267, 1269, 1271, 1322, 1714140294, 1377)
+End

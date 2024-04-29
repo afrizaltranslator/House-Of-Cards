@@ -1,0 +1,36 @@
+// License Information:
+// House of Cards
+// Winning Seeds - Spider
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.04.29
+// End License Information
+// Code Generated on: 4/29/2024 12:29:37 PM
+
+Module
+
+#use "Script/Use/Shf/Class_Seed"
+
+Var Seeds = New SeedReg()
+
+Init
+	Append(Seeds.Seeds,915, 924, 936, 961, 966, 12, 16, 20, 798, 852, 856, 986, 992, 1013, 1034, 1054, 1072, 1094, 1159, 1163, 1183, 1188, 1213, 1232, 1276, 1309, 1323, 1714139419, 1375)
+End

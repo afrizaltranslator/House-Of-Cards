@@ -161,7 +161,7 @@ Void Deal()
 	//SPR_DrawShow = {}
 	//SPR_DiscShow = {}
 	For i=51,dp,-1
-		plua crd;crd = new KlondikeCard(SPR_Draw)
+		plua crd;crd = new SpiderCard(SPR_Draw)
 		crd.Card = SPR_deck[i]
 		DrawPile.Push(crd)
 	End

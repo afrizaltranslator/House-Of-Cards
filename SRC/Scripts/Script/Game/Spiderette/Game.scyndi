@@ -45,7 +45,7 @@ Script
 #undef Use_SeedLog
 
 #region BaseVars
-ReadOnly Var ICO = LoadNewImage("Script/Game/SPRderette/Icon.png","ICON_SPRDERETTE")
+ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERETTE")
 Int ICOSIZE=Graphics.Height
 #region
 

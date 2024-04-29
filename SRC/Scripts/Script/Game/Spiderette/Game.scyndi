@@ -1,0 +1,128 @@
+// License Information:
+// House of Cards
+// Spiderette
+// 
+// 
+// 
+// (c) Jeroen P. Broks, 2024
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please note that some references to data like pictures or audio, do not automatically
+// fall under this licenses. Mostly this is noted in the respective files.
+// 
+// Version: 24.04.29
+// End License Information
+Script
+
+#use "Libs/SCI/Sys"
+#use "Libs/SCI/Graphics"
+
+#use "Libs/XMath"
+
+#use "Script/Use/Gen/Ach"
+#use "Script/Use/Lnk/Deck"
+#use "Script/Use/Lnk/Card"
+#use "Script/Use/Gen/Muis"
+#use "Script/Use/Gen/Sound"
+#use "Script/Use/Gen/RText"
+#use "Script/Use/Gen/Config"
+#use "Script/Use/Gen/SeedLog"
+#use "Script/Use/Gen/QCardWrite"
+#use "Script/Use/Gen/GameFeatures"
+
+#region BaseVars
+ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERETTE")
+Int ICOSIZE=Graphics.Height
+#region
+
+#Region GameVars
+plua SPR_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
+plua SPR_Draw
+plua SPR_CLEAR
+plua SPR_RowNodes
+
+#EndRegion
+
+#region Classes
+Class CardNode
+	Static Int Num
+	Static Number Deg = os.time() % 360
+	Static Var First
+	Static Var Last
+	Var Next
+	ReadOnly Int ID
+	ReadOnly Int X
+	ReadOnly Int Y
+	Static Get Int W;Return SPR_CardSize.W; End
+	Static Get Int H;Return SPR_CardSize.H; End
+
+		
+	Void Draw()
+		Deg = Deg + 0.01
+		SetColor(100,100,100)
+		SetAlpha(math.floor(math.abs(XMath.Sin(Deg+(ID*10))*255)))
+		Rect(X,Y,SPR_CardSize.W,SPR_CardSize.H)
+	End
+	
+	Static Void DrawAll()
+		For c in Each_Chain(First)
+			c.Draw()
+		End
+		SetAlpha(255)
+	End
+		
+	Constructor(Int _X,Int _Y)
+		ID = Num;Num++
+		First = First || Self
+		if (Last); Last.Next = Self; End
+		Last = Self
+		X = _X
+		Y = _Y
+		CSayF("Card Node created at (%04d, %04d)",X,Y)
+	End
+End
+#EndRegion
+
+Init
+	// Piles
+	SPR_Draw = new CardNode(5,5)	
+	
+	// Cleared
+	SPR_Clear = {}
+	SPR_Clear[0] = New CardNode( 5               ,Graphics.Height-math.floor(SPR_CardSize.H * 2.6))
+	SPR_Clear[1] = New CardNode(10+SPR_CardSize.W,Graphics.Height-math.floor(SPR_CardSize.H * 2.6))
+	SPR_Clear[2] = New CardNode( 5               ,Graphics.Height-math.floor(SPR_CardSize.H * 1.50))
+	SPR_Clear[3] = New CardNode(10+SPR_CardSize.W,Graphics.Height-math.floor(SPR_CardSize.H * 1.50))
+	SPR_RowNodes = {}
+	For i=0,6
+		int x
+		x = Graphics.Width- ((SPR_CardSize.W*1.25)*(7-i))
+		SPR_RowNodes[i] = New CardNode(x,40)
+	End
+End	
+
+
+Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
+
+Global Void GameNew(String Shuf="Random")
+End
+
+Global Void MainFlow()
+	SetColor(255,255,255,255)
+	DrawBackground()
+	CardNode.DrawAll()
+	SetColor(255,255,255,255); ICO.Stretch(Graphics.Width-ICOSIZE,Graphics.Height-ICOSIZE,ICOSIZE,ICOSIZE); ICOSIZE = math.max(ICOSIZE-1,96)
+	GameFeatures.Button()
+	ShowMouse()
+End

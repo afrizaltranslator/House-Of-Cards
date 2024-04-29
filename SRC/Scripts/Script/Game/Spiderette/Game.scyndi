@@ -26,6 +26,7 @@
 Script
 
 #use "Libs/SCI/Sys"
+#use "Libs/SCI/GINIE"
 #use "Libs/SCI/Graphics"
 
 #use "Libs/XMath"
@@ -41,16 +42,28 @@ Script
 #use "Script/Use/Gen/QCardWrite"
 #use "Script/Use/Gen/GameFeatures"
 
+#undef Use_SeedLog
+
 #region BaseVars
-ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERETTE")
+ReadOnly Var ICO = LoadNewImage("Script/Game/SPRderette/Icon.png","ICON_SPRDERETTE")
 Int ICOSIZE=Graphics.Height
 #region
 
 #Region GameVars
+plua SPR_Config = GINIE.Obtain("CONFIG::KLONDIKE")
 plua SPR_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
 plua SPR_Draw
 plua SPR_CLEAR
 plua SPR_RowNodes
+plua SPR_SeedLog
+plua SPR_Cleared
+plua SPR_Row
+plua SPR_Deck
+plua SPR_DrawPile
+int SPR_Moves
+int SPR_Undone
+int SPR_State
+int SPR_Time
 
 #EndRegion
 
@@ -92,6 +105,13 @@ Class CardNode
 		CSayF("Card Node created at (%04d, %04d)",X,Y)
 	End
 End
+
+Class SpideretteCard
+	Bool Visible
+	Var Card
+	Constructor(Node)
+	End
+End
 #EndRegion
 
 Init
@@ -112,10 +132,68 @@ Init
 	End
 End	
 
+Void Deal()
+	int dp=0
+	SPR_Row = {}	
+	For i2=0,6		
+		For i1=i2,6
+			SPR_Row[i1] = SPR_Row[i1] || {}
+			CSayF("Dealing card on row %d:%d",i1,i2)
+			plua crd;crd = new SpideretteCard(SPR_RowNodes[i1])
+			SPR_Row[i1][i2] = crd
+			crd.Card = SPR_Deck[dp]
+			dp++
+		End
+	End
+	plua DrawPile; DrawPile = New Stack()
+	//SPR_DiscPile = New Stack()
+	//SPR_DrawShow = {}
+	//SPR_DiscShow = {}
+	For i=51,dp,-1
+		plua crd;crd = new KlondikeCard(SPR_Draw)
+		crd.Card = SPR_deck[i]
+		DrawPile.Push(crd)
+	End
+	SPR_DrawPile = DrawPile.Array
+End
 
 Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
 
-Global Void GameNew(String Shuf="Random")
+Global Void GameNew(String Shuf="")
+#if Use_SeedLog	
+	plua slxn
+#fi
+	SPR_Config.Value("Result","Played",SPR_Config.IntValue("Result","Played")+1)
+	//SPR_Score = 500
+	SPR_Moves = 0
+	SPR_Undone = 0
+	SPR_Cleared = {}
+	SPR_State=0
+	SPR_Time=0
+	GameFeatures.ShuffleTag="DECK_Spiderette"
+#if Use_SeedLog
+	CSay("SeedLog")
+	slxn = sprintf("%d_Suits::allowempty.%s",Suits,AllowEmpty)
+	SPR_SeedLog = SeedLog.StartLog("SPRDERETTE",slxn)
+	SPR_SeedLog.Played++
+	
+#else
+	CSay("SeedLog DISABLED!")
+	SPR_SeedLog = SeedLog.StartLog("FAKE")	
+#fi
+	If Shuf!=""
+		Lua.error("Loading shuffles not yet supported")
+	Else		
+		Switch Suits
+		Case 1		
+			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 8,1)
+		Case 2
+			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 4,2)
+		Default
+			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 2,4)
+		End
+	End
+	Deal()
 End
 
 Global Void MainFlow()

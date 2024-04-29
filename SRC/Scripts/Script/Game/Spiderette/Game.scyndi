@@ -64,8 +64,18 @@ int SPR_Moves
 int SPR_Undone
 int SPR_State
 int SPR_Time
-
 #EndRegion
+
+#region Configration
+Get Int Suits; Return SPR_Config.IntValue("CONFIG","SUITS"); End
+
+// Will allow to deal an extra package of cards even if some rows are empty.
+// That is, when set to 'true' that is.
+Get Bool AllowEmpty; Return Upper(SPR_Config.Value("CONFIG","ALLOWEMPTY"))=="YES"; End
+
+Get String ShuffleMethod; Return SPR_Config.Value("Shuffle","Shuffle"); End
+#endregion
+
 
 #region Classes
 Class CardNode

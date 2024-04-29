@@ -51,7 +51,7 @@ Int ICOSIZE=Graphics.Height
 #region
 
 #Region GameVars
-plua SPR_Config = GINIE.Obtain("CONFIG::KLONDIKE")
+plua SPR_Config = GINIE.Obtain("CONFIG::SPIDERETTE")
 plua SPR_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
 plua SPR_Draw
 plua SPR_CLEAR

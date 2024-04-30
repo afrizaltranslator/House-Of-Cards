@@ -164,6 +164,39 @@ Class SpideretteCard
 		End
 	End	
 End
+
+Class SpideretteAction
+	ReadOnly String Action
+	ReadOnly Var From
+	ReadOnly Var To
+	ReadOnly Var Cards
+	ReadOnly Int FromNumHidden
+	Constructor(String A,F,T,C)
+		Action = Upper(A)
+		if Action=="CLEAR"
+			 // Clear is automated and does therefore not count as a move
+			if SPR_Cleared && SPR_Cleared[3]
+				SFX("COMPLETE")
+			Else
+				SFX("BONUS")
+			End
+			Cards = T
+		Else
+			SPR_Moves++
+			SFX("SLIDE")
+			Cards = C
+		End
+		From  = F
+		To    = T		
+	End
+	Static Var _STCK 
+	Static Var Clear()
+		_STCK = new Stack()
+	End
+	Static Void Add(String A,F,T,C)
+		_STCK.Push(new SpideretteAction(A,F,T,C))
+	End
+End
 #EndRegion
 
 Init
@@ -281,15 +314,24 @@ Void DrawCards()
 	End
 End
 
+Int OldTime
 Void ShowData()
 	ShowTime(SPR_Time,QUD,Graphics.Height-30,2)
 	ShowMoves(SPR_Moves,SPR_Undone,QUD*3,Graphics.Height-30,2)
+	if SPR_Moves>0 && SPR_State==0
+		Int NewTime = os.time()
+		If NewTime!=OldTime
+			SPR_Time++
+			OldTime = NewTime
+		End
+	End
 End
 
 Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
 
 Global Void GameNew(String Shuf="")
 	SpideretteCard.Cnt=0
+	SpideretteAction.Clear()
 #if Use_SeedLog	
 	plua slxn
 #fi

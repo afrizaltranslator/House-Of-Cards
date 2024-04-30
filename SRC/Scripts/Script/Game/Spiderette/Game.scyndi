@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.29
+// Version: 24.04.30
 // End License Information
 Script
 
@@ -47,12 +47,15 @@ Script
 
 #region BaseVars
 ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERETTE")
+ReadOnly Var MNI = ObtainFont("MINI")
+ReadOnly Var GLD = ObtainFont("GOLD")
 Int ICOSIZE=Graphics.Height
 #region
 
 #Region GameVars
 plua SPR_Config = GINIE.Obtain("CONFIG::SPIDERETTE")
 plua SPR_CardSize = Lua.Scyndi.Class.CardSize.FromW(Graphics.Width div 11)
+plua SPR_Card
 plua SPR_Draw
 plua SPR_CLEAR
 plua SPR_RowNodes
@@ -118,10 +121,44 @@ Class CardNode
 End
 
 Class SpideretteCard
+	Static Int Cnt
+	Static Int Deals
+	ReadOnly Int ID
+	Int Delay
 	Bool Visible
 	Var Card
+	Int GX
+	Int GY
+	Int X
+	Int Y
 	Constructor(Node)
+		Cnt++
+		X=math.random(-500,Graphics.width+500)
+		Y=graphics.height+100
+		GX = (Node || {["X"]=0})["X"]
+		GY = (Node || {["Y"]=0})["Y"]
+		Delay = cnt*10
+		ID=Cnt
+		CSayF("%d>Card #%d has been created!",Deals,ID)
 	End
+	Destructor
+		CSayF("%d>Card #%d has been destroyed!",Deals,ID)
+	End
+	
+	Void Draw()
+		SetColor(255,255,255,255)
+		If Delay>0
+			Delay--
+		Else
+			If X>GX; X=X-math.max( (X-GX) div 10,1); ElIf X<GX; X=X+math.max( (GX-X) div 10,1); End
+			If Y>GY; Y=Y-math.max( (Y-GY) div 10,1); ElIf Y<GY; Y=Y+math.max( (GY-Y) div 10,1); End
+		End
+		If Visible
+			SPR_Card.DrawCard(X,Y,Card.CardSuit,Card.CardValue)
+		Else
+			SPR_Card.DrawBack(X,Y)
+		End
+	End	
 End
 #EndRegion
 
@@ -144,6 +181,8 @@ Init
 End	
 
 Void Deal()
+	SpideretteCard.Deals++
+	SPR_Card = SPR_CardSize.Bind()
 	int dp=0
 	SPR_Row = {}	
 	For i2=0,6		
@@ -165,12 +204,62 @@ Void Deal()
 		crd.Card = SPR_deck[i]
 		DrawPile.Push(crd)
 	End
-	SPR_DrawPile = DrawPile.Array
+	SPR_DrawPile = {}
+	For i,c in ipairs(DrawPile.Array)
+		SPR_DrawPile[23-i]=c
+	End
+End
+
+Void DrawCards()
+	// Tableau
+	For ri,ra in ipairs(SPR_Row)
+		Int Hidden=0
+		Int Y=SPR_RowNodes[ri].Y
+		For ci,ca in ipairs(ra)
+			ca.GY=Y
+			If ca.Visible
+				Y = Y + 30				
+			Else
+				Y = Y + 5
+				Hidden++
+				If ca.GY==ca.Y && ca.GX==ca.X && ci==len(ra)-1
+					ca.Visible=true
+					ra.FlashTime=1000
+				End
+			End	
+			ca.Draw()
+			If Hidden>0 && ((ra.FlashTime || 0)<=0 || os.time()%2==0)
+				SetColor(0,180,255)
+				If (ra.FlashTime || 0)>0; SetColor(255,180,0); End
+				MNI.Dark(sprintf("%d",Hidden),SPR_RowNodes[ri].X,SPR_RowNodes[ri].Y)
+			ElIf (ra.FlashTime || 0)>0
+				ra.FlashTime--
+			End			
+		End
+	End
+	// Pile
+	Int PCnt = 0
+	if !SPR_DrawPile.Quick
+		SPR_DrawPile.Quick=true
+		For c in Each(SPR_DrawPile)
+			c.Draw()
+			SPR_DrawPile.Quick = SPR_DrawPile.Quick && c.X==c.GX && c.Y==c.GY
+			if SPR_DrawPile.Quick; PCnt++; End
+		End
+		if SPR_DrawPile.Quick; CSay("Draw Pile Now Set To Quick!"); End
+	Else
+		SPR_Card.DrawBack(SPR_Draw.X,SPR_Draw.Y)
+		PCnt = Len(SPR_DrawPile)
+	End
+	If PCnt>1
+		GLD.Text(sprintf("%d",PCNT),SPR_Draw.X+(SPR_Draw.W div 2),SPR_Draw.Y+(SPR_Draw.H div 2),2,2)
+	End
 End
 
 Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
 
 Global Void GameNew(String Shuf="")
+	SpideretteCard.Cnt=0
 #if Use_SeedLog	
 	plua slxn
 #fi
@@ -211,6 +300,7 @@ Global Void MainFlow()
 	SetColor(255,255,255,255)
 	DrawBackground()
 	CardNode.DrawAll()
+	DrawCards()
 	SetColor(255,255,255,255); ICO.Stretch(Graphics.Width-ICOSIZE,Graphics.Height-ICOSIZE,ICOSIZE,ICOSIZE); ICOSIZE = math.max(ICOSIZE-1,96)
 	GameFeatures.Button()
 	ShowMouse()

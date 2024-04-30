@@ -49,6 +49,8 @@ Script
 ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERETTE")
 ReadOnly Var MNI = ObtainFont("MINI")
 ReadOnly Var GLD = ObtainFont("GOLD")
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")	
+ReadOnly Int QUD = Graphics.Width div 4
 Int ICOSIZE=Graphics.Height
 #region
 
@@ -131,6 +133,8 @@ Class SpideretteCard
 	Int GY
 	Int X
 	Int Y
+	Static Get Int W; Return SPR_CardSize.W; End
+	Static Get Int H; Return SPR_CardSize.H; End
 	Constructor(Node)
 		Cnt++
 		X=math.random(-500,Graphics.width+500)
@@ -215,6 +219,7 @@ Void DrawCards()
 	For ri,ra in ipairs(SPR_Row)
 		Int Hidden=0
 		Int Y=SPR_RowNodes[ri].Y
+		Int Hover = -1
 		For ci,ca in ipairs(ra)
 			ca.GY=Y
 			If ca.Visible
@@ -228,6 +233,16 @@ Void DrawCards()
 				End
 			End	
 			ca.Draw()
+			If ca.Visible && MX>ca.X && MY>CA.Y && MX<ca.X+CA.w && MY<CA.Y+CA.h
+				Bool Allow = true
+				For hi,hc in ipairs(ra)
+					If HI>CI && HI<Len(ra)-1
+						Allow = Allow && ra[HI+1].Card.CardSuit == ca.Card.CardSuit
+						Allow = Allow && ra[HI+1].Card.CardValue == ra[HI].Card.CardValue - 1
+					End
+				End
+				If Allow;Hover=ci;End
+			End
 			If Hidden>0 && ((ra.FlashTime || 0)<=0 || os.time()%2==0)
 				SetColor(0,180,255)
 				If (ra.FlashTime || 0)>0; SetColor(255,180,0); End
@@ -235,6 +250,13 @@ Void DrawCards()
 			ElIf (ra.FlashTime || 0)>0
 				ra.FlashTime--
 			End			
+		End
+		If Hover>=0
+			plua crd;crd = ra[Hover]
+			SetColorHSV(0,0,0.75+( (os.time()%2) * 0.25) )
+			PPP.Stretch(crd.X-128,Crd.Y-128,128,128)
+			SetColor(255,255,255,255)
+			QCardWrite.Show(Graphics.Width div 2, Graphics.Height - 96,Crd.Card.CardSuit,Crd.Card.CardValue)
 		End
 	End
 	// Pile
@@ -254,6 +276,14 @@ Void DrawCards()
 	If PCnt>1
 		GLD.Text(sprintf("%d",PCNT),SPR_Draw.X+(SPR_Draw.W div 2),SPR_Draw.Y+(SPR_Draw.H div 2),2,2)
 	End
+	If MX>SPR_Draw.X && MY>SPR_Draw.Y && MX<SPR_Draw.X+SPR_Draw.W && MY<SPR_Draw.Y+SPR_Draw.H
+		PPP.Stretch(SPR_Draw.X+(SPR_Draw.W div 2)-128,SPR_Draw.Y+(SPR_Draw.H div 2)-128,128,128)
+	End
+End
+
+Void ShowData()
+	ShowTime(SPR_Time,QUD,Graphics.Height-30,2)
+	ShowMoves(SPR_Moves,SPR_Undone,QUD*3,Graphics.Height-30,2)
 End
 
 Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
@@ -301,6 +331,7 @@ Global Void MainFlow()
 	DrawBackground()
 	CardNode.DrawAll()
 	DrawCards()
+	ShowData()
 	SetColor(255,255,255,255); ICO.Stretch(Graphics.Width-ICOSIZE,Graphics.Height-ICOSIZE,ICOSIZE,ICOSIZE); ICOSIZE = math.max(ICOSIZE-1,96)
 	GameFeatures.Button()
 	ShowMouse()

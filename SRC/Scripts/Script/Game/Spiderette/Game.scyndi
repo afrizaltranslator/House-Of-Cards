@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.04.30
+// Version: 24.05.01
 // End License Information
 Script
 
@@ -250,11 +250,14 @@ End
 Void DrawCards()
 	// Tableau
 	For ri,ra in ipairs(SPR_Row)
+		Lua.assert(SPR_RowNodes[ri],sprintf("No row node on index %d",ri))
 		Int Hidden=0
 		Int Y=SPR_RowNodes[ri].Y
+		Int X=SPR_RowNodes[ri].X
 		Int Hover = -1
 		For ci,ca in ipairs(ra)
 			ca.GY=Y
+			ca.GX=X
 			If ca.Visible
 				Y = Y + 30				
 			Else
@@ -303,14 +306,27 @@ Void DrawCards()
 		End
 		if SPR_DrawPile.Quick; CSay("Draw Pile Now Set To Quick!"); End
 	Else
-		SPR_Card.DrawBack(SPR_Draw.X,SPR_Draw.Y)
 		PCnt = Len(SPR_DrawPile)
+		if PCnt>0;	SPR_Card.DrawBack(SPR_Draw.X,SPR_Draw.Y); End
 	End
 	If PCnt>1
 		GLD.Text(sprintf("%d",PCNT),SPR_Draw.X+(SPR_Draw.W div 2),SPR_Draw.Y+(SPR_Draw.H div 2),2,2)
 	End
-	If MX>SPR_Draw.X && MY>SPR_Draw.Y && MX<SPR_Draw.X+SPR_Draw.W && MY<SPR_Draw.Y+SPR_Draw.H
+	If MX>SPR_Draw.X && MY>SPR_Draw.Y && MX<SPR_Draw.X+SPR_Draw.W && MY<SPR_Draw.Y+SPR_Draw.H && Len(SPR_DrawPile)>0
 		PPP.Stretch(SPR_Draw.X+(SPR_Draw.W div 2)-128,SPR_Draw.Y+(SPR_Draw.H div 2)-128,128,128)
+		If ML 
+			SpideretteAction.Add("Draw",nil,nil,math.min(7,Len(SPR_DrawPile)))
+			For i=0,6
+				If Len(SPR_DrawPile)>0					
+					Int idx=Len(SPR_DrawPile)-1
+					CSayF("Adding card (%d) to row #%d (%d)",idx,i+1,i)
+					Append(SPR_Row[i],SPR_DrawPile[idx])
+					SPR_DrawPile[idx].Delay = math.max(SPR_DrawPile[idx].Delay,i*5)
+					SPR_DrawPile[idx].Visible=true
+					SPR_DrawPile[idx]=nil					
+				End
+			End
+		End
 	End
 End
 

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.05.01
+// Version: 24.05.05
 // End License Information
 Script
 
@@ -49,8 +49,10 @@ Script
 ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERETTE")
 ReadOnly Var MNI = ObtainFont("MINI")
 ReadOnly Var GLD = ObtainFont("GOLD")
+ReadOnly Var UND = ObtainImage("UNDO")
 ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")	
 ReadOnly Int QUD = Graphics.Width div 4
+Int Hue
 Int ICOSIZE=Graphics.Height
 #region
 
@@ -332,6 +334,7 @@ End
 
 Int OldTime
 Void ShowData()
+	SetColorHSV(360-Hue,0.2,1)
 	ShowTime(SPR_Time,QUD,Graphics.Height-30,2)
 	ShowMoves(SPR_Moves,SPR_Undone,QUD*3,Graphics.Height-30,2)
 	if SPR_Moves>0 && SPR_State==0
@@ -341,6 +344,22 @@ Void ShowData()
 			OldTime = NewTime
 		End
 	End
+End
+
+Void UndoAction()
+	plua Act = SpideretteAction._STCK.Pop()
+	CSayF("Undo: %s",Act.Action)
+End
+
+Void HandleUndo()
+	If !SpideretteAction._STCK.Have
+		Return
+	End
+	If MX<96 && MY>Graphics.Height-96
+		SetColorHSV(Hue,1,1)
+		If ML; UndoAction(); End
+	End
+	UND.Stretch(0,Graphics.Height-96,96,96)	
 End
 
 Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
@@ -385,10 +404,12 @@ Global Void GameNew(String Shuf="")
 End
 
 Global Void MainFlow()
+	Hue = (Hue+1)%360
 	SetColor(255,255,255,255)
 	DrawBackground()
 	CardNode.DrawAll()
 	DrawCards()
+	HandleUndo()
 	ShowData()
 	SetColor(255,255,255,255); ICO.Stretch(Graphics.Width-ICOSIZE,Graphics.Height-ICOSIZE,ICOSIZE,ICOSIZE); ICOSIZE = math.max(ICOSIZE-1,96)
 	GameFeatures.Button()

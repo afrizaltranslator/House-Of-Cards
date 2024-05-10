@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.05.05
+// Version: 24.05.10
 // End License Information
 Script
 
@@ -50,7 +50,10 @@ ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERET
 ReadOnly Var MNI = ObtainFont("MINI")
 ReadOnly Var GLD = ObtainFont("GOLD")
 ReadOnly Var UND = ObtainImage("UNDO")
-ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")	
+ReadOnly Var PPP = LoadNewImage("Script/Game/Spider/PointPackages.png","SPIDER_PPP")
+ReadOnly Var OKE = ObtainImage("OK")
+ReadOnly Var ESC = ObtainImage("SUCCESS")
+ReadOnly Var EFL = ObtainImage("FAIL")
 ReadOnly Int QUD = Graphics.Width div 4
 Int Hue
 Int ICOSIZE=Graphics.Height
@@ -68,10 +71,12 @@ plua SPR_Cleared
 plua SPR_Row
 plua SPR_Deck
 plua SPR_DrawPile
+plua SPR_DragPile
 int SPR_Moves
 int SPR_Undone
 int SPR_State
 int SPR_Time
+Bool SPR_DBG_Yukon=False
 #EndRegion
 
 #region Configration
@@ -173,12 +178,14 @@ Class SpideretteAction
 	ReadOnly Var To
 	ReadOnly Var Cards
 	ReadOnly Int FromNumHidden
+	Get Int NumFromHidden; Return FromNumHidden; End
 	Constructor(String A,F,T,C)
 		Action = Upper(A)
 		if Action=="CLEAR"
 			 // Clear is automated and does therefore not count as a move
-			if SPR_Cleared && SPR_Cleared[3]
+			if SPR_Cleared && Len(SPR_Cleared[3] || {})>0
 				SFX("COMPLETE")
+				SPR_State=1
 			Else
 				SFX("BONUS")
 			End
@@ -189,7 +196,15 @@ Class SpideretteAction
 			Cards = C
 		End
 		From  = F
-		To    = T		
+		To    = T
+		//If Action=="DRAG" || Action=="CLEAR"
+		If Lua.type(F)=="table"
+			FromNumHidden = 0
+			For PI,PC in ipairs(F)
+				if !PC.Visible; FromNumHidden=math.max(FromNumHidden,PI); End
+			End
+			CSayF("Prior to move %d cards were hidden",FromNumHidden)
+		End
 	End
 	Static Var _STCK 
 	Static Var Clear()
@@ -249,8 +264,85 @@ Void Deal()
 	End
 End
 
-Void DrawCards()
+
+Void CheckClear()
+	For RI,RA in iPairs(SPR_Row)
+		Bool AllowClear = True
+		If Len(RA)>0
+			Int Val=1
+			Int Suit=RA[Len(RA)-1].Card.CardSuit
+			PLUA CC = {}
+			For CI=Len(RA)-1,0,-1
+				PLUA CA;CA=RA[CI]
+				AllowClear = AllowClear && Val<=13
+				AllowClear = AllowClear && CA.Visible
+				AllowClear = AllowClear && CA.Card.CardSuit==Suit
+				AllowClear = AllowClear && CA.Card.CardValue==Val				
+				If AllowClear
+					Append(CC,CA)
+					If Val==13 
+						PLUA CTO = nil
+						For ClI=0,3
+							//SPR_Cleared[ClI] = SPR_Cleared[ClI] || {}
+							//PLUA ClP //;ClP = SPR_Cleared[ClI]
+							If Len(SPR_Cleared[ClI] || {})==0
+								CTO = {} //CTO || ClP
+								SPR_Cleared[ClI] = CTO
+								Break
+							End
+						End
+						Assert(CTO,"No empty clear pile!")
+						
+						CTO.Quick = False
+						For CCI,CCC in iPairs(CC)
+							CCC.Delay = CCI*3
+							Append(CTO,CCC)
+							CSayF("Cleared %d cards",len(CTO))
+							RA[Len(RA)-1]=nil
+						End
+						
+						SpideretteAction.Add("CLEAR",RA,CTO,CC)
+						Return
+					End
+				End
+				Val++
+			End
+		End
+	End
+End
+
+Get Bool Dragging
+	if SPR_DragPile
+		For PI,PC in ipairs(SPR_DragPile)
+			PC.GX = MX - (PC.W div 2)
+			PC.GY = MY + (PI*45)
+			PC.X = PC.GX
+			PC.Y = PC.GY
+		End
+		If MDL
+			Return True
+		End
+		For ri,ra in ipairs(SPR_Row)
+			plua R;R = SPR_RowNodes[ri]
+			Lua.assert(R,sprintf("Row #%d appears to be nil",ri))
+			If MX>R.X && MX<R.X+R.W && ra != SPR_DragPile.From && (len(ra)==0 || ra[len(ra)-1].Card.CardValue==SPR_DragPile[0].Card.CardValue+1)
+				SpideretteAction.Add("DRAG",SPR_DragPile.From,ra,SPR_DragPile)
+				For PI,PC in ipairs(SPR_DragPile)
+					Append(Ra,PC)
+					SPR_DragPile.From[len(SPR_DragPile.From)-1]=nil
+				End
+				CheckClear()
+			End
+		End
+		SPR_DragPile = nil
+	End
+	Return False
+End
+
+
+Void DrawCards()	
 	// Tableau
+	Bool _Dragging = Dragging
 	For ri,ra in ipairs(SPR_Row)
 		Lua.assert(SPR_RowNodes[ri],sprintf("No row node on index %d",ri))
 		Int Hidden=0
@@ -258,8 +350,10 @@ Void DrawCards()
 		Int X=SPR_RowNodes[ri].X
 		Int Hover = -1
 		For ci,ca in ipairs(ra)
-			ca.GY=Y
-			ca.GX=X
+			If !_Dragging
+				ca.GY=Y
+				ca.GX=X
+			End
 			If ca.Visible
 				Y = Y + 30				
 			Else
@@ -271,12 +365,15 @@ Void DrawCards()
 				End
 			End	
 			ca.Draw()
-			If ca.Visible && MX>ca.X && MY>CA.Y && MX<ca.X+CA.w && MY<CA.Y+CA.h
+			If (!_Dragging) && ca.Visible && MX>ca.X && MY>CA.Y && MX<ca.X+CA.w && MY<CA.Y+CA.h
 				Bool Allow = true
-				For hi,hc in ipairs(ra)
-					If HI>CI && HI<Len(ra)-1
-						Allow = Allow && ra[HI+1].Card.CardSuit == ca.Card.CardSuit
-						Allow = Allow && ra[HI+1].Card.CardValue == ra[HI].Card.CardValue - 1
+				if (!SPR_DBG_Yukon)
+					For hi,hc in ipairs(ra)
+						If HI>=CI && HI<Len(ra)-1
+							Allow = Allow && ra[HI+1].Card.CardSuit == ca.Card.CardSuit
+							Allow = Allow && ra[HI+1].Card.CardValue == ra[HI].Card.CardValue - 1 
+							//CSayF("Allow Check %d/%d/%d -> %s -> %s",ri,ci,hi,ra[HI+1].Card.CardValue == ra[HI].Card.CardValue - 1,Allow)
+						End
 					End
 				End
 				If Allow;Hover=ci;End
@@ -295,6 +392,15 @@ Void DrawCards()
 			PPP.Stretch(crd.X-128,Crd.Y-128,128,128)
 			SetColor(255,255,255,255)
 			QCardWrite.Show(Graphics.Width div 2, Graphics.Height - 96,Crd.Card.CardSuit,Crd.Card.CardValue)
+			if MDL
+				SPR_DragPile = {}
+				SPR_DragPile.From = ra
+				For pi,pc in ipairs(ra)
+					If Pi>=Hover
+						Append(SPR_DragPile,PC)
+					End
+				End
+			End
 		End
 	End
 	// Pile
@@ -303,6 +409,7 @@ Void DrawCards()
 		SPR_DrawPile.Quick=true
 		For c in Each(SPR_DrawPile)
 			c.Draw()
+			c.GX,c.GY = SPR_Draw.X,SPR_Draw.Y
 			SPR_DrawPile.Quick = SPR_DrawPile.Quick && c.X==c.GX && c.Y==c.GY
 			if SPR_DrawPile.Quick; PCnt++; End
 		End
@@ -328,8 +435,31 @@ Void DrawCards()
 					SPR_DrawPile[idx]=nil					
 				End
 			End
+			CheckClear()
+			
 		End
 	End
+	// Cleared
+	SetColor(255,255,255,255)
+	For CI,CA in ipairs(SPR_Cleared)
+		plua N=SPR_Clear[CI]
+		If CA.Quick
+			plua TC=CA[len(CA)-1].Card
+			SPR_Card.DrawCard(N.X,N.Y,TC.CardSuit,TC.CardValue)
+		Else
+			CA.Quick=true
+			for CRD in Each(CA)
+				CRD.GX=N.X
+				CRD.GY=N.Y
+				CA.Quick = CA.Quick && CRD.X==N.X && CRD.Y==N.Y
+				CSayF("%02d -> (%d,%d)>(%d,%d)",CRD.Card.CardValue,CRD.X,CRD.Y,N.X,N.Y)
+				CRD.Draw()
+			End
+			If CA.Quick
+				CSayF("Row #%d has been set to quick!",CI)
+			End
+		End
+	End			
 End
 
 Int OldTime
@@ -349,17 +479,61 @@ End
 Void UndoAction()
 	plua Act = SpideretteAction._STCK.Pop()
 	CSayF("Undo: %s",Act.Action)
+	Switch Act.Action
+		Case "DRAW"
+			CSayF("Undo draw - %d cards",Act.Cards)
+			For i=Act.Cards-1,0,-1
+				Plua Crd;Crd = SPR_Row[i][len(SPR_Row[i])-1]
+				SPR_Row[i][len(SPR_Row[i])-1] = nil
+				Crd.Visible = False
+				Crd.Delay=(7-i)*2
+				SPR_DrawPile.Quick=False
+				Append(SPR_DrawPile,Crd)
+			End
+			SPR_Undone++
+		Case "DRAG"
+			CSayF("Undo Drag")
+			For pi,pc in ipairs(Act.Cards)
+				Append(Act.From,PC)
+				Act.To[len(Act.To)-1] = nil
+			End
+			For ci,cc in ipairs(Act.From)
+				cc.Visible = ci>Act.NumFromHidden
+			End
+			SPR_Undone++
+		Default
+			Lua.error("I don't know how to undo: "..Act.Action)
+	End
 End
 
 Void HandleUndo()
-	If !SpideretteAction._STCK.Have
+	If (!SpideretteAction._STCK.Have) || SPR_State!=0
 		Return
 	End
 	If MX<96 && MY>Graphics.Height-96
 		SetColorHSV(Hue,1,1)
 		If ML; UndoAction(); End
+	Else
+		SetColor(255,255,255,255)
 	End
 	UND.Stretch(0,Graphics.Height-96,96,96)	
+End
+
+Void Stage()
+	Switch SPR_State
+		Case 0
+			Return
+		Case 1
+			SetColor(255,255,255,255)
+			ESC.Draw(Graphics.Width div 2, Graphics.Height div 2)
+	End
+	if MY>Graphics.Height-96 && MX>(Graphics.Width div 2)-48 && MX<(Graphics.Width div 2)+48
+		SetColorHSV(Hue,1,1)
+		If ML;GoToFlow("SELECTGAME"); END
+	Else
+		SetColor(255,255,255,255)
+	End
+	OKE.Stretch((Graphics.Width div 2)-48,Graphics.Height-96,96,96)	
 End
 
 Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
@@ -393,11 +567,11 @@ Global Void GameNew(String Shuf="")
 	Else		
 		Switch Suits
 		Case 1		
-			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 8,1)
+			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 4,1)
 		Case 2
-			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 4,2)
+			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 2,2)
 		Default
-			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 2,4)
+			SPR_Deck = Deck.Shuffle("DECK_Spiderette",ShuffleMethod,1, 13, 1,4)
 		End
 	End
 	Deal()
@@ -411,7 +585,17 @@ Global Void MainFlow()
 	DrawCards()
 	HandleUndo()
 	ShowData()
+	Stage()
 	SetColor(255,255,255,255); ICO.Stretch(Graphics.Width-ICOSIZE,Graphics.Height-ICOSIZE,ICOSIZE,ICOSIZE); ICOSIZE = math.max(ICOSIZE-1,96)
 	GameFeatures.Button()
 	ShowMouse()
+End
+
+Global Void DEBUG_ToggleYukon()
+	SPR_DBG_Yukon=!SPR_DBG_Yukon
+	printf("\x1b[32mYukon for Spiderette set to: %s\x1b[37m\n",SPR_DBG_Yukon);
+End
+
+Init
+	Sys.ConsoleLocal("SPR_YUKON","DEBUG_ToggleYukon")
 End

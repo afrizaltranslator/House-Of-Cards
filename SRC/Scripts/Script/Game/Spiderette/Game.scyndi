@@ -21,12 +21,13 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.05.10
+// Version: 24.05.14
 // End License Information
 Script
 
 #use "Libs/SCI/Sys"
 #use "Libs/SCI/GINIE"
+#use "Libs/SCI/SGJCR"
 #use "Libs/SCI/Graphics"
 
 #use "Libs/XMath"
@@ -536,7 +537,40 @@ Void Stage()
 	OKE.Stretch((Graphics.Width div 2)-48,Graphics.Height-96,96,96)	
 End
 
-Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return False; End
+Global Bool  GAMEFEATURES_SAVEEXIT_ALLOW(); Return SPR_State==0; End
+
+Global Void GAMEFEATURES_SAVEEXIT_ACTION()
+	plua SG;
+	plua SG = SGJCR.Create("SAVE:SPIDERETTE")
+	SG.Assign("House Of Cards.SaveGame.SPIDERETTE.jcr")
+	SG.Clear()	
+	String O = "# Spiderette\n# (c) Jeroen P. Broks\n\n"
+	O = O .. "[General]\n"
+	O = O .. sprintf("Time=%d\n",SPR_Time)
+	O = O .. sprintf("Moves=%d\n",SPR_Moves)
+	O = O .. sprintf("Undone=%d\n",SPR_Undone)
+	O = O .. "\n[Pile]\n*list:Stack\n"
+	For c in each(SPR_DrawPile)
+		O = O .. sprintf("\t%x%x\n",c.Card.CardSuit,c.Card.CardValue)
+	End
+	O = O .. "*end\n\n[Tableau]\n"
+	For ri,ra in ipairs(SPR_Row)
+		O = O .. sprintf("*list:C%d\n",ri)
+		For c in each(ra)
+			O = O .. sprintf("\t%x%x%s\n",c.Card.CardSuit,c.Card.CardValue,c.Visible)
+		End
+		O = O .. "*end\n"
+	End
+	O = O .. "\n[Cleared]\n"
+	For i=0,3
+		If Len(SPR_Cleared[i] || {})==13
+			O = O .. sprintf("C%d=%x\n",i,SPR_Cleared[i][0].Card.CardSuit)
+		End
+	End	
+	O = O .. "\n\n"
+	SG.Text.Spiderette = O
+	SG.Save()
+End
 
 Global Void GameNew(String Shuf="")
 	SpideretteCard.Cnt=0

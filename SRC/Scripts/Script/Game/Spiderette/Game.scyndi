@@ -44,7 +44,7 @@ Script
 #use "Script/Use/Gen/QCardWrite"
 #use "Script/Use/Gen/GameFeatures"
 
-#undef Use_SeedLog
+#define Use_SeedLog
 
 #region BaseVars
 ReadOnly Var ICO = LoadNewImage("Script/Game/Spiderette/Icon.png","ICON_SPIDERETTE")
@@ -187,6 +187,7 @@ Class SpideretteAction
 			if SPR_Cleared && Len(SPR_Cleared[3] || {})>0
 				SFX("COMPLETE")
 				SPR_State=1
+				SPR_SeedLog.Won++
 			Else
 				SFX("BONUS")
 			End
@@ -652,11 +653,11 @@ Global Void GameNew(String Shuf="")
 	SPR_Time=0
 	GameFeatures.ShuffleTag="DECK_Spiderette"
 #if Use_SeedLog
+	// FuckYou() // Force a compiler error (debugging compiler only)
 	CSay("SeedLog")
 	slxn = sprintf("%d_Suits::allowempty.%s",Suits,AllowEmpty)
-	SPR_SeedLog = SeedLog.StartLog("SPRDERETTE",slxn)
-	SPR_SeedLog.Played++
-	
+	SPR_SeedLog = SeedLog.StartLog("SPIDERETTE",slxn)
+	SPR_SeedLog.Played++	
 #else
 	CSay("SeedLog DISABLED!")
 	SPR_SeedLog = SeedLog.StartLog("FAKE")	
@@ -685,6 +686,7 @@ Global Void MainFlow()
 	HandleUndo()
 	ShowData()
 	Stage()
+	SPR_SeedLog.ShowSeed()
 	SetColor(255,255,255,255); ICO.Stretch(Graphics.Width-ICOSIZE,Graphics.Height-ICOSIZE,ICOSIZE,ICOSIZE); ICOSIZE = math.max(ICOSIZE-1,96)
 	GameFeatures.Button()
 	ShowMouse()

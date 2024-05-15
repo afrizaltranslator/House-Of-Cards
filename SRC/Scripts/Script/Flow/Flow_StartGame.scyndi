@@ -141,6 +141,13 @@ Class GameRecord
 	ReadOnly Var Config
 	Static Delegate ASC = Lua.string.byte
 	ReadOnly Var Me
+		
+	Get String RosettaID
+		// Config ID		
+		//print(TID,"->",Raw.Value("Rosetta","ID"),"<-") // DEBUG ONLY!
+		if Raw.Value("Rosetta","ID")==""; Return TID; End
+		Return Raw.Value("Rosetta","ID")
+	ENd
 	
 	Get String DevStage
 		String Ret;Ret = Me.Raw.Value("Development","Status")
@@ -175,7 +182,7 @@ Class GameRecord
 		ConfigItems = {}
 		ConfigItems[0] = new CfgItem(Self,"*SHUFFLE*","STARTGAME_GLOBAL","SHUFFLE",ShuffleAct,ShuffleVal)
 		For I in Each(Raw.List("Config","Fields"))
-			ConfigItems[Len(ConfigItems)] = new CfgItem(Self,I,"STARTGAME_"..TID,I,RandomItemAct,RandomItemValue,RandomItemAllow,Raw.List("CFG::"..i,"Answers"))
+			ConfigItems[Len(ConfigItems)] = new CfgItem(Self,I,"STARTGAME_"..RosettaID,I,RandomItemAct,RandomItemValue,RandomItemAllow,Raw.List("CFG::"..i,"Answers"))
 			Config.NewValue("Config",I,Raw.Value("CFG::"..i,"Default"))
 		End
 	End

@@ -21,7 +21,7 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.05.14
+// Version: 24.05.15
 // End License Information
 Script
 
@@ -453,7 +453,7 @@ Void DrawCards()
 				CRD.GX=N.X
 				CRD.GY=N.Y
 				CA.Quick = CA.Quick && CRD.X==N.X && CRD.Y==N.Y
-				CSayF("%02d -> (%d,%d)>(%d,%d)",CRD.Card.CardValue,CRD.X,CRD.Y,N.X,N.Y)
+				//CSayF("%02d -> (%d,%d)>(%d,%d)",CRD.Card.CardValue,CRD.X,CRD.Y,N.X,N.Y)
 				CRD.Draw()
 			End
 			If CA.Quick
@@ -570,6 +570,71 @@ Global Void GAMEFEATURES_SAVEEXIT_ACTION()
 	O = O .. "\n\n"
 	SG.Text.Spiderette = O
 	SG.Save()
+	Sys.CurrentFlow = "SELECTGAME"
+End
+
+Global Void GameContinue()
+	CSay("Load SPIDERETTE savegame!")
+	CSay("= Preparin to load savegame")
+	SpideretteCard.Deals++
+	SpideretteCard.Cnt=0
+	SPR_Card = SPR_CardSize.Bind()	
+	SpideretteAction.Clear()
+	CSay("= SeedLog DISABLED!")
+	SPR_SeedLog = SeedLog.StartLog("FAKE")
+	CSay("= Loading")
+	plua SG = SGJCR.Create("SAVE:SPIDERETTE")
+	SG.Assign("House Of Cards.SaveGame.SPIDERETTE.jcr")
+	SG.Load()
+	CSay("= Parsing")
+	plua SD
+	SD = GINIE.Parse(SG.Text.Spiderette)
+	CSay("= Configuring general data")
+	SPR_Time   = SD.IntValue("General","Time")
+	SPR_Moves  = SD.IntValue("General","Moves")
+	SPR_Undone = SD.IntValue("General","Undone")
+	CSay("= Pile")
+	SPR_DrawPile = {}
+	For C in each(SD.List("Pile","Pile"))
+		plua Crd
+		Crd = New SpideretteCard(SPR_Draw)
+		plua Suit  = lua.tonumber(sprintf("0x%s",Mid(C,1,1))) || 0
+		plua Value = lua.tonumber(sprintf("0x%s",Mid(C,2,1))) || 1
+		crd.Card = New DeckCard(Suit,Value)
+		Crd.Visible   = False	
+		Append(SPR_DrawPile,crd)
+	End
+	CSay("= Tableau")
+	SPR_Row = {}
+	For r = 0,6
+		SPR_Row[r] = {}
+		For C in each(SD.List("Tableau",sprintf("C%d",r)))
+			plua Crd
+			Crd = New SpideretteCard(SPR_RowNodes[r])
+			plua Suit  = lua.tonumber(sprintf("0x%s",Mid(C,1,1))) || 0
+			plua Value = lua.tonumber(sprintf("0x%s",Mid(C,2,1))) || 1
+			crd.Card   = New DeckCard(Suit,Value)
+			Crd.Visible   = Lower(Mid(C,3,1))=="t"	
+			Append(SPR_Row[r],crd)
+		End
+	End
+	CSay("= Cleared")
+	SPR_Cleared = {}
+	For r=0,3
+		plua t;t=sprintf("C%d",r)
+		If SD.Value("Cleared",t)!=""
+			SPR_Cleared[r]={}
+			For v=1,13
+				plua crd
+				crd = new SpideretteCard(SPR_Clear[r])
+				crd.Card = New DeckCard( Sd.IntValue("Cleared",t),v)				
+				crd.Visible = true
+				Append(SPR_Cleared[r],crd)
+			End
+		End
+	End
+	CSay("= Mutilating savegame file")
+	SG.Mutilate()
 End
 
 Global Void GameNew(String Shuf="")

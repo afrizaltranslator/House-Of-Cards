@@ -1,0 +1,12 @@
+// Code Generated on: 5/15/2024 5:09:34 PM
+
+Module
+
+#use "Script/Use/Shf/Class_Seed"
+
+Var Seeds = New SeedReg()
+
+Init
+	Append(Seeds.Seeds,1825, 1829, 1824)
+End
+

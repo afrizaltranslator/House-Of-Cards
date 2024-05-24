@@ -1,6 +1,6 @@
 // License Information:
 // House of Cards
-// Winning Seeds: Spiderette
+// Spiderette Seeds
 // 
 // 
 // 
@@ -23,7 +23,7 @@
 // 
 // Version: 24.05.24
 // End License Information
-// Code Generated on: 5/20/2024 11:31:56 PM
+// Code Generated on: 5/20/2024 9:56:16 PM
 
 Module
 
@@ -32,5 +32,5 @@ Module
 Var Seeds = New SeedReg()
 
 Init
-	Append(Seeds.Seeds,1825, 1829, 1824, 1832, 1834, 1838, 1841, 1846, 1850, 1861, 1866, 1871, 1876, 1885, 1886, 1983, 1987, 1995, 1999, 2002)
+)
 End

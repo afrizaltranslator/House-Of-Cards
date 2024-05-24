@@ -21,9 +21,9 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.05.14
+// Version: 24.05.24
 // End License Information
-// Code Generated on: 5/14/2024 1:30:30 PM
+// Code Generated on: 5/20/2024 9:56:16 PM
 
 Module
 
@@ -32,5 +32,5 @@ Module
 Var Seeds = New SeedReg()
 
 Init
-	Append(Seeds.Seeds,919, 964, 761, 777, 784, 794, 801, 804, 826, 834, 850, 860, 901, 913, 991, 1055, 1134, 1162, 1186, 1211, 1231, 1275, 1285, 1321, 1394, 1715344609, 1748)
+	Append(Seeds.Seeds,919, 964, 761, 777, 784, 794, 801, 804, 826, 834, 850, 860, 901, 913, 991, 1055, 1134, 1162, 1186, 1211, 1231, 1275, 1285, 1321, 1394, 1715344609, 1748, 1715950382, 1874)
 End

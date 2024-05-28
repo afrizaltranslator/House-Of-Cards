@@ -21,9 +21,9 @@
 // Please note that some references to data like pictures or audio, do not automatically
 // fall under this licenses. Mostly this is noted in the respective files.
 // 
-// Version: 24.05.24
+// Version: 24.05.29
 // End License Information
-// Code Generated on: 5/24/2024 1:00:43 PM
+// Code Generated on: 5/29/2024 12:11:23 AM
 
 Module
 
@@ -32,5 +32,5 @@ Module
 Var Seeds = New SeedReg()
 
 Init
-	Append(Seeds.Seeds,1825, 1829, 1824, 1832, 1834, 1838, 1841, 1846, 1850, 1861, 1866, 1871, 1876, 1885, 1886, 1983, 1987, 1995, 1999, 2002, 2007, 2017, 2019, 2022)
+	Append(Seeds.Seeds,1825, 1829, 1824, 1832, 1834, 1838, 1841, 1846, 1850, 1861, 1866, 1871, 1876, 1885, 1886, 1983, 1987, 1995, 1999, 2002, 2007, 2017, 2019, 2022, 2028, 2032, 2037, 2041, 2044)
 End
